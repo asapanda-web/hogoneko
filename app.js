@@ -113,9 +113,11 @@ function listenDailyLogs(catId) {
       card.innerHTML = `
         <div class="row1">
           <span class="date mono">${log.date}</span>
-          <span class="weight mono">${log.weight ? log.weight + " kg" : ""}</span>
+          <span class="weight mono">${log.weight ? log.weight + " kg" : "体重未測定"}</span>
         </div>
-        <div class="detail">食欲: ${escapeHtml(log.appetite || "-")} ／ 排泄: ${escapeHtml(log.excretion || "-")}</div>
+        <div class="detail">${formatAppetite(log.appetite)}</div>
+        <div class="detail">${formatUrine(log.urine)}</div>
+        <div class="detail">${formatStool(log.stool)}</div>
         ${log.memo ? `<div class="detail">${escapeHtml(log.memo)}</div>` : ""}
         <button class="btn btn-ghost btn-small" style="margin-top:6px;padding:0;" data-del>削除</button>
       `;
@@ -128,6 +130,46 @@ function listenDailyLogs(catId) {
       listEl.appendChild(card);
     });
   });
+}
+
+function formatAppetite(appetite) {
+  if (!appetite) return "食欲: -";
+  if (typeof appetite === "string") return `食欲: ${escapeHtml(appetite)}`; // 旧形式との互換
+  let text = `食欲: ${escapeHtml(appetite.status || "-")}`;
+  if (appetite.status === "一部残した" && appetite.remainGrams) {
+    text += `(${escapeHtml(appetite.remainGrams)}g残す)`;
+  }
+  return text;
+}
+
+function formatUrine(urine) {
+  if (!urine) return "尿: -";
+  if (typeof urine === "string") return `尿: ${escapeHtml(urine)}`; // 旧形式との互換
+  let text = `尿: ${escapeHtml(urine.status || "-")}`;
+  if (urine.status === "異常") {
+    const details = [
+      urine.blood === "あり" ? "血尿あり" : "",
+      urine.volume ? `量: ${urine.volume}` : "",
+      urine.color ? `色: ${urine.color}` : ""
+    ].filter(Boolean).join(" ／ ");
+    if (details) text += `(${escapeHtml(details)})`;
+  }
+  return text;
+}
+
+function formatStool(stool) {
+  if (!stool) return "便: -";
+  if (typeof stool === "string") return `便: ${escapeHtml(stool)}`; // 旧形式との互換
+  let text = `便: ${escapeHtml(stool.status || "-")}`;
+  if (stool.status === "異常") {
+    const details = [
+      stool.types && stool.types.length ? stool.types.join("・") : "",
+      stool.volume ? `量: ${stool.volume}` : "",
+      stool.color ? `色: ${stool.color}` : ""
+    ].filter(Boolean).join(" ／ ");
+    if (details) text += `(${escapeHtml(details)})`;
+  }
+  return text;
 }
 
 // ---------- 医療記録 ----------
@@ -176,6 +218,32 @@ function listenMedicalRecords(catId) {
   });
 }
 
+// ---------- 日々の記録フォーム: 詳細欄の表示切り替え ----------
+const appetiteStatusEl = document.getElementById("daily-appetite-status");
+const appetiteRemainWrap = document.getElementById("appetite-remain-wrap");
+appetiteStatusEl.addEventListener("change", () => {
+  appetiteRemainWrap.classList.toggle("hidden", appetiteStatusEl.value !== "一部残した");
+});
+
+const urineStatusEl = document.getElementById("daily-urine-status");
+const urineDetailWrap = document.getElementById("urine-detail-wrap");
+urineStatusEl.addEventListener("change", () => {
+  urineDetailWrap.classList.toggle("hidden", urineStatusEl.value !== "異常");
+});
+
+const stoolStatusEl = document.getElementById("daily-stool-status");
+const stoolDetailWrap = document.getElementById("stool-detail-wrap");
+stoolStatusEl.addEventListener("change", () => {
+  stoolDetailWrap.classList.toggle("hidden", stoolStatusEl.value !== "異常");
+});
+
+function resetDailyFormExtras() {
+  appetiteRemainWrap.classList.add("hidden");
+  urineDetailWrap.classList.add("hidden");
+  stoolDetailWrap.classList.add("hidden");
+  document.querySelectorAll(".stool-type").forEach((cb) => (cb.checked = false));
+}
+
 // ---------- モーダル制御 ----------
 const modalCat = document.getElementById("modal-cat");
 const modalDaily = document.getElementById("modal-daily");
@@ -192,7 +260,9 @@ document.getElementById("fab-btn").addEventListener("click", () => {
     // 詳細画面 → 表示中のタブに応じてモーダルを出し分け
     const activeTab = document.querySelector(".tab-btn.active").dataset.tab;
     if (activeTab === "daily") {
+      document.getElementById("form-daily").reset();
       document.getElementById("daily-date").valueAsDate = new Date();
+      resetDailyFormExtras();
       modalDaily.classList.add("open");
     } else {
       document.getElementById("medical-date").valueAsDate = new Date();
@@ -222,16 +292,43 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
 
 document.getElementById("form-daily").addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  const appetite = {
+    status: document.getElementById("daily-appetite-status").value,
+    remainGrams: document.getElementById("daily-appetite-status").value === "一部残した"
+      ? document.getElementById("daily-appetite-remain").value
+      : ""
+  };
+
+  const urineStatus = document.getElementById("daily-urine-status").value;
+  const urine = {
+    status: urineStatus,
+    blood: urineStatus === "異常" ? document.getElementById("daily-urine-blood").value : "",
+    volume: urineStatus === "異常" ? document.getElementById("daily-urine-volume").value : "",
+    color: urineStatus === "異常" ? document.getElementById("daily-urine-color").value : ""
+  };
+
+  const stoolStatus = document.getElementById("daily-stool-status").value;
+  const stoolTypes = Array.from(document.querySelectorAll(".stool-type:checked")).map((cb) => cb.value);
+  const stool = {
+    status: stoolStatus,
+    types: stoolStatus === "異常" ? stoolTypes : [],
+    volume: stoolStatus === "異常" ? document.getElementById("daily-stool-volume").value : "",
+    color: stoolStatus === "異常" ? document.getElementById("daily-stool-color").value : ""
+  };
+
   await addDoc(collection(db, "cats", currentCatId, "dailyLogs"), {
     date: document.getElementById("daily-date").value,
     weight: document.getElementById("daily-weight").value,
-    appetite: document.getElementById("daily-appetite").value,
-    excretion: document.getElementById("daily-excretion").value,
+    appetite,
+    urine,
+    stool,
     memo: document.getElementById("daily-memo").value.trim(),
     recordedBy: currentUsername,
     createdAt: serverTimestamp()
   });
   e.target.reset();
+  resetDailyFormExtras();
   modalDaily.classList.remove("open");
 });
 

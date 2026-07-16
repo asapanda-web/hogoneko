@@ -96,23 +96,79 @@
     <form id="form-daily">
       <label>日付</label>
       <input type="date" id="daily-date" required>
-      <label>体重(kg)</label>
+      <label>体重(kg)<span class="label-note">(測っていない時は空欄でOK)</span></label>
       <input type="number" step="0.01" id="daily-weight" placeholder="例: 3.20">
+
       <label>食欲</label>
-      <select id="daily-appetite">
-        <option value="良好">良好</option>
-        <option value="普通">普通</option>
-        <option value="低下">低下</option>
-        <option value="食べない">食べない</option>
+      <select id="daily-appetite-status">
+        <option value="完食">完食</option>
+        <option value="一部残した">一部残した</option>
+        <option value="ほとんど食べていない">ほとんど食べていない</option>
+        <option value="食べていない">食べていない</option>
       </select>
-      <label>排泄の様子</label>
-      <select id="daily-excretion">
-        <option value="正常">正常(便・尿とも正常)</option>
-        <option value="軟便">軟便</option>
-        <option value="下痢">下痢</option>
-        <option value="便秘">便秘気味</option>
-        <option value="血尿・血便">血尿・血便あり</option>
+      <div id="appetite-remain-wrap" class="hidden">
+        <label>残した量(g)</label>
+        <input type="number" step="1" id="daily-appetite-remain" placeholder="例: 20">
+      </div>
+
+      <label>尿</label>
+      <select id="daily-urine-status">
+        <option value="正常">正常</option>
+        <option value="異常">異常</option>
+        <option value="無し">無し(排尿確認できず)</option>
       </select>
+      <div id="urine-detail-wrap" class="hidden detail-box">
+        <label>血尿</label>
+        <select id="daily-urine-blood">
+          <option value="なし">なし</option>
+          <option value="あり">あり</option>
+        </select>
+        <label>尿量</label>
+        <select id="daily-urine-volume">
+          <option value="普通">普通</option>
+          <option value="少ない">少ない</option>
+          <option value="多い">多い</option>
+        </select>
+        <label>尿の色</label>
+        <select id="daily-urine-color">
+          <option value="普通(淡い黄色)">普通(淡い黄色)</option>
+          <option value="濃い黄色">濃い黄色</option>
+          <option value="赤みがかる">赤みがかる</option>
+          <option value="茶色っぽい">茶色っぽい</option>
+          <option value="その他">その他(メモに記載)</option>
+        </select>
+      </div>
+
+      <label>便</label>
+      <select id="daily-stool-status">
+        <option value="正常">正常</option>
+        <option value="異常">異常</option>
+        <option value="無し">無し(排便確認できず)</option>
+      </select>
+      <div id="stool-detail-wrap" class="hidden detail-box">
+        <label>便の種類(複数選択可)</label>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" value="血便" class="stool-type"> 血便</label>
+          <label class="checkbox-item"><input type="checkbox" value="下痢" class="stool-type"> 下痢</label>
+          <label class="checkbox-item"><input type="checkbox" value="軟便" class="stool-type"> 軟便</label>
+          <label class="checkbox-item"><input type="checkbox" value="便秘" class="stool-type"> 便秘</label>
+        </div>
+        <label>便の量</label>
+        <select id="daily-stool-volume">
+          <option value="普通">普通</option>
+          <option value="少なめ">少なめ</option>
+          <option value="多め">多め</option>
+        </select>
+        <label>便の色</label>
+        <select id="daily-stool-color">
+          <option value="普通(茶色)">普通(茶色)</option>
+          <option value="黒っぽい">黒っぽい</option>
+          <option value="赤みがかる">赤みがかる</option>
+          <option value="白っぽい・灰色">白っぽい・灰色</option>
+          <option value="その他">その他(メモに記載)</option>
+        </select>
+      </div>
+
       <label>メモ(任意)</label>
       <textarea id="daily-memo" placeholder="様子や気になることなど"></textarea>
       <div class="modal-actions">

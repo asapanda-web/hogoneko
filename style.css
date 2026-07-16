@@ -157,6 +157,42 @@ input:focus, select:focus, textarea:focus {
 .btn-small { padding: 6px 12px; font-size: 13px; }
 .btn-danger { background: var(--coral-bg); color: var(--coral); }
 
+.label-note {
+  font-weight: 400;
+  color: var(--ink-soft);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.detail-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 14px 14px;
+  margin-top: 8px;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 4px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 0;
+}
+
+.checkbox-item input {
+  width: auto;
+}
+
 .hint-text {
   color: var(--ink-soft);
   font-size: 13px;
