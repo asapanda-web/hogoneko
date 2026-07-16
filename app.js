@@ -207,14 +207,19 @@ const ALL_WALLPAPER_CLASSES = ["wallpaper-paws", "wallpaper-photo-pet", "wallpap
 function applyWallpaper(wallpaper, customData) {
   document.body.classList.remove(...ALL_WALLPAPER_CLASSES);
   document.body.style.backgroundImage = ""; // カスタム写真用のインラインスタイルをリセット
+  document.body.style.backgroundSize = "";
+  document.body.style.backgroundPosition = "";
+  document.body.style.backgroundRepeat = "";
+  document.body.style.backgroundAttachment = "";
 
   if (wallpaper === "paws") document.body.classList.add("wallpaper-paws");
   else if (wallpaper === "photo-pet") document.body.classList.add("wallpaper-photo-pet");
   else if (wallpaper === "photo-common") document.body.classList.add("wallpaper-photo-common");
   else if (wallpaper === "custom" && customData) {
     document.body.style.backgroundImage = `linear-gradient(rgba(250,247,242,0.88), rgba(250,247,242,0.88)), url("${customData}")`;
-    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundSize = "contain";
     document.body.style.backgroundPosition = "center";
+    document.body.style.backgroundRepeat = "no-repeat";
     document.body.style.backgroundAttachment = "fixed";
   }
 

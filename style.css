@@ -44,16 +44,18 @@ a { color: inherit; }
 body.wallpaper-photo-pet {
   background-color: var(--bg);
   background-image: linear-gradient(rgba(250,247,242,0.88), rgba(250,247,242,0.88)), url("assets/wallpaper-pet.jpg");
-  background-size: cover;
+  background-size: contain;
   background-position: center;
+  background-repeat: no-repeat;
   background-attachment: fixed;
 }
 
 body.wallpaper-photo-common {
   background-color: var(--bg);
   background-image: linear-gradient(rgba(250,247,242,0.88), rgba(250,247,242,0.88)), url("assets/wallpaper-common.jpg");
-  background-size: cover;
+  background-size: contain;
   background-position: center;
+  background-repeat: no-repeat;
   background-attachment: fixed;
 }
 
