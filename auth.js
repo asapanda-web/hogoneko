@@ -1,4 +1,4 @@
-import { auth, db } from "./firebase-config.js?v=1784209265";
+import { auth, db } from "./firebase-config.js?v=1784218044";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -6,7 +6,7 @@ import {
   sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ORG_NAME, APP_TITLE, ADMIN_EMAIL } from "./site-config.js?v=1784209265";
+import { ORG_NAME, APP_TITLE, ADMIN_EMAIL } from "./site-config.js?v=1784218044";
 
 // 団体名・アプリ名を画面に反映
 const titleText = ORG_NAME ? `${APP_TITLE}(${ORG_NAME})` : APP_TITLE;
