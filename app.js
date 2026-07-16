@@ -100,12 +100,17 @@ function showDetail(catId, catData) {
   const deleteCatBtn = document.getElementById("delete-cat-btn");
 
   actionsWrap.classList.toggle("hidden", !canEditCat);
+  const editCatBtn = document.getElementById("edit-cat-btn");
+  editCatBtn.classList.toggle("hidden", !canEditCat);
   if (canEditCat) {
+    editCatBtn.onclick = () => openCatEditModal(catId, catData);
+
     toggleStatusBtn.textContent = catData.status === "譲渡済み" ? "保護中に戻す" : "譲渡済みにする";
     toggleStatusBtn.onclick = async () => {
       const newStatus = catData.status === "譲渡済み" ? "保護中" : "譲渡済み";
       if (confirm(`ステータスを「${newStatus}」に変更しますか？`)) {
         await updateDoc(doc(db, "cats", catId), { status: newStatus });
+        await addHistoryEntry(catId, `ステータス: ${catData.status || "保護中"} → ${newStatus}`);
         catData.status = newStatus; // 画面上の表示を即時反映
         showDetail(catId, catData);
       }
@@ -126,16 +131,60 @@ function showDetail(catId, catData) {
 
   listenDailyLogs(catId);
   listenMedicalRecords(catId);
+  listenHistory(catId);
 }
 
 async function deleteCatCompletely(catId) {
   const dailySnap = await getDocs(collection(db, "cats", catId, "dailyLogs"));
   const medicalSnap = await getDocs(collection(db, "cats", catId, "medicalRecords"));
+  const historySnap = await getDocs(collection(db, "cats", catId, "history"));
   const batch = writeBatch(db);
   dailySnap.forEach((d) => batch.delete(d.ref));
   medicalSnap.forEach((d) => batch.delete(d.ref));
+  historySnap.forEach((d) => batch.delete(d.ref));
   batch.delete(doc(db, "cats", catId));
   await batch.commit();
+}
+
+// ---------- 変更履歴 ----------
+async function addHistoryEntry(catId, summary) {
+  await addDoc(collection(db, "cats", catId, "history"), {
+    summary,
+    changedBy: currentUsername,
+    changedAt: serverTimestamp()
+  });
+}
+
+let unsubHistory = null;
+function listenHistory(catId) {
+  if (unsubHistory) unsubHistory();
+  const q = query(collection(db, "cats", catId, "history"), orderBy("changedAt", "desc"));
+  unsubHistory = onSnapshot(q, (snap) => {
+    const listEl = document.getElementById("history-list");
+    const emptyEl = document.getElementById("empty-history");
+    listEl.innerHTML = "";
+    if (snap.empty) {
+      emptyEl.classList.remove("hidden");
+      return;
+    }
+    emptyEl.classList.add("hidden");
+    snap.forEach((docSnap) => {
+      const h = docSnap.data();
+      const dateText = h.changedAt && h.changedAt.toDate
+        ? h.changedAt.toDate().toLocaleString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+        : "";
+      const card = document.createElement("div");
+      card.className = "log-card";
+      card.innerHTML = `
+        <div class="row1">
+          <span class="date mono">${escapeHtml(dateText)}</span>
+        </div>
+        <div class="detail">${escapeHtml(h.summary)}</div>
+        <div class="detail" style="color:var(--ink-soft);">変更者: ${escapeHtml(h.changedBy || "-")}</div>
+      `;
+      listEl.appendChild(card);
+    });
+  });
 }
 
 document.getElementById("back-to-list").addEventListener("click", showDashboard);
@@ -148,6 +197,7 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     const tab = btn.dataset.tab;
     document.getElementById("tab-daily").classList.toggle("hidden", tab !== "daily");
     document.getElementById("tab-medical").classList.toggle("hidden", tab !== "medical");
+    document.getElementById("tab-history").classList.toggle("hidden", tab !== "history");
   });
 });
 
@@ -365,6 +415,7 @@ async function populateFosterDropdown() {
 
 // ---------- 猫の一覧 ----------
 let currentFilter = "すべて";
+let currentFosterFilter = "";
 let latestCatsSnapshot = null;
 
 document.querySelectorAll(".filter-btn").forEach((btn) => {
@@ -372,8 +423,15 @@ document.querySelectorAll(".filter-btn").forEach((btn) => {
     document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     currentFilter = btn.dataset.filter;
+    document.getElementById("foster-filter-wrap").classList.toggle("hidden", currentFilter !== "個人宅預かり");
+    if (currentFilter !== "個人宅預かり") currentFosterFilter = "";
     renderCatList();
   });
+});
+
+document.getElementById("foster-filter-select").addEventListener("change", (e) => {
+  currentFosterFilter = e.target.value;
+  renderCatList();
 });
 
 document.getElementById("show-adopted-toggle").addEventListener("change", renderCatList);
@@ -382,8 +440,33 @@ function listenCats() {
   const q = query(collection(db, "cats"), orderBy("createdAt", "desc"));
   unsubCats = onSnapshot(q, (snap) => {
     latestCatsSnapshot = snap;
+    updateFosterFilterOptions();
     renderCatList();
   });
+}
+
+function updateFosterFilterOptions() {
+  const selectEl = document.getElementById("foster-filter-select");
+  const previousValue = selectEl.value;
+  const fosterMap = new Map(); // uid -> 表示名
+  latestCatsSnapshot.docs.forEach((docSnap) => {
+    const cat = docSnap.data();
+    if (cat.location === "個人宅預かり" && cat.assignedFosterUids && cat.assignedFosterUids[0]) {
+      fosterMap.set(cat.assignedFosterUids[0], cat.fosterName || cat.assignedFosterUids[0]);
+    }
+  });
+  selectEl.innerHTML = `<option value="">預かり担当者ですべて表示</option>`;
+  Array.from(fosterMap.entries())
+    .sort((a, b) => a[1].localeCompare(b[1], "ja"))
+    .forEach(([uid, name]) => {
+      const opt = document.createElement("option");
+      opt.value = uid;
+      opt.textContent = name;
+      selectEl.appendChild(opt);
+    });
+  if (Array.from(selectEl.options).some((o) => o.value === previousValue)) {
+    selectEl.value = previousValue;
+  }
 }
 
 function renderCatList() {
@@ -396,8 +479,9 @@ function renderCatList() {
   const docs = latestCatsSnapshot.docs.filter((docSnap) => {
     const cat = docSnap.data();
     if (!showAdopted && cat.status === "譲渡済み") return false;
-    if (currentFilter === "すべて") return true;
-    return cat.location === currentFilter;
+    if (currentFilter !== "すべて" && cat.location !== currentFilter) return false;
+    if (currentFosterFilter && !(cat.assignedFosterUids && cat.assignedFosterUids[0] === currentFosterFilter)) return false;
+    return true;
   });
 
   if (docs.length === 0) {
@@ -711,6 +795,10 @@ document.querySelectorAll("[data-close]").forEach((btn) => {
     const overlay = btn.closest(".modal-overlay");
     overlay.classList.remove("open");
     if (overlay.id === "modal-medical") resetMedicalModalToAddMode();
+    if (overlay.id === "modal-cat") {
+      resetCatModalToAddMode();
+      fosterNameWrap.classList.add("hidden");
+    }
   });
 });
 
@@ -725,17 +813,59 @@ document.getElementById("fab-btn").addEventListener("click", () => {
       resetDailyFormExtras();
       renderMedicationChecklist();
       modalDaily.classList.add("open");
-    } else {
+    } else if (activeTab === "medical") {
       document.getElementById("form-medical").reset();
       resetMedicalModalToAddMode();
       medicationDetailWrap.classList.add("hidden");
       document.getElementById("medical-date").valueAsDate = new Date();
       modalMedical.classList.add("open");
     }
+    // 変更履歴タブでは何もしない(手動追加の対象ではないため)
   } else {
+    resetCatModalToAddMode();
+    fosterNameWrap.classList.add("hidden");
     modalCat.classList.add("open");
   }
 });
+
+// ---------- 猫の編集 ----------
+let editingCatId = null;
+let editingCatOriginal = null;
+
+async function openCatEditModal(catId, catData) {
+  editingCatId = catId;
+  editingCatOriginal = catData;
+  document.getElementById("cat-modal-title").textContent = "犬猫を編集";
+  document.getElementById("cat-submit-btn").textContent = "更新する";
+
+  document.getElementById("cat-species").value = catData.species || "猫";
+  document.getElementById("cat-name").value = catData.name || "";
+  document.getElementById("cat-sex").value = catData.sex || "不明";
+  document.getElementById("cat-age").value = catData.age || "";
+  document.getElementById("cat-intake").value = catData.intake || "";
+  document.getElementById("cat-memo").value = catData.memo || "";
+
+  const locationSelect = document.getElementById("cat-location");
+  locationSelect.value = catData.location || "施設";
+  const isFoster = locationSelect.value === "個人宅預かり";
+  fosterNameWrap.classList.toggle("hidden", !isFoster);
+
+  if (isFoster) {
+    await populateFosterDropdown();
+    const fosterSelect = document.getElementById("cat-foster-user");
+    const currentFosterUid = catData.assignedFosterUids && catData.assignedFosterUids[0];
+    if (currentFosterUid) fosterSelect.value = currentFosterUid;
+  }
+
+  modalCat.classList.add("open");
+}
+
+function resetCatModalToAddMode() {
+  editingCatId = null;
+  editingCatOriginal = null;
+  document.getElementById("cat-modal-title").textContent = "犬猫を登録";
+  document.getElementById("cat-submit-btn").textContent = "登録する";
+}
 
 // ---------- フォーム送信 ----------
 document.getElementById("form-cat").addEventListener("submit", async (e) => {
@@ -748,23 +878,53 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     ? fosterSelect.options[fosterSelect.selectedIndex].textContent
     : "";
 
-  await addDoc(collection(db, "cats"), {
+  const data = {
     species: document.getElementById("cat-species").value,
     location,
-    status: "保護中",
     assignedFosterUids: isFoster && fosterUid ? [fosterUid] : [],
     fosterName: fosterUsername,
     name: document.getElementById("cat-name").value.trim(),
     sex: document.getElementById("cat-sex").value,
     age: document.getElementById("cat-age").value.trim(),
     intake: document.getElementById("cat-intake").value,
-    memo: document.getElementById("cat-memo").value.trim(),
-    createdBy: currentUsername,
-    createdAt: serverTimestamp()
-  });
-  e.target.reset();
-  fosterNameWrap.classList.add("hidden");
-  modalCat.classList.remove("open");
+    memo: document.getElementById("cat-memo").value.trim()
+  };
+
+  if (editingCatId) {
+    const before = editingCatOriginal || {};
+    const changes = [];
+    const beforeLocationText = before.location === "個人宅預かり"
+      ? `${FOSTER_LABEL}${before.fosterName ? "(" + before.fosterName + ")" : ""}`
+      : FACILITY_LABEL;
+    const afterLocationText = data.location === "個人宅預かり"
+      ? `${FOSTER_LABEL}${data.fosterName ? "(" + data.fosterName + ")" : ""}`
+      : FACILITY_LABEL;
+    if (beforeLocationText !== afterLocationText) {
+      changes.push(`保護場所: ${beforeLocationText} → ${afterLocationText}`);
+    }
+    if ((before.name || "") !== data.name) changes.push(`名前: ${before.name || "-"} → ${data.name}`);
+    if ((before.species || "") !== data.species) changes.push(`種類: ${before.species || "-"} → ${data.species}`);
+
+    await updateDoc(doc(db, "cats", editingCatId), data);
+    if (changes.length) await addHistoryEntry(editingCatId, changes.join(" ／ "));
+
+    const updatedCatData = { ...before, ...data };
+    e.target.reset();
+    fosterNameWrap.classList.add("hidden");
+    resetCatModalToAddMode();
+    modalCat.classList.remove("open");
+    showDetail(editingCatId, updatedCatData);
+  } else {
+    await addDoc(collection(db, "cats"), {
+      ...data,
+      status: "保護中",
+      createdBy: currentUsername,
+      createdAt: serverTimestamp()
+    });
+    e.target.reset();
+    fosterNameWrap.classList.add("hidden");
+    modalCat.classList.remove("open");
+  }
 });
 
 document.getElementById("form-daily").addEventListener("submit", async (e) => {
