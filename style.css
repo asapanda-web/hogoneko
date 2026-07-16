@@ -1,13 +1,562 @@
-// ==============================================
-// 団体名など、見た目に関する設定をここでまとめて変更できます。
-// 他の団体でこのアプリを使う場合は、このファイルの ORG_NAME だけ
-// 書き換えれば、ログイン画面・メイン画面の表示が変わります。
-// ==============================================
-export const ORG_NAME = "ほごねこ"; // 団体名(空文字 "" にすると団体名を表示しません)
-export const APP_TITLE = "犬猫の健康管理"; // アプリ名(変更不要ならそのままでOK)
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap');
 
-// 保護場所の呼び方(団体によって「シェルター」「保護施設」「センター」など呼び方が違うため)
-// ここを書き換えるだけで、画面上の表示がすべて変わります。
-// (データの中身は変わらないので、既に登録したデータが消えたりすることはありません)
-export const FACILITY_LABEL = "シェルター(施設)";
-export const FOSTER_LABEL = "個人宅預かり";
+:root {
+  --bg: #FAF7F2;
+  --surface: #FFFFFF;
+  --ink: #2B2620;
+  --ink-soft: #6B6055;
+  --border: #E8E0D4;
+  --accent: #E8A33D;
+  --accent-ink: #7A4E10;
+  --sage: #7C9473;
+  --sage-bg: #EEF2E9;
+  --coral: #D9694F;
+  --coral-bg: #FBECE7;
+  --radius: 14px;
+  --shadow: 0 2px 10px rgba(43, 38, 32, 0.06);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Noto Sans JP', sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .brand {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 700;
+  margin: 0;
+}
+
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+a { color: inherit; }
+
+/* ---------- 壁紙: 写真プリセット ----------
+   assets/wallpaper-pet.jpg, wallpaper-common.jpg を
+   リポジトリの assets フォルダに追加すると反映されます。
+   (画像の上に薄いクリーム色を重ねて、文字が読みやすいようにしています) */
+body.wallpaper-photo-pet {
+  background-color: var(--bg);
+  background-image: linear-gradient(rgba(250,247,242,0.88), rgba(250,247,242,0.88)), url("assets/wallpaper-pet.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+body.wallpaper-photo-common {
+  background-color: var(--bg);
+  background-image: linear-gradient(rgba(250,247,242,0.88), rgba(250,247,242,0.88)), url("assets/wallpaper-common.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.wallpaper-option-photo-thumb {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.wallpaper-upload-input { display: none; }
+
+/* ---------- 壁紙プリセット ---------- */
+body.wallpaper-paws {
+  background-color: var(--bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cg fill='%23E8A33D' fill-opacity='0.13'%3E%3Cellipse cx='100' cy='117' rx='16' ry='19'/%3E%3Cellipse cx='78' cy='92' rx='8' ry='11'/%3E%3Cellipse cx='122' cy='92' rx='8' ry='11'/%3E%3Cellipse cx='67' cy='113' rx='7' ry='9.5'/%3E%3Cellipse cx='133' cy='113' rx='7' ry='9.5'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.wallpaper-picker {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.wallpaper-option {
+  width: 76px;
+  height: 76px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 22px;
+  background: var(--surface);
+  text-align: center;
+  padding: 4px;
+}
+
+.wallpaper-option-label {
+  font-size: 10px;
+  color: var(--ink-soft);
+  line-height: 1.2;
+}
+
+.wallpaper-option.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent) inset;
+}
+
+/* ---------- Layout ---------- */
+.screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar .brand {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.paw {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+}
+
+.container {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+  flex: 1;
+}
+
+/* ---------- Auth screen ---------- */
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 32px 28px;
+  border: 1px solid var(--border);
+}
+
+.auth-card h1 {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.auth-sub {
+  color: var(--ink-soft);
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+/* ---------- Forms ---------- */
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  margin: 14px 0 6px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+textarea { resize: vertical; min-height: 60px; }
+
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 18px;
+  border-radius: 10px;
+  border: none;
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.08s ease, opacity 0.15s ease;
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn-primary { background: var(--accent); color: #fff; width: 100%; margin-top: 20px; }
+.btn-ghost { background: transparent; color: var(--ink-soft); text-decoration: underline; padding: 8px 0; }
+.btn-outline { background: var(--surface); color: var(--ink); border: 1px solid var(--border); }
+.btn-small { padding: 6px 12px; font-size: 13px; }
+.btn-danger { background: var(--coral-bg); color: var(--coral); }
+
+.label-note {
+  font-weight: 400;
+  color: var(--ink-soft);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.detail-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 14px 14px;
+  margin-top: 8px;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.member-row:last-child { border-bottom: none; }
+.member-row .member-name { font-weight: 500; font-size: 14px; }
+.member-row select { width: auto; min-width: 140px; }
+
+.med-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.med-check-item:last-child { border-bottom: none; }
+.med-check-item input { width: auto; }
+.med-check-item .med-label { flex: 1; }
+
+.med-empty-note {
+  color: var(--ink-soft);
+  font-size: 13px;
+  padding: 6px 0;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 4px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 0;
+}
+
+.checkbox-item input {
+  width: auto;
+}
+
+.hint-text {
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.7;
+  margin-top: 8px;
+}
+
+.error-msg {
+  color: var(--coral);
+  font-size: 13px;
+  margin-top: 10px;
+  display: none;
+}
+
+/* ---------- Cat list ---------- */
+.pending-box {
+  max-width: 480px;
+  margin: 60px auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  text-align: center;
+}
+
+.pending-box h2 { font-size: 18px; margin-bottom: 12px; }
+.pending-box p { color: var(--ink-soft); font-size: 14px; }
+
+.pending-username {
+  margin-top: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 10px;
+  color: var(--accent-ink);
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-soft);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.location-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--sage-bg);
+  color: var(--sage);
+  margin-left: 6px;
+}
+
+.cat-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+
+.cat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+
+.cat-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--sage-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cat-card .name { font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700; font-size: 16px; }
+.cat-card .meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+/* ---------- Cat detail ---------- */
+.back-link {
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.cat-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 8px 0 20px;
+}
+
+.cat-header .name { font-size: 22px; }
+.cat-header .meta { color: var(--ink-soft); font-size: 13px; }
+
+.detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.adopted-badge {
+  background: var(--border);
+  color: var(--ink-soft);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 18px;
+}
+
+.tab-btn {
+  border: none;
+  background: none;
+  padding: 10px 6px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 14px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  position: relative;
+  margin-right: 18px;
+}
+
+.tab-btn.active { color: var(--accent-ink); }
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.log-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.log-card .row1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.log-card .date { font-weight: 500; font-size: 13px; }
+.log-card .weight { font-size: 15px; }
+.log-card .detail { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.tag-vaccine { background: var(--sage-bg); color: var(--sage); }
+.tag-hospital { background: var(--coral-bg); color: var(--coral); }
+.tag-medication { background: #EFEAF6; color: #7E5FB0; }
+.tag-other { background: var(--border); color: var(--ink-soft); }
+
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 26px;
+  box-shadow: 0 4px 14px rgba(232, 163, 61, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Modal ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 38, 32, 0.4);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  width: 100%;
+  max-width: 480px;
+  border-radius: 20px 20px 0 0;
+  padding: 24px 22px 28px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+  .modal-overlay { align-items: center; }
+  .modal { border-radius: 18px; }
+}
+
+.modal h3 { font-size: 17px; margin-bottom: 4px; }
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-actions .btn { flex: 1; margin-top: 0; }
+
+.hidden { display: none !important; }

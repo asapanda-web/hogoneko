@@ -1,20 +1,76 @@
-// ==============================================
-// Firebaseの設定をここに貼り付けてください
-// Firebaseコンソール > プロジェクトの設定 > マイアプリ で確認できます
-// ==============================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// Firebaseコンソール > Firestore Database > ルール タブに、
+// この内容をそのまま貼り付けて「公開」を押してください。
+//
+// 【役割の考え方】
+// - users/{uid} ドキュメントの role フィールドで役割を管理します
+//   ("未設定" / "管理者" / "責任者" / "施設メンバー" / "預り先")
+// - 管理者・責任者は全ての犬猫のデータを閲覧・編集できます
+// - 施設メンバーは location が「施設」の犬猫だけ閲覧・編集できます
+// - 預り先は、自分が assignedFosterUids に含まれている犬猫だけ閲覧できます
+//   (登録できるのは管理者・責任者・施設メンバーのみ)
+// - 新規登録した人は最初 role が「未設定」になり、管理者がこのコンソールの
+//   Firestore Database > データ タブで users コレクションの中の該当ドキュメントを開き、
+//   role フィールドを書き換えることで権限が有効になります
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAS-GgE3knjcQsYklDwZVZ8vXSH2l3piig",
-  authDomain: "hogoneko-228bc.firebaseapp.com",
-  projectId: "hogoneko-228bc",
-  storageBucket: "hogoneko-228bc.firebasestorage.app",
-  messagingSenderId: "757553213572",
-  appId: "1:757553213572:web:d06a33711c4437a55c12d1"
-};
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myRole() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : "未設定";
+    }
+
+    function isFullAdmin() {
+      return myRole() == "管理者" || myRole() == "責任者";
+    }
+
+    function isShelterMember() {
+      return myRole() == "施設メンバー";
+    }
+
+    function catAllowsRead(catData) {
+      return isFullAdmin()
+        || (catData.location == "施設" && isShelterMember())
+        || (catData.location == "個人宅預かり" && request.auth.uid in catData.assignedFosterUids);
+    }
+
+    // ユーザーの役割情報
+    match /users/{userId} {
+      // 自分の情報と、管理者・責任者はみんなの情報を読める
+      allow read: if isSignedIn() && (request.auth.uid == userId || isFullAdmin());
+      // 新規登録時、自分自身のドキュメントを role:"未設定" で作成することだけ許可
+      allow create: if isSignedIn() && request.auth.uid == userId && request.resource.data.role == "未設定";
+      // role の変更は管理者・責任者のみ。本人はusername等その他項目のみ更新可能
+      allow update: if isFullAdmin()
+        || (isSignedIn() && request.auth.uid == userId && request.resource.data.role == resource.data.role);
+      allow delete: if isFullAdmin();
+    }
+
+    // 犬猫本体の情報
+    match /cats/{catId} {
+      allow read: if isSignedIn() && catAllowsRead(resource.data);
+      allow create: if isFullAdmin()
+        || (isShelterMember() && request.resource.data.location == "施設");
+      allow update, delete: if isFullAdmin()
+        || (isShelterMember() && resource.data.location == "施設");
+
+      // 日々の記録
+      match /dailyLogs/{logId} {
+        allow read, create, delete: if isSignedIn()
+          && catAllowsRead(get(/databases/$(database)/documents/cats/$(catId)).data);
+      }
+
+      // 医療記録
+      match /medicalRecords/{recordId} {
+        allow read, create, update, delete: if isSignedIn()
+          && catAllowsRead(get(/databases/$(database)/documents/cats/$(catId)).data);
+      }
+    }
+  }
+}
