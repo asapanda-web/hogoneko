@@ -43,7 +43,7 @@ a { color: inherit; }
    (画像の上に薄いクリーム色を重ねて、文字が読みやすいようにしています) */
 body.wallpaper-photo-pet {
   background-color: var(--bg);
-  background-image: linear-gradient(rgba(250,247,242,0.88), rgba(250,247,242,0.88)), url("assets/wallpaper-pet.jpg");
+  background-image: linear-gradient(rgba(250,247,242,0.35), rgba(250,247,242,0.35)), url("assets/wallpaper-pet.jpg");
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -52,7 +52,7 @@ body.wallpaper-photo-pet {
 
 body.wallpaper-photo-common {
   background-color: var(--bg);
-  background-image: linear-gradient(rgba(250,247,242,0.88), rgba(250,247,242,0.88)), url("assets/wallpaper-common.jpg");
+  background-image: linear-gradient(rgba(250,247,242,0.35), rgba(250,247,242,0.35)), url("assets/wallpaper-common.jpg");
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -71,7 +71,7 @@ body.wallpaper-photo-common {
 /* ---------- 壁紙プリセット ---------- */
 body.wallpaper-paws {
   background-color: var(--bg);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cg fill='%23E8A33D' fill-opacity='0.13'%3E%3Cellipse cx='100' cy='117' rx='16' ry='19'/%3E%3Cellipse cx='78' cy='92' rx='8' ry='11'/%3E%3Cellipse cx='122' cy='92' rx='8' ry='11'/%3E%3Cellipse cx='67' cy='113' rx='7' ry='9.5'/%3E%3Cellipse cx='133' cy='113' rx='7' ry='9.5'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cg fill='%23C97A1E' fill-opacity='0.22'%3E%3Cellipse cx='75' cy='88' rx='12' ry='14.5'/%3E%3Cellipse cx='59' cy='69' rx='6' ry='8.5'/%3E%3Cellipse cx='92' cy='69' rx='6' ry='8.5'/%3E%3Cellipse cx='50' cy='85' rx='5.3' ry='7'/%3E%3Cellipse cx='100' cy='85' rx='5.3' ry='7'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .wallpaper-picker {
@@ -121,7 +121,9 @@ body.wallpaper-paws {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
