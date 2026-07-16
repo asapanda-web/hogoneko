@@ -202,25 +202,25 @@ async function loadMembersList() {
 }
 
 // ---------- 壁紙 ----------
-const ALL_WALLPAPER_CLASSES = ["wallpaper-paws", "wallpaper-photo-pet", "wallpaper-photo-common"];
+const ALL_WALLPAPER_CLASSES = ["wallpaper-paws"];
 
 function applyWallpaper(wallpaper, customData) {
   document.body.classList.remove(...ALL_WALLPAPER_CLASSES);
-  document.body.style.backgroundImage = ""; // カスタム写真用のインラインスタイルをリセット
-  document.body.style.backgroundSize = "";
-  document.body.style.backgroundPosition = "";
-  document.body.style.backgroundRepeat = "";
-  document.body.style.backgroundAttachment = "";
+  const imgEl = document.getElementById("wallpaper-img");
+  imgEl.classList.add("hidden");
+  imgEl.src = "";
 
-  if (wallpaper === "paws") document.body.classList.add("wallpaper-paws");
-  else if (wallpaper === "photo-pet") document.body.classList.add("wallpaper-photo-pet");
-  else if (wallpaper === "photo-common") document.body.classList.add("wallpaper-photo-common");
-  else if (wallpaper === "custom" && customData) {
-    document.body.style.backgroundImage = `linear-gradient(rgba(250,247,242,0.35), rgba(250,247,242,0.35)), url("${customData}")`;
-    document.body.style.backgroundSize = "contain";
-    document.body.style.backgroundPosition = "center";
-    document.body.style.backgroundRepeat = "no-repeat";
-    document.body.style.backgroundAttachment = "fixed";
+  if (wallpaper === "paws") {
+    document.body.classList.add("wallpaper-paws");
+  } else if (wallpaper === "photo-pet") {
+    imgEl.src = "assets/wallpaper-pet.jpg";
+    imgEl.classList.remove("hidden");
+  } else if (wallpaper === "photo-common") {
+    imgEl.src = "assets/wallpaper-common.jpg";
+    imgEl.classList.remove("hidden");
+  } else if (wallpaper === "custom" && customData) {
+    imgEl.src = customData;
+    imgEl.classList.remove("hidden");
   }
 
   document.querySelectorAll(".wallpaper-option").forEach((el) => {

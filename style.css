@@ -37,26 +37,20 @@ h1, h2, h3, .brand {
 
 a { color: inherit; }
 
-/* ---------- 壁紙: 写真プリセット ----------
-   assets/wallpaper-pet.jpg, wallpaper-common.jpg を
-   リポジトリの assets フォルダに追加すると反映されます。
-   (画像の上に薄いクリーム色を重ねて、文字が読みやすいようにしています) */
-body.wallpaper-photo-pet {
-  background-color: var(--bg);
-  background-image: linear-gradient(rgba(250,247,242,0.35), rgba(250,247,242,0.35)), url("assets/wallpaper-pet.jpg");
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-}
-
-body.wallpaper-photo-common {
-  background-color: var(--bg);
-  background-image: linear-gradient(rgba(250,247,242,0.35), rgba(250,247,242,0.35)), url("assets/wallpaper-common.jpg");
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+/* ---------- 壁紙: 写真(枠・影付きで中央に表示) ---------- */
+#wallpaper-img {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: min(80vw, 640px);
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 20px;
+  border: 6px solid #fff;
+  box-shadow: 0 8px 30px rgba(43, 38, 32, 0.18);
+  z-index: -1;
+  pointer-events: none;
 }
 
 .wallpaper-option-photo-thumb {
