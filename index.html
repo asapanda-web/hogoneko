@@ -22,6 +22,12 @@
         ひらがな・カタカナ・漢字は使えませんのでご注意ください。
       </p>
 
+      <p class="hint-text" id="signup-reset-hint" style="display:none;">
+        <strong>⚠️ パスワードを忘れた時のために、大事な違いがあります:</strong><br>
+        メールアドレスで登録した人は、パスワード忘れた際にその場でパスワード再設定メールを送ることですぐ再設定できます。<br>
+        ユーザー名で登録の場合は自分でパスワードを再設定ができません。既存アカウントを削除し再度登録し直す形となります。お手数ですが「アカウント削除」依頼をしてください(処理に時間がかかります)。
+      </p>
+
       <label for="password">パスワード</label>
       <input type="password" id="password" required autocomplete="current-password">
       <p class="hint-text" id="password-hint" style="display:none;">
@@ -35,6 +41,29 @@
     <p style="text-align:center; margin-top:18px;">
       <button type="button" class="btn btn-ghost" id="toggle-mode">アカウントを持っていない方はこちら(新規登録)</button>
     </p>
+    <p style="text-align:center; margin-top:4px;">
+      <button type="button" class="btn btn-ghost" id="show-reset-btn">パスワードを忘れた方はこちら</button>
+    </p>
+
+    <div id="reset-panel" class="hidden" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+      <label for="reset-email">ユーザー名 または メールアドレス</label>
+      <input type="text" id="reset-email" placeholder="例: tanaka1 または yamada@example.com">
+      <p class="hint-text">
+        <strong>メールアドレスで登録した方</strong>は、下のボタンから再設定メールを送れます。<br>
+        <strong>ユーザー名(半角英数字)だけで登録した方</strong>は、自分でパスワードを再設定できません。既存アカウントを削除し再度登録し直す形となります。下の「依頼文をコピーする」から文章をコピーして、管理者に送ってください(処理に時間がかかります)。
+      </p>
+      <button type="button" class="btn btn-outline" id="reset-submit-btn" style="width:100%; margin-top:8px;">再設定メールを送る</button>
+      <p class="hint-text" id="reset-status" style="margin-top:8px;"></p>
+
+      <div id="reissue-request-wrap" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+        <label>管理者に送る「アカウント削除」依頼文(ユーザー名だけで登録した方向け)</label>
+        <textarea id="reissue-request-text" readonly rows="4" style="font-size:13px;"></textarea>
+        <button type="button" class="btn btn-outline" id="reissue-copy-btn" style="width:100%; margin-top:8px;">依頼文をコピーする</button>
+        <button type="button" class="btn btn-outline" id="reissue-mail-btn" style="width:100%; margin-top:8px;">メールソフトで送る</button>
+        <p class="hint-text" id="reissue-copy-status"></p>
+      </div>
+    </div>
+
     <p style="text-align:center; margin-top:4px;">
       <a href="guide.html" class="btn btn-ghost">使い方ガイドを見る</a>
     </p>

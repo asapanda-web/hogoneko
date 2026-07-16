@@ -2,10 +2,11 @@ import { auth, db } from "./firebase-config.js";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  onAuthStateChanged
+  onAuthStateChanged,
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ORG_NAME, APP_TITLE } from "./site-config.js";
+import { ORG_NAME, APP_TITLE, ADMIN_EMAIL } from "./site-config.js";
 
 // 団体名・アプリ名を画面に反映
 const titleText = ORG_NAME ? `${APP_TITLE}(${ORG_NAME})` : APP_TITLE;
@@ -36,6 +37,7 @@ toggleBtn.addEventListener("click", () => {
     ? "すでにアカウントをお持ちの方はこちら(ログイン)"
     : "アカウントを持っていない方はこちら(新規登録)";
   passwordHint.style.display = isSignup ? "block" : "none";
+  document.getElementById("signup-reset-hint").style.display = isSignup ? "block" : "none";
   errorMsg.style.display = "none";
 });
 
@@ -99,3 +101,73 @@ function translateError(code) {
   };
   return map[code] || "エラーが発生しました。もう一度お試しください";
 }
+
+// ---------- パスワードを忘れた方向けの再設定 ----------
+const showResetBtn = document.getElementById("show-reset-btn");
+const resetPanel = document.getElementById("reset-panel");
+const resetEmailInput = document.getElementById("reset-email");
+const resetSubmitBtn = document.getElementById("reset-submit-btn");
+const resetStatus = document.getElementById("reset-status");
+
+showResetBtn.addEventListener("click", () => {
+  resetPanel.classList.toggle("hidden");
+});
+
+resetSubmitBtn.addEventListener("click", async () => {
+  const input = resetEmailInput.value.trim();
+  resetStatus.textContent = "";
+
+  if (!input) {
+    resetStatus.textContent = "ユーザー名またはメールアドレスを入力してください。";
+    return;
+  }
+
+  if (!input.includes("@")) {
+    // ユーザー名だけで登録した人は、自分では再設定できない
+    resetStatus.textContent = "ユーザー名だけで登録した方は、自分でパスワードを再設定できません。下の依頼文をコピーして管理者に送ってください。";
+    return;
+  }
+
+  resetSubmitBtn.disabled = true;
+  resetStatus.textContent = "送信しています...";
+  try {
+    await sendPasswordResetEmail(auth, input);
+    resetStatus.textContent = "再設定メールを送信しました。メールボックスをご確認ください(迷惑メールフォルダも念のためご確認ください)。";
+  } catch (err) {
+    resetStatus.textContent = "送信できませんでした。メールアドレスが正しいかご確認ください。";
+  } finally {
+    resetSubmitBtn.disabled = false;
+  }
+});
+
+// ---------- アカウント削除依頼の依頼文(ユーザー名だけで登録した方向け) ----------
+const reissueRequestText = document.getElementById("reissue-request-text");
+const reissueCopyBtn = document.getElementById("reissue-copy-btn");
+const reissueCopyStatus = document.getElementById("reissue-copy-status");
+
+function updateReissueRequestText() {
+  const username = resetEmailInput.value.trim() || "(ここにユーザー名を入力してください)";
+  reissueRequestText.value =
+    `【アカウント削除のお願い】\nユーザー名: ${username}\nパスワードを忘れてしまったため、既存アカウントの削除をお願いします。削除後、同じユーザー名で登録し直します。`;
+}
+
+resetEmailInput.addEventListener("input", updateReissueRequestText);
+showResetBtn.addEventListener("click", updateReissueRequestText);
+
+reissueCopyBtn.addEventListener("click", async () => {
+  updateReissueRequestText();
+  try {
+    await navigator.clipboard.writeText(reissueRequestText.value);
+    reissueCopyStatus.textContent = "コピーしました。管理者に送ってください。";
+  } catch (err) {
+    reissueRequestText.select();
+    reissueCopyStatus.textContent = "自動コピーできなかったため、文章を選択状態にしました。手動でコピーしてください。";
+  }
+});
+
+document.getElementById("reissue-mail-btn").addEventListener("click", () => {
+  updateReissueRequestText();
+  const subject = encodeURIComponent("アカウント削除のお願い");
+  const body = encodeURIComponent(reissueRequestText.value);
+  window.location.href = `mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`;
+});
