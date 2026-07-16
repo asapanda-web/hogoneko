@@ -1,10 +1,10 @@
-import { auth, db } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js?v=1784209265";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection, addDoc, deleteDoc, doc, getDoc, getDocs, onSnapshot,
   query, where, orderBy, serverTimestamp, updateDoc, writeBatch, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ORG_NAME, APP_TITLE, FACILITY_LABEL, FOSTER_LABEL } from "./site-config.js";
+import { ORG_NAME, APP_TITLE, FACILITY_LABEL, FOSTER_LABEL } from "./site-config.js?v=1784209265";
 
 // 団体名・アプリ名を画面に反映
 const titleText = ORG_NAME ? `${APP_TITLE}(${ORG_NAME})` : APP_TITLE;
@@ -17,14 +17,15 @@ document.getElementById("filter-btn-foster").textContent = FOSTER_LABEL;
 document.getElementById("option-facility").textContent = FACILITY_LABEL;
 document.getElementById("option-foster").textContent = FOSTER_LABEL;
 
-let currentRole = null; // "管理者" | "責任者" | "施設メンバー" | "預り先" | "未設定"
+let currentRole = null; // "管理者" | "責任者" | "シェルターメンバー" | "預りメンバー" | "未設定"
 let currentUid = null;
+let storedCustomWallpaperData = null; // 既にアップロード済みの写真データ(あれば)
 
 function isFullAdmin() {
   return currentRole === "管理者" || currentRole === "責任者";
 }
 function isShelterMember() {
-  return currentRole === "施設メンバー";
+  return currentRole === "シェルターメンバー";
 }
 
 let currentUser = null;
@@ -47,6 +48,7 @@ onAuthStateChanged(auth, async (user) => {
   const userDocSnap = await getDoc(doc(db, "users", user.uid));
   currentRole = userDocSnap.exists() ? userDocSnap.data().role : "未設定";
   const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+  storedCustomWallpaperData = userData.customWallpaperData || null;
   applyWallpaper(userData.wallpaper || "photo-common", userData.customWallpaperData);
 
   if (currentRole === "未設定") {
@@ -74,7 +76,7 @@ function showDashboard() {
   if (unsubMedical) unsubMedical();
   viewDetail.classList.add("hidden");
   viewDashboard.classList.remove("hidden");
-  // 犬猫の新規登録は 管理者・責任者・施設メンバー のみ
+  // 犬猫の新規登録は 管理者・責任者・シェルターメンバー のみ
   document.getElementById("fab-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
 }
 
@@ -174,19 +176,30 @@ async function loadMembersList() {
   snap.forEach((docSnap) => {
     const member = docSnap.data();
     const uid = docSnap.id;
+    const currentMemberRole = member.role || "未設定";
     const row = document.createElement("div");
     row.className = "member-row";
+
+    // 管理者・責任者はこの画面からは変更不可(表示のみ)。誤操作や不用意な権限昇格を防ぐため、
+    // Firebaseコンソールから直接設定する運用のままにしています。
+    if (currentMemberRole === "管理者" || currentMemberRole === "責任者") {
+      row.innerHTML = `
+        <span class="member-name">${escapeHtml(member.username || uid)}</span>
+        <span class="hint-text" style="margin:0;">${escapeHtml(currentMemberRole)}(Firebaseコンソールから変更)</span>
+      `;
+      listEl.appendChild(row);
+      return;
+    }
+
     row.innerHTML = `
       <span class="member-name">${escapeHtml(member.username || uid)}</span>
       <select data-uid="${uid}">
         <option value="未設定">未設定</option>
-        <option value="管理者">管理者</option>
-        <option value="責任者">責任者</option>
-        <option value="施設メンバー">施設メンバー</option>
-        <option value="預り先">預り先</option>
+        <option value="シェルターメンバー">シェルターメンバー</option>
+        <option value="預りメンバー">預りメンバー</option>
       </select>
     `;
-    row.querySelector("select").value = member.role || "未設定";
+    row.querySelector("select").value = currentMemberRole;
     row.querySelector("select").addEventListener("change", async (e) => {
       const newRole = e.target.value;
       statusEl.textContent = "保存しています...";
@@ -236,18 +249,31 @@ function applyWallpaper(wallpaper, customData) {
 
 document.getElementById("wallpaper-btn").addEventListener("click", () => {
   document.getElementById("modal-wallpaper").classList.add("open");
+  document.getElementById("wallpaper-change-link-wrap").classList.toggle("hidden", !storedCustomWallpaperData);
 });
 
 document.querySelectorAll(".wallpaper-option").forEach((el) => {
   el.addEventListener("click", async () => {
     const choice = el.dataset.wallpaper;
     if (choice === "custom") {
-      document.getElementById("wallpaper-upload-input").click();
+      if (storedCustomWallpaperData) {
+        // 既にアップロード済みの写真があれば、それをそのまま選択する
+        applyWallpaper("custom", storedCustomWallpaperData);
+        await setDoc(doc(db, "users", currentUid), { wallpaper: "custom" }, { merge: true });
+      } else {
+        // まだ写真が無ければ、アップロード画面を開く
+        document.getElementById("wallpaper-upload-input").click();
+      }
       return;
     }
     applyWallpaper(choice);
     await setDoc(doc(db, "users", currentUid), { wallpaper: choice }, { merge: true });
   });
+});
+
+document.getElementById("wallpaper-change-link").addEventListener("click", (e) => {
+  e.preventDefault();
+  document.getElementById("wallpaper-upload-input").click();
 });
 
 document.getElementById("wallpaper-upload-input").addEventListener("change", async (e) => {
@@ -261,8 +287,10 @@ document.getElementById("wallpaper-upload-input").addEventListener("change", asy
       statusEl.textContent = "画像が大きすぎます。別の写真を試すか、画質の粗い写真でお試しください。";
       return;
     }
+    storedCustomWallpaperData = compressed;
     applyWallpaper("custom", compressed);
     await setDoc(doc(db, "users", currentUid), { wallpaper: "custom", customWallpaperData: compressed }, { merge: true });
+    document.getElementById("wallpaper-change-link-wrap").classList.remove("hidden");
     statusEl.textContent = "設定しました。";
   } catch (err) {
     statusEl.textContent = "画像の読み込みに失敗しました。別の写真でお試しください。";
@@ -304,7 +332,7 @@ function applyRoleUI() {
   const filterTabs = document.querySelector(".filter-tabs");
   if (filterTabs) filterTabs.classList.toggle("hidden", !isFullAdmin());
 
-  // 施設メンバーは「個人宅預かり」の登録はできない(施設側で割り当てるため選択肢を消す)
+  // シェルターメンバーは「個人宅預かり」の登録はできない(施設側で割り当てるため選択肢を消す)
   if (isShelterMember()) {
     const option = document.querySelector('#cat-location option[value="個人宅預かり"]');
     if (option) option.remove();
@@ -315,20 +343,23 @@ let fosterListLoaded = false;
 async function populateFosterDropdown() {
   if (fosterListLoaded) return;
   const selectEl = document.getElementById("cat-foster-user");
-  const q = query(collection(db, "users"), where("role", "==", "預り先"));
-  const snap = await getDocs(q);
+  const snap = await getDocs(collection(db, "users"));
   selectEl.innerHTML = "";
   if (snap.empty) {
-    selectEl.innerHTML = `<option value="">(まだ「預り先」として登録された人がいません)</option>`;
+    selectEl.innerHTML = `<option value="">(まだ登録された人がいません)</option>`;
     return;
   }
   snap.forEach((docSnap) => {
     const u = docSnap.data();
+    if (!u.role || u.role === "未設定") return; // 未設定の人は選択肢に出さない
     const opt = document.createElement("option");
     opt.value = docSnap.id; // uid
-    opt.textContent = u.username || docSnap.id;
+    opt.textContent = `${u.username || docSnap.id}(${u.role})`;
     selectEl.appendChild(opt);
   });
+  if (!selectEl.options.length) {
+    selectEl.innerHTML = `<option value="">(選べる人がまだいません)</option>`;
+  }
   fosterListLoaded = true;
 }
 

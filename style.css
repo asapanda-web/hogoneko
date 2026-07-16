@@ -37,20 +37,29 @@ h1, h2, h3, .brand {
 
 a { color: inherit; }
 
-/* ---------- 壁紙: 写真(枠・影付きで中央に表示) ---------- */
+/* ---------- 壁紙: 写真(枠・影付きで右下に控えめに表示) ---------- */
 #wallpaper-img {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  max-width: min(80vw, 640px);
-  max-height: 80vh;
+  bottom: 20px;
+  left: 20px;
+  top: auto;
+  right: auto;
+  transform: none;
+  max-width: min(32vw, 320px);
+  max-height: 40vh;
   object-fit: contain;
-  border-radius: 20px;
-  border: 6px solid #fff;
-  box-shadow: 0 8px 30px rgba(43, 38, 32, 0.18);
-  z-index: -1;
+  border-radius: 16px;
+  border: 5px solid #fff;
+  box-shadow: 0 8px 24px rgba(43, 38, 32, 0.18);
+  z-index: 1;
   pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  #wallpaper-img {
+    max-width: 38vw;
+    max-height: 28vh;
+  }
 }
 
 .wallpaper-option-photo-thumb {

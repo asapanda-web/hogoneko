@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title id="page-title">犬猫の健康管理</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=1784209265">
 </head>
 <body>
 
@@ -106,7 +106,7 @@
         <select id="cat-foster-user">
           <option value="">(読み込み中...)</option>
         </select>
-        <p class="hint-text">一覧に出ない場合は、その方がまだ「預り先」として登録・役割設定されていません。</p>
+        <p class="hint-text">一覧に出ない場合は、その方がまだ役割設定(未設定のまま)されていません。先に「メンバー管理」から役割を設定してください。</p>
       </div>
       <label>名前</label>
       <input type="text" id="cat-name" required>
@@ -310,6 +310,9 @@
         <span class="wallpaper-option-label">自分でアップロード</span>
       </div>
     </div>
+    <p class="hint-text hidden" id="wallpaper-change-link-wrap">
+      設定済みの写真があります。<a href="#" id="wallpaper-change-link">別の写真に変更する</a>
+    </p>
     <input type="file" id="wallpaper-upload-input" class="wallpaper-upload-input" accept="image/*">
     <p class="hint-text">「＋」のマスをタップすると、自分の写真を選んで壁紙に設定できます(自分のアカウントだけに表示されます)。写真は自動で圧縮されるので、多少画質は落ちます。</p>
     <p class="hint-text" id="wallpaper-upload-status"></p>
@@ -332,6 +335,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js"></script>
+<script type="module" src="app.js?v=1784209265"></script>
 </body>
 </html>
