@@ -1,9 +1,10 @@
-import { auth } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const form = document.getElementById("login-form");
 const emailInput = document.getElementById("email");
@@ -61,7 +62,14 @@ form.addEventListener("submit", async (e) => {
 
   try {
     if (isSignup) {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      // 役割は最初「未設定」。管理者がFirebaseコンソールで役割を割り当てるまでは
+      // データが見えない状態になる(Firestoreのルールで制御)
+      await setDoc(doc(db, "users", cred.user.uid), {
+        username: rawInput,
+        role: "未設定",
+        createdAt: serverTimestamp()
+      });
     } else {
       await signInWithEmailAndPassword(auth, email, password);
     }

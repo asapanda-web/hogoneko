@@ -172,6 +172,25 @@ input:focus, select:focus, textarea:focus {
   margin-top: 8px;
 }
 
+.med-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.med-check-item:last-child { border-bottom: none; }
+.med-check-item input { width: auto; }
+.med-check-item .med-label { flex: 1; }
+
+.med-empty-note {
+  color: var(--ink-soft);
+  font-size: 13px;
+  padding: 6px 0;
+}
+
 .checkbox-group {
   display: flex;
   flex-wrap: wrap;
@@ -208,6 +227,63 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ---------- Cat list ---------- */
+.pending-box {
+  max-width: 480px;
+  margin: 60px auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  text-align: center;
+}
+
+.pending-box h2 { font-size: 18px; margin-bottom: 12px; }
+.pending-box p { color: var(--ink-soft); font-size: 14px; }
+
+.pending-username {
+  margin-top: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 10px;
+  color: var(--accent-ink);
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-soft);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.location-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--sage-bg);
+  color: var(--sage);
+  margin-left: 6px;
+}
+
 .cat-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
 
 .cat-card {

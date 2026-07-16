@@ -16,10 +16,25 @@
 
   <div class="container">
 
+    <!-- 役割がまだ割り当てられていない場合の待機画面 -->
+    <section id="view-pending" class="hidden">
+      <div class="pending-box">
+        <h2>権限の設定待ちです</h2>
+        <p>アカウントは作成されましたが、まだ管理者による権限設定が済んでいません。<br>
+        以下のユーザー名を管理者に伝えて、役割を設定してもらってください。</p>
+        <p class="pending-username mono" id="pending-username"></p>
+      </div>
+    </section>
+
     <!-- ダッシュボード(猫一覧) -->
     <section id="view-dashboard">
       <div class="section-head">
         <h2>保護中の犬猫たち</h2>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-btn active" data-filter="すべて">すべて</button>
+        <button class="filter-btn" data-filter="シェルター">シェルター</button>
+        <button class="filter-btn" data-filter="個人宅預かり">個人宅預かり</button>
       </div>
       <div class="cat-list" id="cat-list"></div>
       <p class="empty-state hidden" id="empty-cats">まだ登録されている猫がいません。右下の+から登録しましょう。</p>
@@ -67,6 +82,18 @@
         <option value="猫">猫</option>
         <option value="犬">犬</option>
       </select>
+      <label>保護場所</label>
+      <select id="cat-location">
+        <option value="シェルター">シェルター</option>
+        <option value="個人宅預かり">個人宅預かり</option>
+      </select>
+      <div id="foster-name-wrap" class="hidden">
+        <label>預かり担当者</label>
+        <select id="cat-foster-user">
+          <option value="">(読み込み中...)</option>
+        </select>
+        <p class="hint-text">一覧に出ない場合は、その方がまだ「預り先」として登録・役割設定されていません。</p>
+      </div>
       <label>名前</label>
       <input type="text" id="cat-name" required>
       <label>性別</label>
@@ -96,6 +123,21 @@
     <form id="form-daily">
       <label>日付</label>
       <input type="date" id="daily-date" required>
+
+      <label>時間帯</label>
+      <select id="daily-time-of-day">
+        <option value="朝">朝</option>
+        <option value="夜">夜</option>
+      </select>
+
+      <label>世話した時間(任意)</label>
+      <input type="time" id="daily-care-time">
+
+      <div id="medication-checklist-wrap" class="hidden detail-box">
+        <label>投薬チェック</label>
+        <div id="medication-checklist"></div>
+      </div>
+
       <label>体重(kg)<span class="label-note">(測っていない時は空欄でOK)</span></label>
       <input type="number" step="0.01" id="daily-weight" placeholder="例: 3.20">
 
@@ -111,10 +153,10 @@
         <input type="number" step="1" id="daily-appetite-remain" placeholder="例: 20">
       </div>
 
-      <label>尿</label>
+      <label>尿<span class="label-note">(「異常」を選ぶと血尿・尿量・色を詳しく記録できます)</span></label>
       <select id="daily-urine-status">
         <option value="正常">正常</option>
-        <option value="異常">異常</option>
+        <option value="異常">異常(詳しく記録する)</option>
         <option value="無し">無し(排尿確認できず)</option>
       </select>
       <div id="urine-detail-wrap" class="hidden detail-box">
@@ -139,10 +181,10 @@
         </select>
       </div>
 
-      <label>便</label>
+      <label>便<span class="label-note">(「異常」を選ぶと種類・量・色を詳しく記録できます)</span></label>
       <select id="daily-stool-status">
         <option value="正常">正常</option>
-        <option value="異常">異常</option>
+        <option value="異常">異常(詳しく記録する)</option>
         <option value="無し">無し(排便確認できず)</option>
       </select>
       <div id="stool-detail-wrap" class="hidden detail-box">
@@ -198,6 +240,20 @@
       <input type="text" id="medical-title" placeholder="例: 混合ワクチン1回目" required>
       <label>詳細(任意)</label>
       <textarea id="medical-detail" placeholder="病院名、薬の名前、獣医師の所見など"></textarea>
+
+      <div id="medication-detail-wrap" class="hidden detail-box">
+        <label>投薬するタイミング(複数選択可)</label>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" value="朝" class="medication-timing"> 朝</label>
+          <label class="checkbox-item"><input type="checkbox" value="夜" class="medication-timing"> 夜</label>
+        </div>
+        <label>1回あたりの分量</label>
+        <input type="text" id="medical-dosage" placeholder="例: 1錠 / 2分の1錠 / 5ml">
+        <label>投薬終了予定日(任意)</label>
+        <input type="date" id="medical-end-date">
+        <p class="hint-text">終了予定日を設定すると、その日以降は日々の記録の投薬チェックに出てこなくなります。</p>
+      </div>
+
       <label>次回予定日(任意)</label>
       <input type="date" id="medical-next">
       <div class="modal-actions">
