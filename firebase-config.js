@@ -1,20 +1,101 @@
-// ==============================================
-// Firebaseの設定をここに貼り付けてください
-// Firebaseコンソール > プロジェクトの設定 > マイアプリ で確認できます
-// ==============================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { auth, db } from "./firebase-config.js";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { ORG_NAME, APP_TITLE } from "./site-config.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAS-GgE3knjcQsYklDwZVZ8vXSH2l3piig",
-  authDomain: "hogoneko-228bc.firebaseapp.com",
-  projectId: "hogoneko-228bc",
-  storageBucket: "hogoneko-228bc.firebasestorage.app",
-  messagingSenderId: "757553213572",
-  appId: "1:757553213572:web:d06a33711c4437a55c12d1"
-};
+// 団体名・アプリ名を画面に反映
+const titleText = ORG_NAME ? `${APP_TITLE}(${ORG_NAME})` : APP_TITLE;
+document.getElementById("brand-title").textContent = `🐾 ${titleText}`;
+document.getElementById("page-title").textContent = `ログイン | ${titleText}`;
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+const form = document.getElementById("login-form");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const errorMsg = document.getElementById("error-msg");
+const submitBtn = document.getElementById("submit-btn");
+const toggleBtn = document.getElementById("toggle-mode");
+const passwordHint = document.getElementById("password-hint");
+
+let isSignup = false;
+
+// すでにログイン済みならダッシュボードへ
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    window.location.href = "app.html";
+  }
+});
+
+toggleBtn.addEventListener("click", () => {
+  isSignup = !isSignup;
+  submitBtn.textContent = isSignup ? "新規登録する" : "ログイン";
+  toggleBtn.textContent = isSignup
+    ? "すでにアカウントをお持ちの方はこちら(ログイン)"
+    : "アカウントを持っていない方はこちら(新規登録)";
+  passwordHint.style.display = isSignup ? "block" : "none";
+  errorMsg.style.display = "none";
+});
+
+// 入力が「@」を含んでいれば本物のメールアドレスとしてそのまま使い、
+// 含んでいなければユーザー名とみなして内部的な擬似メール形式に変換する
+const FAKE_EMAIL_DOMAIN = "hogoneko-app.local";
+function resolveEmail(input) {
+  if (input.includes("@")) {
+    return input; // メールアドレスとしてそのまま使う
+  }
+  return `${input.toLowerCase()}@${FAKE_EMAIL_DOMAIN}`; // ユーザー名 → 擬似メール
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorMsg.style.display = "none";
+  submitBtn.disabled = true;
+
+  const rawInput = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!rawInput.includes("@") && !/^[A-Za-z0-9_]+$/.test(rawInput)) {
+    errorMsg.textContent = "ユーザー名は半角英数字とアンダースコアのみ使えます";
+    errorMsg.style.display = "block";
+    submitBtn.disabled = false;
+    return;
+  }
+
+  const email = resolveEmail(rawInput);
+
+  try {
+    if (isSignup) {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      // 役割は最初「未設定」。管理者がFirebaseコンソールで役割を割り当てるまでは
+      // データが見えない状態になる(Firestoreのルールで制御)
+      await setDoc(doc(db, "users", cred.user.uid), {
+        username: rawInput,
+        role: "未設定",
+        createdAt: serverTimestamp()
+      });
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+    }
+    window.location.href = "app.html";
+  } catch (err) {
+    errorMsg.textContent = translateError(err.code);
+    errorMsg.style.display = "block";
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+function translateError(code) {
+  const map = {
+    "auth/invalid-email": "ユーザー名またはメールアドレスの形式が正しくありません",
+    "auth/user-not-found": "アカウントが見つかりません",
+    "auth/wrong-password": "パスワードが間違っています",
+    "auth/invalid-credential": "ユーザー名(メールアドレス)またはパスワードが間違っています",
+    "auth/email-already-in-use": "このユーザー名(メールアドレス)は既に使われています",
+    "auth/weak-password": "パスワードは6文字以上にしてください"
+  };
+  return map[code] || "エラーが発生しました。もう一度お試しください";
+}
