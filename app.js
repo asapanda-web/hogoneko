@@ -216,7 +216,7 @@ function applyWallpaper(wallpaper, customData) {
   else if (wallpaper === "photo-pet") document.body.classList.add("wallpaper-photo-pet");
   else if (wallpaper === "photo-common") document.body.classList.add("wallpaper-photo-common");
   else if (wallpaper === "custom" && customData) {
-    document.body.style.backgroundImage = `linear-gradient(rgba(250,247,242,0.88), rgba(250,247,242,0.88)), url("${customData}")`;
+    document.body.style.backgroundImage = `linear-gradient(rgba(250,247,242,0.35), rgba(250,247,242,0.35)), url("${customData}")`;
     document.body.style.backgroundSize = "contain";
     document.body.style.backgroundPosition = "center";
     document.body.style.backgroundRepeat = "no-repeat";
