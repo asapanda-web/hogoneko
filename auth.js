@@ -5,6 +5,12 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { ORG_NAME, APP_TITLE } from "./site-config.js";
+
+// 団体名・アプリ名を画面に反映
+const titleText = ORG_NAME ? `${ORG_NAME} ${APP_TITLE}` : APP_TITLE;
+document.getElementById("brand-title").textContent = `🐾 ${titleText}`;
+document.getElementById("page-title").textContent = `ログイン | ${titleText}`;
 
 const form = document.getElementById("login-form");
 const emailInput = document.getElementById("email");

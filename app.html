@@ -3,15 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>犬猫の健康管理</title>
+<title id="page-title">犬猫の健康管理</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="screen">
   <div class="topbar">
-    <div class="brand">🐾 犬猫の健康管理</div>
-    <button class="btn btn-outline btn-small" id="logout-btn">ログアウト</button>
+    <div class="brand" id="brand-title">🐾 犬猫の健康管理</div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-outline btn-small" id="wallpaper-btn">🎨 壁紙</button>
+      <a href="guide.html" class="btn btn-outline btn-small">使い方ガイド</a>
+      <button class="btn btn-outline btn-small" id="logout-btn">ログアウト</button>
+    </div>
   </div>
 
   <div class="container">
@@ -33,9 +37,12 @@
       </div>
       <div class="filter-tabs">
         <button class="filter-btn active" data-filter="すべて">すべて</button>
-        <button class="filter-btn" data-filter="シェルター">シェルター</button>
-        <button class="filter-btn" data-filter="個人宅預かり">個人宅預かり</button>
+        <button class="filter-btn" data-filter="施設" id="filter-btn-facility">シェルター(施設)</button>
+        <button class="filter-btn" data-filter="個人宅預かり" id="filter-btn-foster">個人宅預かり</button>
       </div>
+      <label class="checkbox-item" style="margin-top:10px;">
+        <input type="checkbox" id="show-adopted-toggle"> 譲渡済みの子も表示する
+      </label>
       <div class="cat-list" id="cat-list"></div>
       <p class="empty-state hidden" id="empty-cats">まだ登録されている猫がいません。右下の+から登録しましょう。</p>
     </section>
@@ -49,6 +56,11 @@
           <div class="name" id="detail-name"></div>
           <div class="meta" id="detail-meta"></div>
         </div>
+      </div>
+
+      <div id="detail-actions" class="detail-actions hidden">
+        <button class="btn btn-outline btn-small" id="toggle-status-btn"></button>
+        <button class="btn btn-danger btn-small hidden" id="delete-cat-btn">この子のデータを完全削除</button>
       </div>
 
       <div class="tabs">
@@ -84,8 +96,8 @@
       </select>
       <label>保護場所</label>
       <select id="cat-location">
-        <option value="シェルター">シェルター</option>
-        <option value="個人宅預かり">個人宅預かり</option>
+        <option value="施設" id="option-facility">シェルター(施設)</option>
+        <option value="個人宅預かり" id="option-foster">個人宅預かり</option>
       </select>
       <div id="foster-name-wrap" class="hidden">
         <label>預かり担当者</label>
@@ -126,8 +138,12 @@
 
       <label>時間帯</label>
       <select id="daily-time-of-day">
+        <option value="早朝">早朝</option>
         <option value="朝">朝</option>
+        <option value="昼">昼</option>
+        <option value="夕方">夕方</option>
         <option value="夜">夜</option>
+        <option value="深夜">深夜</option>
       </select>
 
       <label>世話した時間(任意)</label>
@@ -242,10 +258,23 @@
       <textarea id="medical-detail" placeholder="病院名、薬の名前、獣医師の所見など"></textarea>
 
       <div id="medication-detail-wrap" class="hidden detail-box">
+        <label>投与方法</label>
+        <select id="medical-method">
+          <option value="飲み薬(内服)">飲み薬(内服)</option>
+          <option value="塗布(外用)">塗布(外用)</option>
+          <option value="点眼(目薬)">点眼(目薬)</option>
+          <option value="点耳">点耳</option>
+          <option value="注射">注射</option>
+          <option value="その他">その他(メモに記載)</option>
+        </select>
         <label>投薬するタイミング(複数選択可)</label>
         <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" value="早朝" class="medication-timing"> 早朝</label>
           <label class="checkbox-item"><input type="checkbox" value="朝" class="medication-timing"> 朝</label>
+          <label class="checkbox-item"><input type="checkbox" value="昼" class="medication-timing"> 昼</label>
+          <label class="checkbox-item"><input type="checkbox" value="夕方" class="medication-timing"> 夕方</label>
           <label class="checkbox-item"><input type="checkbox" value="夜" class="medication-timing"> 夜</label>
+          <label class="checkbox-item"><input type="checkbox" value="深夜" class="medication-timing"> 深夜</label>
         </div>
         <label>1回あたりの分量</label>
         <input type="text" id="medical-dosage" placeholder="例: 1錠 / 2分の1錠 / 5ml">
@@ -261,6 +290,30 @@
         <button type="submit" class="btn btn-primary">追加する</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- 壁紙を選ぶモーダル -->
+<div class="modal-overlay" id="modal-wallpaper">
+  <div class="modal">
+    <h3>壁紙を選ぶ</h3>
+    <p class="hint-text">好きな柄を選んでください。自分のアカウントに保存されるので、他の人の画面には影響しません。</p>
+    <div class="wallpaper-picker">
+      <div class="wallpaper-option" data-wallpaper="paws" title="イラスト">🐾<span class="wallpaper-option-label">イラスト</span></div>
+      <div class="wallpaper-option" data-wallpaper="photo-pet" title="写真">📷<span class="wallpaper-option-label">写真</span></div>
+      <div class="wallpaper-option" data-wallpaper="photo-common" title="こちらで用意する写真">🖼️<span class="wallpaper-option-label">こちらで用意する写真</span></div>
+      <div class="wallpaper-option" id="wallpaper-upload-tile" data-wallpaper="custom" title="自分で写真をアップロード">
+        <span id="custom-wallpaper-preview-icon">＋</span>
+        <img id="custom-wallpaper-preview" class="wallpaper-option-photo-thumb hidden">
+        <span class="wallpaper-option-label">自分でアップロード</span>
+      </div>
+    </div>
+    <input type="file" id="wallpaper-upload-input" class="wallpaper-upload-input" accept="image/*">
+    <p class="hint-text">「＋」のマスをタップすると、自分の写真を選んで壁紙に設定できます(自分のアカウントだけに表示されます)。写真は自動で圧縮されるので、多少画質は落ちます。</p>
+    <p class="hint-text" id="wallpaper-upload-status"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" data-close>閉じる</button>
+    </div>
   </div>
 </div>
 

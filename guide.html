@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">使い方ガイド</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .guide-container { max-width: 720px; margin: 0 auto; padding: 24px 20px 60px; }
+  .guide-container h2 { font-size: 19px; margin-top: 36px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  .guide-container h2:first-of-type { margin-top: 12px; }
+  .guide-container h3 { font-size: 15px; margin-top: 20px; margin-bottom: 8px; color: var(--accent-ink); }
+  .guide-container p, .guide-container li { font-size: 14px; color: var(--ink); line-height: 1.8; }
+  .guide-container ul, .guide-container ol { padding-left: 22px; margin: 8px 0; }
+  .guide-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin: 12px 0; }
+  .guide-toc { background: var(--sage-bg); border-radius: 12px; padding: 16px 18px; margin: 16px 0 28px; }
+  .guide-toc a { color: var(--sage); text-decoration: underline; }
+  .guide-toc ul { margin: 6px 0; }
+  .role-tag { display:inline-block; font-size:12px; padding:2px 10px; border-radius:999px; background:var(--accent); color:#fff; margin-right:6px; }
+</style>
+</head>
+<body>
+
+<div class="screen">
+  <div class="topbar">
+    <div class="brand" id="brand-title">🐾 犬猫の健康管理</div>
+    <a href="app.html" class="btn btn-outline btn-small">← アプリに戻る</a>
+  </div>
+
+  <div class="guide-container">
+    <h1>使い方ガイド</h1>
+    <p>困ったときは、このページを見返してみてください。それでも分からない時は、遠慮なく管理者に聞いてくださいね。</p>
+
+    <div class="guide-toc">
+      <strong>もくじ</strong>
+      <ul>
+        <li><a href="#login">① ログイン・新規登録の仕方</a></li>
+        <li><a href="#pending">② 「権限の設定待ちです」と出たら</a></li>
+        <li><a href="#register">③ 犬猫を登録する</a></li>
+        <li><a href="#daily">④ 日々の記録のつけ方</a></li>
+        <li><a href="#medical">⑤ 医療記録・投薬のつけ方</a></li>
+        <li><a href="#adopted">⑥ 譲渡済みにする・絞り込み</a></li>
+        <li><a href="#faq">⑦ よくある質問</a></li>
+      </ul>
+    </div>
+
+    <h2 id="login">① ログイン・新規登録の仕方</h2>
+    <div class="guide-box">
+      <p><strong>初めて使う方</strong>は、ログイン画面の下にある「アカウントを持っていない方はこちら(新規登録)」を押してください。</p>
+      <ul>
+        <li><strong>ユーザー名</strong>: 半角の英字(a〜z)と数字(0〜9)が使えます。例: <span class="mono">tanaka1</span>。ひらがな・漢字は使えません。メールアドレスをお持ちの方はそちらでも登録できます。</li>
+        <li><strong>パスワード</strong>: 6文字以上であれば、数字だけ・英字だけ・混ぜたものでもOKです。</li>
+      </ul>
+      <p>2回目以降は、同じユーザー名(またはメールアドレス)とパスワードで「ログイン」を押すだけです。</p>
+    </div>
+
+    <h2 id="pending">② 「権限の設定待ちです」と出たら</h2>
+    <div class="guide-box">
+      <p>新規登録した直後は、まだ管理者が権限(役割)を設定していないため、この画面が表示されます。<strong>自分では何もする必要はありません。</strong></p>
+      <p>画面に表示されている「ユーザー名」を、管理者にお伝えください。管理者が設定を済ませると、次にログインした時から通常の画面が使えるようになります。</p>
+    </div>
+
+    <h2 id="register">③ 犬猫を登録する</h2>
+    <div class="guide-box">
+      <p><span class="role-tag">管理者・責任者・施設メンバーのみ</span></p>
+      <p>一覧画面の右下にある丸い「+」ボタンを押すと、登録フォームが開きます。</p>
+      <ul>
+        <li><strong>種類</strong>: 猫か犬かを選びます</li>
+        <li><strong>保護場所</strong>: シェルター(施設)か、個人宅預かりかを選びます。個人宅預かりを選ぶと「預かり担当者」を選ぶ欄が出てきます(先に管理者へ「預り先」の役割設定を依頼しておいてください)</li>
+        <li><strong>名前・性別・推定年齢・保護開始日・メモ</strong>: わかる範囲で入力すればOK、空欄でも構いません</li>
+      </ul>
+      <p>登録した動物は一覧にカードとして表示され、タップすると詳細画面(記録の画面)に進めます。</p>
+    </div>
+
+    <h2 id="daily">④ 日々の記録のつけ方</h2>
+    <div class="guide-box">
+      <p>動物のカードをタップして詳細画面を開き、右下の「+」を押すと「日々の記録を追加」の画面が開きます。</p>
+      <ul>
+        <li><strong>時間帯</strong>: 早朝・朝・昼・夕方・夜・深夜から選びます。シェルターは基本「朝」「夜」の2回でOKです。子猫などで頻繁な給餌が必要な時は、細かい時間帯を選んで何回でも記録できます</li>
+        <li><strong>世話した時間</strong>: 実際に世話をした時刻(任意)</li>
+        <li><strong>体重</strong>: 測っていない時は空欄のままでOKです</li>
+        <li><strong>食欲</strong>: 完食・一部残した(残した量をグラムで記録できます)・ほとんど食べていない・食べていない、から選びます</li>
+        <li><strong>尿・便</strong>: 「正常」「異常」「無し」から選びます。「異常」を選ぶと、血尿の有無・量・色(尿)や、種類・量・色(便)を詳しく記録できます</li>
+        <li><strong>投薬チェック</strong>: その子に投薬の予定がある場合、時間帯に合わせて自動的にチェック項目が出てきます。投与できたらそのまま(チェックが入った状態)、できなかったらチェックを外してください</li>
+      </ul>
+    </div>
+
+    <h2 id="medical">⑤ 医療記録・投薬のつけ方</h2>
+    <div class="guide-box">
+      <p>詳細画面の上部にある「医療記録」タブを開き、右下の「+」を押すと登録できます。</p>
+      <ul>
+        <li><strong>種類</strong>: ワクチン・通院・投薬・手術・その他から選びます</li>
+        <li>「投薬」を選ぶと、<strong>投与方法</strong>(飲み薬・塗布・点眼・点耳・注射・その他)、<strong>投薬するタイミング</strong>(複数選択可)、<strong>1回あたりの分量</strong>(例: 1錠、2分の1錠)を登録できます</li>
+        <li><strong>投薬終了予定日</strong>を設定しておくと、その日以降は「日々の記録」の投薬チェックに出てこなくなります</li>
+      </ul>
+      <p>ここで投薬を登録しておくと、④の「日々の記録」に自動でチェック項目として反映されるので、二重に入力する必要はありません。</p>
+    </div>
+
+    <h2 id="adopted">⑥ 譲渡済みにする・絞り込み</h2>
+    <div class="guide-box">
+      <p><span class="role-tag">管理者・責任者・施設メンバーのみ</span></p>
+      <p>譲渡が決まったら、詳細画面の「譲渡済みにする」ボタンを押してください。一覧からは自動的に隠れます(「譲渡済みの子も表示する」にチェックを入れれば、いつでも見られます)。</p>
+      <p>一覧画面上部の「すべて/シェルター(施設)/個人宅預かり」のタブで、見たい範囲を絞り込めます。</p>
+    </div>
+
+    <h2 id="faq">⑦ よくある質問</h2>
+    <div class="guide-box">
+      <h3>Q. パスワードを忘れてしまった</h3>
+      <p>A. 現在、自分でパスワードを再設定する機能はありません。管理者に相談してください。</p>
+
+      <h3>Q. 間違えて記録を追加してしまった</h3>
+      <p>A. 記録の下にある「削除」ボタンから消せます。</p>
+
+      <h3>Q. 自分が担当している猫が一覧に出てこない</h3>
+      <p>A. まだ管理者による権限設定が済んでいないか、その猫の「預かり担当者」に自分が選ばれていない可能性があります。管理者に確認してください。</p>
+
+      <h3>Q. 犬猫の登録画面に「+」ボタンが出てこない</h3>
+      <p>A. 「預り先」の役割の方は、新しい犬猫の登録はできない仕組みになっています(登録は管理者・責任者・施設メンバーのみ)。自分が担当している猫の記録追加は問題なくできます。</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { ORG_NAME, APP_TITLE } from "./site-config.js";
+  const titleText = ORG_NAME ? `${ORG_NAME} ${APP_TITLE}` : APP_TITLE;
+  document.getElementById("brand-title").textContent = `🐾 ${titleText}`;
+  document.getElementById("page-title").textContent = `使い方ガイド | ${titleText}`;
+</script>
+</body>
+</html>

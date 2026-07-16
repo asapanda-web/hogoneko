@@ -2,17 +2,29 @@ import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection, addDoc, deleteDoc, doc, getDoc, getDocs, onSnapshot,
-  query, where, orderBy, serverTimestamp
+  query, where, orderBy, serverTimestamp, updateDoc, writeBatch, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { ORG_NAME, APP_TITLE, FACILITY_LABEL, FOSTER_LABEL } from "./site-config.js";
 
-let currentRole = null; // "管理者" | "責任者" | "シェルターメンバー" | "預り先" | "未設定"
+// 団体名・アプリ名を画面に反映
+const titleText = ORG_NAME ? `${ORG_NAME} ${APP_TITLE}` : APP_TITLE;
+document.getElementById("brand-title").textContent = `🐾 ${titleText}`;
+document.getElementById("page-title").textContent = titleText;
+
+// 保護場所の呼び方を画面に反映
+document.getElementById("filter-btn-facility").textContent = FACILITY_LABEL;
+document.getElementById("filter-btn-foster").textContent = FOSTER_LABEL;
+document.getElementById("option-facility").textContent = FACILITY_LABEL;
+document.getElementById("option-foster").textContent = FOSTER_LABEL;
+
+let currentRole = null; // "管理者" | "責任者" | "施設メンバー" | "預り先" | "未設定"
 let currentUid = null;
 
 function isFullAdmin() {
   return currentRole === "管理者" || currentRole === "責任者";
 }
 function isShelterMember() {
-  return currentRole === "シェルターメンバー";
+  return currentRole === "施設メンバー";
 }
 
 let currentUser = null;
@@ -34,6 +46,8 @@ onAuthStateChanged(auth, async (user) => {
 
   const userDocSnap = await getDoc(doc(db, "users", user.uid));
   currentRole = userDocSnap.exists() ? userDocSnap.data().role : "未設定";
+  const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+  applyWallpaper(userData.wallpaper || "photo-common", userData.customWallpaperData);
 
   if (currentRole === "未設定") {
     document.getElementById("pending-username").textContent = currentUsername;
@@ -60,7 +74,7 @@ function showDashboard() {
   if (unsubMedical) unsubMedical();
   viewDetail.classList.add("hidden");
   viewDashboard.classList.remove("hidden");
-  // 犬猫の新規登録は 管理者・責任者・シェルターメンバー のみ
+  // 犬猫の新規登録は 管理者・責任者・施設メンバー のみ
   document.getElementById("fab-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
 }
 
@@ -72,12 +86,54 @@ function showDetail(catId, catData) {
   document.getElementById("detail-name").textContent = catData.name;
   document.getElementById("detail-avatar").textContent = catData.species === "犬" ? "🐕" : "🐱";
   const locationText = catData.location === "個人宅預かり"
-    ? `個人宅預かり${catData.fosterName ? "(" + catData.fosterName + ")" : ""}`
-    : "シェルター";
+    ? `${FOSTER_LABEL}${catData.fosterName ? "(" + catData.fosterName + ")" : ""}`
+    : FACILITY_LABEL;
   document.getElementById("detail-meta").textContent =
-    [locationText, catData.sex, catData.age, catData.intake ? `保護開始: ${catData.intake}` : ""].filter(Boolean).join(" ・ ");
+    [locationText, catData.status === "譲渡済み" ? "譲渡済み" : "", catData.sex, catData.age, catData.intake ? `保護開始: ${catData.intake}` : ""].filter(Boolean).join(" ・ ");
+
+  // ステータス変更・完全削除ボタンの出し分け
+  const canEditCat = isFullAdmin() || (isShelterMember() && catData.location === "施設");
+  const actionsWrap = document.getElementById("detail-actions");
+  const toggleStatusBtn = document.getElementById("toggle-status-btn");
+  const deleteCatBtn = document.getElementById("delete-cat-btn");
+
+  actionsWrap.classList.toggle("hidden", !canEditCat);
+  if (canEditCat) {
+    toggleStatusBtn.textContent = catData.status === "譲渡済み" ? "保護中に戻す" : "譲渡済みにする";
+    toggleStatusBtn.onclick = async () => {
+      const newStatus = catData.status === "譲渡済み" ? "保護中" : "譲渡済み";
+      if (confirm(`ステータスを「${newStatus}」に変更しますか？`)) {
+        await updateDoc(doc(db, "cats", catId), { status: newStatus });
+        catData.status = newStatus; // 画面上の表示を即時反映
+        showDetail(catId, catData);
+      }
+    };
+  }
+
+  deleteCatBtn.classList.toggle("hidden", !isFullAdmin());
+  if (isFullAdmin()) {
+    deleteCatBtn.onclick = async () => {
+      const sure = confirm(`「${catData.name}」のデータを完全に削除します。日々の記録・医療記録もすべて消えます。この操作は取り消せません。本当によろしいですか？`);
+      if (!sure) return;
+      const sureAgain = confirm("本当に本当に削除してよろしいですか？(最終確認です)");
+      if (!sureAgain) return;
+      await deleteCatCompletely(catId);
+      showDashboard();
+    };
+  }
+
   listenDailyLogs(catId);
   listenMedicalRecords(catId);
+}
+
+async function deleteCatCompletely(catId) {
+  const dailySnap = await getDocs(collection(db, "cats", catId, "dailyLogs"));
+  const medicalSnap = await getDocs(collection(db, "cats", catId, "medicalRecords"));
+  const batch = writeBatch(db);
+  dailySnap.forEach((d) => batch.delete(d.ref));
+  medicalSnap.forEach((d) => batch.delete(d.ref));
+  batch.delete(doc(db, "cats", catId));
+  await batch.commit();
 }
 
 document.getElementById("back-to-list").addEventListener("click", showDashboard);
@@ -93,13 +149,102 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
   });
 });
 
+// ---------- 壁紙 ----------
+const ALL_WALLPAPER_CLASSES = ["wallpaper-paws", "wallpaper-photo-pet", "wallpaper-photo-common"];
+
+function applyWallpaper(wallpaper, customData) {
+  document.body.classList.remove(...ALL_WALLPAPER_CLASSES);
+  document.body.style.backgroundImage = ""; // カスタム写真用のインラインスタイルをリセット
+
+  if (wallpaper === "paws") document.body.classList.add("wallpaper-paws");
+  else if (wallpaper === "photo-pet") document.body.classList.add("wallpaper-photo-pet");
+  else if (wallpaper === "photo-common") document.body.classList.add("wallpaper-photo-common");
+  else if (wallpaper === "custom" && customData) {
+    document.body.style.backgroundImage = `linear-gradient(rgba(250,247,242,0.88), rgba(250,247,242,0.88)), url("${customData}")`;
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundPosition = "center";
+    document.body.style.backgroundAttachment = "fixed";
+  }
+
+  document.querySelectorAll(".wallpaper-option").forEach((el) => {
+    el.classList.toggle("selected", el.dataset.wallpaper === (wallpaper || "photo-common"));
+  });
+
+  if (customData) {
+    document.getElementById("custom-wallpaper-preview").src = customData;
+    document.getElementById("custom-wallpaper-preview").classList.remove("hidden");
+    document.getElementById("custom-wallpaper-preview-icon").classList.add("hidden");
+  }
+}
+
+document.getElementById("wallpaper-btn").addEventListener("click", () => {
+  document.getElementById("modal-wallpaper").classList.add("open");
+});
+
+document.querySelectorAll(".wallpaper-option").forEach((el) => {
+  el.addEventListener("click", async () => {
+    const choice = el.dataset.wallpaper;
+    if (choice === "custom") {
+      document.getElementById("wallpaper-upload-input").click();
+      return;
+    }
+    applyWallpaper(choice);
+    await setDoc(doc(db, "users", currentUid), { wallpaper: choice }, { merge: true });
+  });
+});
+
+document.getElementById("wallpaper-upload-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById("wallpaper-upload-status");
+  statusEl.textContent = "画像を処理しています...";
+  try {
+    const compressed = await compressImageToDataUrl(file, 900, 0.7);
+    if (compressed.length > 700000) {
+      statusEl.textContent = "画像が大きすぎます。別の写真を試すか、画質の粗い写真でお試しください。";
+      return;
+    }
+    applyWallpaper("custom", compressed);
+    await setDoc(doc(db, "users", currentUid), { wallpaper: "custom", customWallpaperData: compressed }, { merge: true });
+    statusEl.textContent = "設定しました。";
+  } catch (err) {
+    statusEl.textContent = "画像の読み込みに失敗しました。別の写真でお試しください。";
+  }
+});
+
+function compressImageToDataUrl(file, maxSize, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        if (w > maxSize || h > maxSize) {
+          if (w > h) { h = Math.round((h * maxSize) / w); w = maxSize; }
+          else { w = Math.round((w * maxSize) / h); h = maxSize; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 // ---------- 役割に応じた画面の出し分け ----------
 function applyRoleUI() {
   // 絞り込みタブは管理者・責任者だけに表示(他の役割はもともと見える範囲が限定されるため)
   const filterTabs = document.querySelector(".filter-tabs");
   if (filterTabs) filterTabs.classList.toggle("hidden", !isFullAdmin());
 
-  // シェルターメンバーは「個人宅預かり」の登録はできない(施設側で割り当てるため選択肢を消す)
+  // 施設メンバーは「個人宅預かり」の登録はできない(施設側で割り当てるため選択肢を消す)
   if (isShelterMember()) {
     const option = document.querySelector('#cat-location option[value="個人宅預かり"]');
     if (option) option.remove();
@@ -140,6 +285,8 @@ document.querySelectorAll(".filter-btn").forEach((btn) => {
   });
 });
 
+document.getElementById("show-adopted-toggle").addEventListener("change", renderCatList);
+
 function listenCats() {
   const q = query(collection(db, "cats"), orderBy("createdAt", "desc"));
   unsubCats = onSnapshot(q, (snap) => {
@@ -154,9 +301,12 @@ function renderCatList() {
   const emptyEl = document.getElementById("empty-cats");
   listEl.innerHTML = "";
 
+  const showAdopted = document.getElementById("show-adopted-toggle").checked;
   const docs = latestCatsSnapshot.docs.filter((docSnap) => {
+    const cat = docSnap.data();
+    if (!showAdopted && cat.status === "譲渡済み") return false;
     if (currentFilter === "すべて") return true;
-    return docSnap.data().location === currentFilter;
+    return cat.location === currentFilter;
   });
 
   if (docs.length === 0) {
@@ -173,12 +323,13 @@ function renderCatList() {
     const card = document.createElement("div");
     card.className = "cat-card";
     const locationLabel = cat.location === "個人宅預かり"
-      ? `個人宅預かり${cat.fosterName ? "(" + escapeHtml(cat.fosterName) + ")" : ""}`
-      : "シェルター";
+      ? `${FOSTER_LABEL}${cat.fosterName ? "(" + escapeHtml(cat.fosterName) + ")" : ""}`
+      : FACILITY_LABEL;
+    const adoptedBadge = cat.status === "譲渡済み" ? `<span class="location-badge adopted-badge">譲渡済み</span>` : "";
     card.innerHTML = `
       <div class="cat-avatar">${cat.species === "犬" ? "🐕" : "🐱"}</div>
       <div style="flex:1">
-        <div class="name">${escapeHtml(cat.name)}<span class="location-badge">${locationLabel}</span></div>
+        <div class="name">${escapeHtml(cat.name)}<span class="location-badge">${locationLabel}</span>${adoptedBadge}</div>
         <div class="meta">${[cat.sex, cat.age].filter(Boolean).map(escapeHtml).join(" ・ ")}</div>
       </div>
     `;
@@ -302,7 +453,7 @@ function listenMedicalRecords(catId) {
       const card = document.createElement("div");
       card.className = "log-card";
       const medicationInfo = rec.type === "投薬" && rec.medicationTiming && rec.medicationTiming.length
-        ? `<div class="detail">投薬タイミング: ${escapeHtml(rec.medicationTiming.join("・"))}${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}${rec.endDate ? " ／ 終了予定: " + escapeHtml(rec.endDate) : ""}</div>`
+        ? `<div class="detail">${rec.medicationMethod ? escapeHtml(rec.medicationMethod) + " ／ " : ""}投薬タイミング: ${escapeHtml(rec.medicationTiming.join("・"))}${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}${rec.endDate ? " ／ 終了予定: " + escapeHtml(rec.endDate) : ""}</div>`
         : "";
       card.innerHTML = `
         <div class="row1">
@@ -356,7 +507,8 @@ function renderMedicationChecklist() {
 
   activeMeds.forEach((docSnap) => {
     const rec = docSnap.data();
-    const label = `${rec.title}${rec.dosage ? "(" + rec.dosage + ")" : ""}`;
+    const methodText = rec.medicationMethod ? `[${rec.medicationMethod}] ` : "";
+    const label = `${methodText}${rec.title}${rec.dosage ? "(" + rec.dosage + ")" : ""}`;
     const row = document.createElement("label");
     row.className = "med-check-item";
     row.innerHTML = `
@@ -457,6 +609,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
   await addDoc(collection(db, "cats"), {
     species: document.getElementById("cat-species").value,
     location,
+    status: "保護中",
     assignedFosterUids: isFoster && fosterUid ? [fosterUid] : [],
     fosterName: fosterUsername,
     name: document.getElementById("cat-name").value.trim(),
@@ -538,6 +691,7 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
     detail: document.getElementById("medical-detail").value.trim(),
     next: document.getElementById("medical-next").value,
     medicationTiming,
+    medicationMethod: isMedication ? document.getElementById("medical-method").value : "",
     dosage: isMedication ? document.getElementById("medical-dosage").value.trim() : "",
     endDate: isMedication ? document.getElementById("medical-end-date").value : "",
     recordedBy: currentUsername,
