@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ログイン | 猫の健康管理</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>🐾 猫の健康管理</h1>
+    <p class="auth-sub">保護団体のメンバーでログインしてください</p>
+
+    <form id="login-form">
+      <label for="email">メールアドレス</label>
+      <input type="email" id="email" required autocomplete="email">
+
+      <label for="password">パスワード</label>
+      <input type="password" id="password" required autocomplete="current-password">
+
+      <button type="submit" class="btn btn-primary" id="submit-btn">ログイン</button>
+      <p class="error-msg" id="error-msg"></p>
+    </form>
+
+    <p style="text-align:center; margin-top:18px;">
+      <button type="button" class="btn btn-ghost" id="toggle-mode">アカウントを持っていない方はこちら(新規登録)</button>
+    </p>
+  </div>
+</div>
+
+<script type="module" src="auth.js"></script>
+</body>
+</html>

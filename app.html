@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>猫の健康管理</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="screen">
+  <div class="topbar">
+    <div class="brand">🐾 猫の健康管理</div>
+    <button class="btn btn-outline btn-small" id="logout-btn">ログアウト</button>
+  </div>
+
+  <div class="container">
+
+    <!-- ダッシュボード(猫一覧) -->
+    <section id="view-dashboard">
+      <div class="section-head">
+        <h2>保護中の猫たち</h2>
+      </div>
+      <div class="cat-list" id="cat-list"></div>
+      <p class="empty-state hidden" id="empty-cats">まだ登録されている猫がいません。右下の+から登録しましょう。</p>
+    </section>
+
+    <!-- 猫の詳細 -->
+    <section id="view-detail" class="hidden">
+      <span class="back-link" id="back-to-list">← 一覧に戻る</span>
+      <div class="cat-header">
+        <div class="cat-avatar">🐱</div>
+        <div>
+          <div class="name" id="detail-name"></div>
+          <div class="meta" id="detail-meta"></div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="daily">日々の記録</button>
+        <button class="tab-btn" data-tab="medical">医療記録</button>
+      </div>
+
+      <div id="tab-daily">
+        <div id="daily-list"></div>
+        <p class="empty-state hidden" id="empty-daily">まだ記録がありません。</p>
+      </div>
+
+      <div id="tab-medical" class="hidden">
+        <div id="medical-list"></div>
+        <p class="empty-state hidden" id="empty-medical">まだ記録がありません。</p>
+      </div>
+    </section>
+
+  </div>
+
+  <button class="fab" id="fab-btn">+</button>
+</div>
+
+<!-- 猫を登録するモーダル -->
+<div class="modal-overlay" id="modal-cat">
+  <div class="modal">
+    <h3>猫を登録</h3>
+    <form id="form-cat">
+      <label>名前</label>
+      <input type="text" id="cat-name" required>
+      <label>性別</label>
+      <select id="cat-sex">
+        <option value="不明">不明</option>
+        <option value="オス">オス</option>
+        <option value="メス">メス</option>
+      </select>
+      <label>推定年齢・生年月日(任意)</label>
+      <input type="text" id="cat-age" placeholder="例: 推定2歳 / 2023年5月頃">
+      <label>保護開始日</label>
+      <input type="date" id="cat-intake">
+      <label>メモ(任意)</label>
+      <textarea id="cat-memo" placeholder="性格や特徴など"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-close>キャンセル</button>
+        <button type="submit" class="btn btn-primary">登録する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 日々の記録を追加するモーダル -->
+<div class="modal-overlay" id="modal-daily">
+  <div class="modal">
+    <h3>日々の記録を追加</h3>
+    <form id="form-daily">
+      <label>日付</label>
+      <input type="date" id="daily-date" required>
+      <label>体重(kg)</label>
+      <input type="number" step="0.01" id="daily-weight" placeholder="例: 3.20">
+      <label>食欲</label>
+      <select id="daily-appetite">
+        <option value="良好">良好</option>
+        <option value="普通">普通</option>
+        <option value="低下">低下</option>
+        <option value="食べない">食べない</option>
+      </select>
+      <label>排泄の様子</label>
+      <select id="daily-excretion">
+        <option value="正常">正常(便・尿とも正常)</option>
+        <option value="軟便">軟便</option>
+        <option value="下痢">下痢</option>
+        <option value="便秘">便秘気味</option>
+        <option value="血尿・血便">血尿・血便あり</option>
+      </select>
+      <label>メモ(任意)</label>
+      <textarea id="daily-memo" placeholder="様子や気になることなど"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-close>キャンセル</button>
+        <button type="submit" class="btn btn-primary">追加する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 医療記録を追加するモーダル -->
+<div class="modal-overlay" id="modal-medical">
+  <div class="modal">
+    <h3>医療記録を追加</h3>
+    <form id="form-medical">
+      <label>種類</label>
+      <select id="medical-type">
+        <option value="ワクチン">ワクチン</option>
+        <option value="通院">通院</option>
+        <option value="投薬">投薬</option>
+        <option value="手術">手術</option>
+        <option value="その他">その他</option>
+      </select>
+      <label>日付</label>
+      <input type="date" id="medical-date" required>
+      <label>件名</label>
+      <input type="text" id="medical-title" placeholder="例: 混合ワクチン1回目" required>
+      <label>詳細(任意)</label>
+      <textarea id="medical-detail" placeholder="病院名、薬の名前、獣医師の所見など"></textarea>
+      <label>次回予定日(任意)</label>
+      <input type="date" id="medical-next">
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-close>キャンセル</button>
+        <button type="submit" class="btn btn-primary">追加する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
