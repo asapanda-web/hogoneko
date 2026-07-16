@@ -870,6 +870,16 @@ function resetCatModalToAddMode() {
 // ---------- フォーム送信 ----------
 document.getElementById("form-cat").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const catFormStatus = document.getElementById("cat-form-status");
+  const catSubmitBtn = document.getElementById("cat-submit-btn");
+  catFormStatus.textContent = "";
+
+  const name = document.getElementById("cat-name").value.trim();
+  if (!name) {
+    catFormStatus.textContent = "名前を入力してください。";
+    return;
+  }
+
   const location = document.getElementById("cat-location").value;
   const isFoster = location === "個人宅預かり";
   const fosterSelect = document.getElementById("cat-foster-user");
@@ -883,47 +893,58 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     location,
     assignedFosterUids: isFoster && fosterUid ? [fosterUid] : [],
     fosterName: fosterUsername,
-    name: document.getElementById("cat-name").value.trim(),
+    name,
     sex: document.getElementById("cat-sex").value,
     age: document.getElementById("cat-age").value.trim(),
     intake: document.getElementById("cat-intake").value,
     memo: document.getElementById("cat-memo").value.trim()
   };
 
-  if (editingCatId) {
-    const before = editingCatOriginal || {};
-    const changes = [];
-    const beforeLocationText = before.location === "個人宅預かり"
-      ? `${FOSTER_LABEL}${before.fosterName ? "(" + before.fosterName + ")" : ""}`
-      : FACILITY_LABEL;
-    const afterLocationText = data.location === "個人宅預かり"
-      ? `${FOSTER_LABEL}${data.fosterName ? "(" + data.fosterName + ")" : ""}`
-      : FACILITY_LABEL;
-    if (beforeLocationText !== afterLocationText) {
-      changes.push(`保護場所: ${beforeLocationText} → ${afterLocationText}`);
+  catSubmitBtn.disabled = true;
+  catFormStatus.textContent = editingCatId ? "更新しています..." : "登録しています...";
+
+  try {
+    if (editingCatId) {
+      const before = editingCatOriginal || {};
+      const changes = [];
+      const beforeLocationText = before.location === "個人宅預かり"
+        ? `${FOSTER_LABEL}${before.fosterName ? "(" + before.fosterName + ")" : ""}`
+        : FACILITY_LABEL;
+      const afterLocationText = data.location === "個人宅預かり"
+        ? `${FOSTER_LABEL}${data.fosterName ? "(" + data.fosterName + ")" : ""}`
+        : FACILITY_LABEL;
+      if (beforeLocationText !== afterLocationText) {
+        changes.push(`保護場所: ${beforeLocationText} → ${afterLocationText}`);
+      }
+      if ((before.name || "") !== data.name) changes.push(`名前: ${before.name || "-"} → ${data.name}`);
+      if ((before.species || "") !== data.species) changes.push(`種類: ${before.species || "-"} → ${data.species}`);
+
+      await updateDoc(doc(db, "cats", editingCatId), data);
+      if (changes.length) await addHistoryEntry(editingCatId, changes.join(" ／ "));
+
+      const updatedCatData = { ...before, ...data };
+      catFormStatus.textContent = "更新しました。";
+      e.target.reset();
+      fosterNameWrap.classList.add("hidden");
+      resetCatModalToAddMode();
+      modalCat.classList.remove("open");
+      showDetail(editingCatId, updatedCatData);
+    } else {
+      await addDoc(collection(db, "cats"), {
+        ...data,
+        status: "保護中",
+        createdBy: currentUsername,
+        createdAt: serverTimestamp()
+      });
+      catFormStatus.textContent = "登録しました。";
+      e.target.reset();
+      fosterNameWrap.classList.add("hidden");
+      modalCat.classList.remove("open");
     }
-    if ((before.name || "") !== data.name) changes.push(`名前: ${before.name || "-"} → ${data.name}`);
-    if ((before.species || "") !== data.species) changes.push(`種類: ${before.species || "-"} → ${data.species}`);
-
-    await updateDoc(doc(db, "cats", editingCatId), data);
-    if (changes.length) await addHistoryEntry(editingCatId, changes.join(" ／ "));
-
-    const updatedCatData = { ...before, ...data };
-    e.target.reset();
-    fosterNameWrap.classList.add("hidden");
-    resetCatModalToAddMode();
-    modalCat.classList.remove("open");
-    showDetail(editingCatId, updatedCatData);
-  } else {
-    await addDoc(collection(db, "cats"), {
-      ...data,
-      status: "保護中",
-      createdBy: currentUsername,
-      createdAt: serverTimestamp()
-    });
-    e.target.reset();
-    fosterNameWrap.classList.add("hidden");
-    modalCat.classList.remove("open");
+  } catch (err) {
+    catFormStatus.textContent = `保存に失敗しました(${err.code || err.message || "不明なエラー"})。権限設定を確認するか、もう一度お試しください。`;
+  } finally {
+    catSubmitBtn.disabled = false;
   }
 });
 
