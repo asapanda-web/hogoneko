@@ -31,34 +31,38 @@ h1, h2, h3, .brand {
   font-family: 'Zen Maru Gothic', sans-serif;
   font-weight: 700;
   margin: 0;
+  text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 10px rgba(255,255,255,0.75), 0 0 14px rgba(255,255,255,0.6);
 }
 
 .mono { font-family: 'JetBrains Mono', monospace; }
 
 a { color: inherit; }
 
-/* ---------- 壁紙: 写真(枠・影付きで右下に控えめに表示) ---------- */
+/* ---------- 壁紙: 写真(中央にはっきり表示、文字は白い縁取りで読みやすくする) ---------- */
 #wallpaper-img {
   position: fixed;
-  bottom: 20px;
-  left: 20px;
-  top: auto;
+  top: 50%;
+  left: 50%;
+  bottom: auto;
   right: auto;
-  transform: none;
-  max-width: min(32vw, 320px);
-  max-height: 40vh;
+  transform: translate(-50%, -50%);
+  width: auto;
+  height: auto;
+  max-width: min(70vw, 520px);
+  max-height: 65vh;
   object-fit: contain;
-  border-radius: 16px;
-  border: 5px solid #fff;
-  box-shadow: 0 8px 24px rgba(43, 38, 32, 0.18);
-  z-index: 1;
+  border-radius: 20px;
+  border: 6px solid #fff;
+  box-shadow: 0 8px 28px rgba(43, 38, 32, 0.2);
+  opacity: 0.9;
+  z-index: -1;
   pointer-events: none;
 }
 
 @media (max-width: 640px) {
   #wallpaper-img {
-    max-width: 38vw;
-    max-height: 28vh;
+    max-width: 78vw;
+    max-height: 45vh;
   }
 }
 
@@ -296,6 +300,7 @@ input:focus, select:focus, textarea:focus {
   font-weight: 400;
   color: var(--ink);
   margin: 0;
+  text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 10px rgba(255,255,255,0.7);
 }
 
 .checkbox-item input {
@@ -399,7 +404,7 @@ input:focus, select:focus, textarea:focus {
   flex-shrink: 0;
 }
 
-.cat-card .name { font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700; font-size: 16px; }
+.cat-card .name { font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700; font-size: 16px; text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 10px rgba(255,255,255,0.7); }
 .cat-card .meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
 
 .section-head {
