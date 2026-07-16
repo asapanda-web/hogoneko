@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>猫の健康管理</title>
+<title>犬猫の健康管理</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="screen">
   <div class="topbar">
-    <div class="brand">🐾 猫の健康管理</div>
+    <div class="brand">🐾 犬猫の健康管理</div>
     <button class="btn btn-outline btn-small" id="logout-btn">ログアウト</button>
   </div>
 
@@ -19,7 +19,7 @@
     <!-- ダッシュボード(猫一覧) -->
     <section id="view-dashboard">
       <div class="section-head">
-        <h2>保護中の猫たち</h2>
+        <h2>保護中の犬猫たち</h2>
       </div>
       <div class="cat-list" id="cat-list"></div>
       <p class="empty-state hidden" id="empty-cats">まだ登録されている猫がいません。右下の+から登録しましょう。</p>
@@ -29,7 +29,7 @@
     <section id="view-detail" class="hidden">
       <span class="back-link" id="back-to-list">← 一覧に戻る</span>
       <div class="cat-header">
-        <div class="cat-avatar">🐱</div>
+        <div class="cat-avatar" id="detail-avatar">🐱</div>
         <div>
           <div class="name" id="detail-name"></div>
           <div class="meta" id="detail-meta"></div>
@@ -57,11 +57,16 @@
   <button class="fab" id="fab-btn">+</button>
 </div>
 
-<!-- 猫を登録するモーダル -->
+<!-- 犬猫を登録するモーダル -->
 <div class="modal-overlay" id="modal-cat">
   <div class="modal">
-    <h3>猫を登録</h3>
+    <h3>犬猫を登録</h3>
     <form id="form-cat">
+      <label>種類</label>
+      <select id="cat-species">
+        <option value="猫">猫</option>
+        <option value="犬">犬</option>
+      </select>
       <label>名前</label>
       <input type="text" id="cat-name" required>
       <label>性別</label>

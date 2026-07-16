@@ -11,6 +11,7 @@ const passwordInput = document.getElementById("password");
 const errorMsg = document.getElementById("error-msg");
 const submitBtn = document.getElementById("submit-btn");
 const toggleBtn = document.getElementById("toggle-mode");
+const passwordHint = document.getElementById("password-hint");
 
 let isSignup = false;
 
@@ -27,16 +28,36 @@ toggleBtn.addEventListener("click", () => {
   toggleBtn.textContent = isSignup
     ? "すでにアカウントをお持ちの方はこちら(ログイン)"
     : "アカウントを持っていない方はこちら(新規登録)";
+  passwordHint.style.display = isSignup ? "block" : "none";
   errorMsg.style.display = "none";
 });
+
+// 入力が「@」を含んでいれば本物のメールアドレスとしてそのまま使い、
+// 含んでいなければユーザー名とみなして内部的な擬似メール形式に変換する
+const FAKE_EMAIL_DOMAIN = "hogoneko-app.local";
+function resolveEmail(input) {
+  if (input.includes("@")) {
+    return input; // メールアドレスとしてそのまま使う
+  }
+  return `${input.toLowerCase()}@${FAKE_EMAIL_DOMAIN}`; // ユーザー名 → 擬似メール
+}
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   errorMsg.style.display = "none";
   submitBtn.disabled = true;
 
-  const email = emailInput.value.trim();
+  const rawInput = emailInput.value.trim();
   const password = passwordInput.value;
+
+  if (!rawInput.includes("@") && !/^[A-Za-z0-9_]+$/.test(rawInput)) {
+    errorMsg.textContent = "ユーザー名は半角英数字とアンダースコアのみ使えます";
+    errorMsg.style.display = "block";
+    submitBtn.disabled = false;
+    return;
+  }
+
+  const email = resolveEmail(rawInput);
 
   try {
     if (isSignup) {
@@ -55,11 +76,11 @@ form.addEventListener("submit", async (e) => {
 
 function translateError(code) {
   const map = {
-    "auth/invalid-email": "メールアドレスの形式が正しくありません",
+    "auth/invalid-email": "ユーザー名またはメールアドレスの形式が正しくありません",
     "auth/user-not-found": "アカウントが見つかりません",
     "auth/wrong-password": "パスワードが間違っています",
-    "auth/invalid-credential": "メールアドレスまたはパスワードが間違っています",
-    "auth/email-already-in-use": "このメールアドレスは既に登録されています",
+    "auth/invalid-credential": "ユーザー名(メールアドレス)またはパスワードが間違っています",
+    "auth/email-already-in-use": "このユーザー名(メールアドレス)は既に使われています",
     "auth/weak-password": "パスワードは6文字以上にしてください"
   };
   return map[code] || "エラーが発生しました。もう一度お試しください";

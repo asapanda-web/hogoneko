@@ -6,6 +6,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 let currentUser = null;
+let currentUsername = null;
 let currentCatId = null;
 let unsubCats = null;
 let unsubDaily = null;
@@ -18,6 +19,7 @@ onAuthStateChanged(auth, (user) => {
     return;
   }
   currentUser = user;
+  currentUsername = (user.email || "").split("@")[0];
   listenCats();
 });
 
@@ -42,6 +44,7 @@ function showDetail(catId, catData) {
   viewDashboard.classList.add("hidden");
   viewDetail.classList.remove("hidden");
   document.getElementById("detail-name").textContent = catData.name;
+  document.getElementById("detail-avatar").textContent = catData.species === "犬" ? "🐕" : "🐱";
   document.getElementById("detail-meta").textContent =
     [catData.sex, catData.age, catData.intake ? `保護開始: ${catData.intake}` : ""].filter(Boolean).join(" ・ ");
   listenDailyLogs(catId);
@@ -78,7 +81,7 @@ function listenCats() {
       const card = document.createElement("div");
       card.className = "cat-card";
       card.innerHTML = `
-        <div class="cat-avatar">🐱</div>
+        <div class="cat-avatar">${cat.species === "犬" ? "🐕" : "🐱"}</div>
         <div style="flex:1">
           <div class="name">${escapeHtml(cat.name)}</div>
           <div class="meta">${[cat.sex, cat.age].filter(Boolean).map(escapeHtml).join(" ・ ")}</div>
@@ -204,12 +207,13 @@ document.getElementById("fab-btn").addEventListener("click", () => {
 document.getElementById("form-cat").addEventListener("submit", async (e) => {
   e.preventDefault();
   await addDoc(collection(db, "cats"), {
+    species: document.getElementById("cat-species").value,
     name: document.getElementById("cat-name").value.trim(),
     sex: document.getElementById("cat-sex").value,
     age: document.getElementById("cat-age").value.trim(),
     intake: document.getElementById("cat-intake").value,
     memo: document.getElementById("cat-memo").value.trim(),
-    createdBy: currentUser.email,
+    createdBy: currentUsername,
     createdAt: serverTimestamp()
   });
   e.target.reset();
@@ -224,7 +228,7 @@ document.getElementById("form-daily").addEventListener("submit", async (e) => {
     appetite: document.getElementById("daily-appetite").value,
     excretion: document.getElementById("daily-excretion").value,
     memo: document.getElementById("daily-memo").value.trim(),
-    recordedBy: currentUser.email,
+    recordedBy: currentUsername,
     createdAt: serverTimestamp()
   });
   e.target.reset();
@@ -239,7 +243,7 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
     title: document.getElementById("medical-title").value.trim(),
     detail: document.getElementById("medical-detail").value.trim(),
     next: document.getElementById("medical-next").value,
-    recordedBy: currentUser.email,
+    recordedBy: currentUsername,
     createdAt: serverTimestamp()
   });
   e.target.reset();

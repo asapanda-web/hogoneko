@@ -157,6 +157,13 @@ input:focus, select:focus, textarea:focus {
 .btn-small { padding: 6px 12px; font-size: 13px; }
 .btn-danger { background: var(--coral-bg); color: var(--coral); }
 
+.hint-text {
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.7;
+  margin-top: 8px;
+}
+
 .error-msg {
   color: var(--coral);
   font-size: 13px;

@@ -1,0 +1,12 @@
+// Firebaseコンソール > Firestore Database > ルール タブに、
+// この内容をそのまま貼り付けて「公開」を押してください。
+// (ログインしているメンバー全員が読み書きできる設定です)
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
