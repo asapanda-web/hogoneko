@@ -58,6 +58,7 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  document.title = `[role:${currentRole}/uid:${currentUid}] デバッグ中`; // 一時的なデバッグ表示、後で削除します
   applyRoleUI();
   listenCats();
 });
