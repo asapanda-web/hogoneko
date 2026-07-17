@@ -405,6 +405,9 @@ input:focus, select:focus, textarea:focus {
   flex-shrink: 0;
 }
 
+.avatar-cat { background: var(--sage-bg); border: 2px solid var(--sage); }
+.avatar-dog { background: var(--coral-bg); border: 2px solid var(--coral); }
+
 .cat-card .name { font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700; font-size: 16px; text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 10px rgba(255,255,255,0.7); }
 .cat-card .meta { font-size: 13px; color: var(--ink); font-weight: 500; margin-top: 2px; }
 
@@ -441,6 +444,8 @@ input:focus, select:focus, textarea:focus {
   gap: 14px;
   margin: 8px 0 20px;
 }
+
+.cat-header .cat-avatar { width: 64px; height: 64px; font-size: 32px; }
 
 .cat-header .name { font-size: 22px; }
 .cat-header .meta { color: var(--ink); font-weight: 500; font-size: 14px; }

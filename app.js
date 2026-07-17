@@ -86,7 +86,10 @@ function showDetail(catId, catData) {
   viewDetail.classList.remove("hidden");
   document.getElementById("fab-btn").classList.remove("hidden"); // 記録の追加は誰でも可能
   document.getElementById("detail-name").textContent = catData.name;
-  document.getElementById("detail-avatar").textContent = catData.species === "犬" ? "🐕" : "🐱";
+  const detailAvatarEl = document.getElementById("detail-avatar");
+  detailAvatarEl.textContent = catData.species === "犬" ? "🐕" : "🐱";
+  detailAvatarEl.classList.toggle("avatar-dog", catData.species === "犬");
+  detailAvatarEl.classList.toggle("avatar-cat", catData.species !== "犬");
   const locationText = catData.location === "個人宅預かり"
     ? `${FOSTER_LABEL}${catData.fosterName ? "(" + catData.fosterName + ")" : ""}`
     : FACILITY_LABEL;
@@ -502,7 +505,7 @@ function renderCatList() {
       : FACILITY_LABEL;
     const adoptedBadge = cat.status === "譲渡済み" ? `<span class="location-badge adopted-badge">譲渡済み</span>` : "";
     card.innerHTML = `
-      <div class="cat-avatar">${cat.species === "犬" ? "🐕" : "🐱"}</div>
+      <div class="cat-avatar ${cat.species === "犬" ? "avatar-dog" : "avatar-cat"}">${cat.species === "犬" ? "🐕" : "🐱"}</div>
       <div style="flex:1">
         <div class="name">${escapeHtml(cat.name)}<span class="location-badge">${locationLabel}</span>${adoptedBadge}</div>
         <div class="meta">${[cat.sex, cat.age].filter(Boolean).map(escapeHtml).join(" ・ ")}</div>
@@ -526,30 +529,54 @@ function listenDailyLogs(catId) {
       return;
     }
     emptyEl.classList.add("hidden");
-    snap.forEach((docSnap) => {
-      const log = docSnap.data();
-      const card = document.createElement("div");
-      card.className = "log-card";
-      const timeLabel = [log.timeOfDay, log.careTime].filter(Boolean).join(" ");
-      card.innerHTML = `
-        <div class="row1">
-          <span class="date mono">${log.date}${timeLabel ? " ／ " + escapeHtml(timeLabel) : ""}</span>
-          <span class="weight mono">${log.weight ? log.weight + " kg" : "体重未測定"}</span>
-        </div>
-        <div class="detail">${formatAppetite(log.appetite)}</div>
-        <div class="detail">${formatUrine(log.urine)}</div>
-        <div class="detail">${formatStool(log.stool)}</div>
-        ${formatMedications(log.medications)}
-        ${log.memo ? `<div class="detail">${escapeHtml(log.memo)}</div>` : ""}
-        <button class="btn btn-ghost btn-small" style="margin-top:6px;padding:0;" data-del>削除</button>
-      `;
-      card.querySelector("[data-del]").addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (confirm("この記録を削除しますか？")) {
-          deleteDoc(doc(db, "cats", catId, "dailyLogs", docSnap.id));
-        }
+
+    const timeOfDayRank = { "早朝": 0, "朝": 1, "昼": 2, "夕方": 3, "夜": 4, "深夜": 5 };
+    const docsArray = snap.docs.map((docSnap) => ({ id: docSnap.id, log: docSnap.data() }));
+
+    // 同じ日付ごとにグループ化し、グループ内は時間帯の早い順に並べる
+    const groups = [];
+    docsArray.forEach((item) => {
+      let group = groups.find((g) => g.date === item.log.date);
+      if (!group) {
+        group = { date: item.log.date, items: [] };
+        groups.push(group);
+      }
+      group.items.push(item);
+    });
+    groups.forEach((g) => {
+      g.items.sort((a, b) => (timeOfDayRank[a.log.timeOfDay] ?? 9) - (timeOfDayRank[b.log.timeOfDay] ?? 9));
+    });
+
+    groups.forEach((group) => {
+      const dateHeader = document.createElement("div");
+      dateHeader.className = "daily-date-header";
+      dateHeader.textContent = group.date;
+      listEl.appendChild(dateHeader);
+
+      group.items.forEach(({ id, log }) => {
+        const card = document.createElement("div");
+        card.className = "log-card";
+        const timeLabel = [log.timeOfDay, log.careTime].filter(Boolean).join(" ");
+        card.innerHTML = `
+          <div class="row1">
+            <span class="date mono">${escapeHtml(timeLabel || "-")}</span>
+            <span class="weight mono">${log.weight ? log.weight + " kg" : "体重未測定"}</span>
+          </div>
+          <div class="detail">${formatAppetite(log.appetite)}</div>
+          <div class="detail">${formatUrine(log.urine)}</div>
+          <div class="detail">${formatStool(log.stool)}</div>
+          ${formatMedications(log.medications)}
+          ${log.memo ? `<div class="detail">${escapeHtml(log.memo)}</div>` : ""}
+          <button class="btn btn-ghost btn-small" style="margin-top:6px;padding:0;" data-del>削除</button>
+        `;
+        card.querySelector("[data-del]").addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (confirm("この記録を削除しますか？")) {
+            deleteDoc(doc(db, "cats", catId, "dailyLogs", id));
+          }
+        });
+        listEl.appendChild(card);
       });
-      listEl.appendChild(card);
     });
   });
 }
