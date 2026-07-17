@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">招待用QRコード | 犬猫の健康管理</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff6996">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="保護ログ">
+<link rel="stylesheet" href="style.css?v=1784285912">
+<style>
+  .invite-wrap {
+    max-width: 420px;
+    margin: 40px auto;
+    padding: 28px 24px 36px;
+    text-align: center;
+  }
+  .invite-wrap h1 {
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+  .invite-wrap p.sub {
+    font-size: 14px;
+    color: var(--ink-soft, #7a6a5a);
+    margin-bottom: 22px;
+  }
+  #qrcode-box {
+    display: inline-block;
+    background: #fff;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border, #e6ddd0);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  #qrcode-box img, #qrcode-box canvas {
+    display: block;
+    width: 220px;
+    height: 220px;
+  }
+  .url-box {
+    margin-top: 22px;
+    padding: 12px 14px;
+    background: var(--surface, #faf5ee);
+    border: 1px solid var(--border, #e6ddd0);
+    border-radius: 10px;
+    font-size: 13px;
+    word-break: break-all;
+    color: var(--ink, #4a3a2a);
+  }
+  .copy-status {
+    margin-top: 8px;
+    font-size: 13px;
+    min-height: 18px;
+    color: var(--sage, #6b8a5a);
+  }
+  .invite-steps {
+    text-align: left;
+    margin-top: 28px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border, #e6ddd0);
+    font-size: 13px;
+    line-height: 1.9;
+  }
+</style>
+</head>
+<body>
+
+<div class="screen">
+  <div class="topbar">
+    <div class="brand" id="brand-title">🐾 犬猫の健康管理</div>
+    <a href="app.html" class="btn btn-outline btn-small">← アプリに戻る</a>
+  </div>
+
+  <div class="invite-wrap">
+    <h1>📱 メンバーを招待する</h1>
+    <p class="sub">このQRコードをスマホのカメラで読み取ってもらうと、すぐにログイン画面が開きます。</p>
+
+    <div id="qrcode-box"></div>
+
+    <div class="url-box" id="site-url-text"></div>
+    <button type="button" class="btn btn-primary" id="copy-url-btn" style="width:100%; margin-top:10px;">リンクをコピーする</button>
+    <p class="copy-status" id="copy-status"></p>
+
+    <div class="invite-steps">
+      <strong>スマホで受け取った人へ:</strong>
+      <ol style="padding-left:20px; margin-top:6px;">
+        <li>QRコードを読み取る(またはコピーしたリンクを開く)</li>
+        <li>新規登録して、ユーザー名を管理者に伝える</li>
+        <li>管理者が役割(メンバー管理)を設定したら使い始められます</li>
+      </ol>
+      <p style="margin-top:10px;">アプリっぽく使いたい場合は、使い方ガイドの「ホーム画面に追加」の手順も参考にしてください(iPhoneはSafari推奨です)。</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script type="module">
+  import { ORG_NAME, APP_TITLE } from "./site-config.js";
+  const titleText = ORG_NAME ? `${APP_TITLE}(${ORG_NAME})` : APP_TITLE;
+  document.getElementById("brand-title").textContent = `🐾 ${titleText}`;
+  document.getElementById("page-title").textContent = `招待用QRコード | ${titleText}`;
+</script>
+<script>
+  const siteUrl = location.origin + location.pathname.replace(/[^/]*$/, "index.html");
+
+  new QRCode(document.getElementById("qrcode-box"), {
+    text: siteUrl,
+    width: 220,
+    height: 220,
+    colorDark: "#5a3a1e",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  document.getElementById("site-url-text").textContent = siteUrl;
+
+  document.getElementById("copy-url-btn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("copy-status");
+    try {
+      await navigator.clipboard.writeText(siteUrl);
+      statusEl.textContent = "コピーしました。";
+    } catch (err) {
+      statusEl.textContent = "コピーできませんでした。上の欄を長押しして手動でコピーしてください。";
+    }
+  });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
