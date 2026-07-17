@@ -34,7 +34,7 @@ h1, h2, h3, .brand {
   text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 10px rgba(255,255,255,0.75), 0 0 14px rgba(255,255,255,0.6);
 }
 
-.mono { font-family: 'JetBrains Mono', monospace; }
+.mono { font-family: 'Noto Sans JP', 'Courier New', monospace; font-weight: 700; letter-spacing: 0.02em; }
 
 a { color: inherit; }
 
@@ -405,7 +405,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .cat-card .name { font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700; font-size: 16px; text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 10px rgba(255,255,255,0.7); }
-.cat-card .meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+.cat-card .meta { font-size: 13px; color: var(--ink); font-weight: 500; margin-top: 2px; }
 
 .section-head {
   display: flex;
@@ -442,7 +442,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .cat-header .name { font-size: 22px; }
-.cat-header .meta { color: var(--ink-soft); font-size: 13px; }
+.cat-header .meta { color: var(--ink); font-weight: 500; font-size: 14px; }
 
 .detail-actions {
   display: flex;
@@ -488,6 +488,18 @@ input:focus, select:focus, textarea:focus {
   background: var(--accent);
 }
 
+.daily-date-header {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--accent-ink);
+  background: var(--sage-bg);
+  border-radius: 8px;
+  padding: 5px 12px;
+  margin: 16px 0 8px;
+  display: inline-block;
+}
+
 .log-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -502,9 +514,9 @@ input:focus, select:focus, textarea:focus {
   align-items: baseline;
 }
 
-.log-card .date { font-weight: 500; font-size: 13px; }
-.log-card .weight { font-size: 15px; }
-.log-card .detail { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+.log-card .date { font-weight: 700; font-size: 15px; color: var(--ink); }
+.log-card .weight { font-size: 15px; font-weight: 700; color: var(--ink); }
+.log-card .detail { font-size: 14px; color: var(--ink); margin-top: 4px; }
 
 .tag {
   display: inline-block;
