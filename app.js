@@ -839,6 +839,22 @@ function renderMedicationChecklist() {
 timeOfDayEl.addEventListener("change", renderMedicationChecklist);
 document.getElementById("daily-date").addEventListener("change", renderMedicationChecklist);
 
+// ---------- 犬猫の登録フォーム: 種類に応じたタグの表示切り替え ----------
+const catSpeciesEl = document.getElementById("cat-species");
+function updateSpeciesTagVisibility() {
+  const speciesKey = catSpeciesEl.value === "犬" ? "dog" : "cat";
+  document.querySelectorAll(".checkbox-group .checkbox-item").forEach((item) => {
+    const target = item.dataset.species;
+    const show = !target || target === speciesKey;
+    item.classList.toggle("hidden", !show);
+    if (!show) {
+      const input = item.querySelector("input[type=checkbox]");
+      if (input) input.checked = false;
+    }
+  });
+}
+catSpeciesEl.addEventListener("change", updateSpeciesTagVisibility);
+
 // ---------- 猫の登録フォーム: 預かり担当者名の表示切り替え ----------
 const catLocationEl = document.getElementById("cat-location");
 const fosterNameWrap = document.getElementById("foster-name-wrap");
@@ -944,6 +960,7 @@ async function openCatEditModal(catId, catData) {
   document.getElementById("cat-submit-btn").textContent = "更新する";
 
   document.getElementById("cat-species").value = catData.species || "猫";
+  updateSpeciesTagVisibility();
   document.getElementById("cat-name").value = catData.name || "";
   document.getElementById("cat-sex").value = catData.sex || "不明";
   document.getElementById("cat-age").value = catData.age || "";
@@ -997,6 +1014,7 @@ function resetCatModalToAddMode() {
   document.getElementById("cat-photo-status").textContent = "";
   document.getElementById("cat-modal-title").textContent = "犬猫を登録";
   document.getElementById("cat-submit-btn").textContent = "登録する";
+  updateSpeciesTagVisibility();
 }
 
 let currentCatPhotoData = null;

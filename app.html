@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title id="page-title">犬猫の健康管理</title>
-<link rel="stylesheet" href="style.css?v=1784285912">
+<link rel="stylesheet" href="style.css?v=1784285913">
 </head>
 <body>
 
@@ -194,9 +194,14 @@
         <label class="checkbox-item"><input type="checkbox" value="ビビり" class="personality-tag"> ビビり</label>
         <label class="checkbox-item"><input type="checkbox" value="マイペース" class="personality-tag"> マイペース</label>
         <label class="checkbox-item"><input type="checkbox" value="寂しがり屋" class="personality-tag"> 寂しがり屋</label>
-        <label class="checkbox-item"><input type="checkbox" value="他の猫と仲良くできる" class="personality-tag"> 他の猫と仲良くできる</label>
-        <label class="checkbox-item"><input type="checkbox" value="他の猫が苦手" class="personality-tag"> 他の猫が苦手</label>
-        <label class="checkbox-item"><input type="checkbox" value="犬と仲良くできる" class="personality-tag"> 犬と仲良くできる</label>
+        <label class="checkbox-item" data-species="cat"><input type="checkbox" value="他の猫と仲良くできる" class="personality-tag"> 他の猫と仲良くできる</label>
+        <label class="checkbox-item" data-species="cat"><input type="checkbox" value="他の猫が苦手" class="personality-tag"> 他の猫が苦手</label>
+        <label class="checkbox-item" data-species="cat"><input type="checkbox" value="犬と仲良くできる" class="personality-tag"> 犬と仲良くできる</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="他の犬と仲良くできる" class="personality-tag"> 他の犬と仲良くできる</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="他の犬が苦手" class="personality-tag"> 他の犬が苦手</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="猫と仲良くできる" class="personality-tag"> 猫と仲良くできる</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="お散歩好き" class="personality-tag"> お散歩好き</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="番犬気質" class="personality-tag"> 番犬気質</label>
         <label class="checkbox-item"><input type="checkbox" value="子供が好き" class="personality-tag"> 子供が好き</label>
         <label class="checkbox-item"><input type="checkbox" value="抱っこが好き" class="personality-tag"> 抱っこが好き</label>
         <label class="checkbox-item"><input type="checkbox" value="抱っこが苦手" class="personality-tag"> 抱っこが苦手</label>
@@ -207,20 +212,30 @@
 
       <label>🎓 できること(あてはまるものを選んでください・複数選択可)</label>
       <div class="checkbox-group">
-        <label class="checkbox-item"><input type="checkbox" value="トイレ" class="can-do-tag"> トイレ</label>
-        <label class="checkbox-item"><input type="checkbox" value="爪とぎ" class="can-do-tag"> 爪とぎ</label>
+        <label class="checkbox-item" data-species="cat"><input type="checkbox" value="トイレ" class="can-do-tag"> トイレ(猫トイレ)</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="トイレ" class="can-do-tag"> トイレ(お散歩/シーツ)</label>
+        <label class="checkbox-item" data-species="cat"><input type="checkbox" value="爪とぎ" class="can-do-tag"> 爪とぎ</label>
         <label class="checkbox-item"><input type="checkbox" value="爪切り" class="can-do-tag"> 爪切り</label>
         <label class="checkbox-item"><input type="checkbox" value="お風呂" class="can-do-tag"> お風呂</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="お座り" class="can-do-tag"> お座り</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="待て" class="can-do-tag"> 待て</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="お手" class="can-do-tag"> お手</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="無駄吠えしない" class="can-do-tag"> 無駄吠えしない</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="留守番できる" class="can-do-tag"> 留守番できる</label>
       </div>
       <input type="text" id="cat-candoo-other" placeholder="できることその他(自由記述)">
 
       <label>🎮 好きな遊び(あてはまるものを選んでください・複数選択可)</label>
       <div class="checkbox-group">
-        <label class="checkbox-item"><input type="checkbox" value="ねこじゃらし" class="play-tag"> ねこじゃらし</label>
+        <label class="checkbox-item" data-species="cat"><input type="checkbox" value="ねこじゃらし" class="play-tag"> ねこじゃらし</label>
         <label class="checkbox-item"><input type="checkbox" value="ボール転がし" class="play-tag"> ボール転がし</label>
         <label class="checkbox-item"><input type="checkbox" value="かくれんぼ" class="play-tag"> かくれんぼ</label>
-        <label class="checkbox-item"><input type="checkbox" value="高いところに登る" class="play-tag"> 高いところに登る</label>
+        <label class="checkbox-item" data-species="cat"><input type="checkbox" value="高いところに登る" class="play-tag"> 高いところに登る</label>
         <label class="checkbox-item"><input type="checkbox" value="追いかけっこ" class="play-tag"> 追いかけっこ</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="引っ張りっこ" class="play-tag"> 引っ張りっこ</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="ボール投げ" class="play-tag"> ボール投げ</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="お散歩" class="play-tag"> お散歩</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="水遊び" class="play-tag"> 水遊び</label>
       </div>
       <input type="text" id="cat-play-other" placeholder="好きな遊びその他(自由記述)">
 
@@ -465,6 +480,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=1784285912"></script>
+<script type="module" src="app.js?v=1784285913"></script>
 </body>
 </html>
