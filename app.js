@@ -66,6 +66,16 @@ document.getElementById("logout-btn").addEventListener("click", () => {
   signOut(auth);
 });
 
+document.getElementById("print-cat-btn").addEventListener("click", () => {
+  document.body.classList.remove("print-mode-profile");
+  window.print();
+});
+
+document.getElementById("print-profile-btn").addEventListener("click", () => {
+  document.body.classList.add("print-mode-profile");
+  window.print();
+});
+
 // ---------- 画面切り替え ----------
 const viewDashboard = document.getElementById("view-dashboard");
 const viewDetail = document.getElementById("view-detail");
@@ -95,6 +105,11 @@ function showDetail(catId, catData) {
     : FACILITY_LABEL;
   document.getElementById("detail-meta").textContent =
     [locationText, catData.status === "譲渡済み" ? "譲渡済み" : "", catData.sex, catData.age, catData.intake ? `保護開始: ${catData.intake}` : ""].filter(Boolean).join(" ・ ");
+
+  // 印刷時の色分け(オス=水色系、メス=ピンク系)用のクラスをbodyに付与
+  document.body.classList.remove("print-sex-male", "print-sex-female");
+  if (catData.sex === "オス") document.body.classList.add("print-sex-male");
+  if (catData.sex === "メス") document.body.classList.add("print-sex-female");
 
   // ステータス変更・完全削除ボタンの出し分け
   const canEditCat = isFullAdmin() || (isShelterMember() && catData.location === "施設");
@@ -135,6 +150,64 @@ function showDetail(catId, catData) {
   listenDailyLogs(catId);
   listenMedicalRecords(catId);
   listenHistory(catId);
+
+  // 譲渡プロフィールシートへの反映(避妊去勢・ワクチン・ウイルス検査・駆虫は医療記録から自動計算)
+  currentCatDataForProfile = catData;
+  updateProfileDerivedFields();
+}
+
+let currentCatDataForProfile = null;
+function updateProfileDerivedFields() {
+  if (!currentCatDataForProfile) return;
+  const catData = currentCatDataForProfile;
+
+  const profilePhotoEl = document.getElementById("profile-photo");
+  if (catData.photoData) {
+    profilePhotoEl.src = catData.photoData;
+    profilePhotoEl.classList.remove("hidden");
+  } else {
+    profilePhotoEl.classList.add("hidden");
+  }
+  document.getElementById("profile-name").textContent = catData.name || "";
+  document.getElementById("profile-meta").textContent =
+    [catData.species, catData.sex, catData.age].filter(Boolean).join(" ・ ");
+  document.getElementById("profile-intro").textContent = catData.intro || "";
+  const tagsEl = document.getElementById("profile-tags");
+  const tags = [...(catData.personalityTags || [])];
+  if (catData.personalityOther) tags.push(catData.personalityOther);
+  tagsEl.innerHTML = tags.map((t) => `<span class="profile-tag-badge">${escapeHtml(t)}</span>`).join("");
+
+  const candooTags = [...(catData.canDoTags || [])];
+  if (catData.canDoOther) candooTags.push(catData.canDoOther);
+  document.getElementById("profile-candoo-title").classList.toggle("hidden", candooTags.length === 0);
+  document.getElementById("profile-candoo-tags").innerHTML =
+    candooTags.map((t) => `<span class="profile-tag-badge">${escapeHtml(t)}</span>`).join("");
+
+  const playTags = [...(catData.playTags || [])];
+  if (catData.playOther) playTags.push(catData.playOther);
+  document.getElementById("profile-play-title").classList.toggle("hidden", playTags.length === 0);
+  document.getElementById("profile-play-tags").innerHTML =
+    playTags.map((t) => `<span class="profile-tag-badge">${escapeHtml(t)}</span>`).join("");
+
+  document.getElementById("profile-food-title").classList.toggle("hidden", !catData.food);
+  document.getElementById("profile-food").textContent = catData.food || "";
+
+  document.getElementById("profile-memo-title").classList.toggle("hidden", !catData.detailMemo);
+  document.getElementById("profile-memo").textContent = catData.detailMemo || "";
+
+  const records = latestMedicalSnapshot ? latestMedicalSnapshot.docs.map((d) => d.data()) : [];
+  const hasNeuter = records.some((r) => r.type === "避妊去勢");
+  const vaccineCount = records.filter((r) => r.type === "ワクチン").length;
+  const hasDeworm = records.some((r) => r.type === "駆虫");
+  const latestVirusTest = records
+    .filter((r) => r.type === "ウイルス検査")
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+
+  document.getElementById("profile-neuter").textContent = hasNeuter ? "済" : "未";
+  document.getElementById("profile-vaccine").textContent = vaccineCount > 0 ? `済(${vaccineCount}回)` : "未";
+  document.getElementById("profile-fiv").textContent = latestVirusTest ? (latestVirusTest.fivResult || "未検査") : "未検査";
+  document.getElementById("profile-felv").textContent = latestVirusTest ? (latestVirusTest.felvResult || "未検査") : "未検査";
+  document.getElementById("profile-deworm").textContent = hasDeworm ? "済" : "未";
 }
 
 async function deleteCatCompletely(catId) {
@@ -642,6 +715,7 @@ function listenMedicalRecords(catId) {
   const q = query(collection(db, "cats", catId, "medicalRecords"), orderBy("date", "desc"));
   unsubMedical = onSnapshot(q, (snap) => {
     latestMedicalSnapshot = snap;
+    updateProfileDerivedFields();
     const listEl = document.getElementById("medical-list");
     const emptyEl = document.getElementById("empty-medical");
     listEl.innerHTML = "";
@@ -805,9 +879,12 @@ const medicalTypeEl = document.getElementById("medical-type");
 const medicationDetailWrap = document.getElementById("medication-detail-wrap");
 const medicalTitleLabel = document.getElementById("medical-title-label");
 const medicalTitleInput = document.getElementById("medical-title");
+const virusTestDetailWrap = document.getElementById("virus-test-detail-wrap");
 medicalTypeEl.addEventListener("change", () => {
   const isMedication = medicalTypeEl.value === "投薬";
+  const isVirusTest = medicalTypeEl.value === "ウイルス検査";
   medicationDetailWrap.classList.toggle("hidden", !isMedication);
+  virusTestDetailWrap.classList.toggle("hidden", !isVirusTest);
   medicalTitleLabel.textContent = isMedication ? "薬の名前" : "件名";
   medicalTitleInput.placeholder = isMedication ? "例: メタカム / 下痢止め" : "例: 混合ワクチン1回目";
 });
@@ -844,6 +921,7 @@ document.getElementById("fab-btn").addEventListener("click", () => {
       document.getElementById("form-medical").reset();
       resetMedicalModalToAddMode();
       medicationDetailWrap.classList.add("hidden");
+      virusTestDetailWrap.classList.add("hidden");
       document.getElementById("medical-date").valueAsDate = new Date();
       modalMedical.classList.add("open");
     }
@@ -871,6 +949,29 @@ async function openCatEditModal(catId, catData) {
   document.getElementById("cat-age").value = catData.age || "";
   document.getElementById("cat-intake").value = catData.intake || "";
   document.getElementById("cat-memo").value = catData.memo || "";
+  document.getElementById("cat-intro").value = catData.intro || "";
+  document.getElementById("cat-personality-other").value = catData.personalityOther || "";
+  document.getElementById("cat-candoo-other").value = catData.canDoOther || "";
+  document.getElementById("cat-play-other").value = catData.playOther || "";
+  document.getElementById("cat-food").value = catData.food || "";
+  document.getElementById("cat-detail-memo").value = catData.detailMemo || "";
+  document.querySelectorAll(".personality-tag").forEach((cb) => {
+    cb.checked = !!(catData.personalityTags && catData.personalityTags.includes(cb.value));
+  });
+  document.querySelectorAll(".can-do-tag").forEach((cb) => {
+    cb.checked = !!(catData.canDoTags && catData.canDoTags.includes(cb.value));
+  });
+  document.querySelectorAll(".play-tag").forEach((cb) => {
+    cb.checked = !!(catData.playTags && catData.playTags.includes(cb.value));
+  });
+  currentCatPhotoData = catData.photoData || null;
+  const photoPreview = document.getElementById("cat-photo-preview");
+  if (currentCatPhotoData) {
+    photoPreview.src = currentCatPhotoData;
+    photoPreview.classList.remove("hidden");
+  } else {
+    photoPreview.classList.add("hidden");
+  }
 
   const locationSelect = document.getElementById("cat-location");
   locationSelect.value = catData.location || "施設";
@@ -890,9 +991,35 @@ async function openCatEditModal(catId, catData) {
 function resetCatModalToAddMode() {
   editingCatId = null;
   editingCatOriginal = null;
+  currentCatPhotoData = null;
+  document.getElementById("cat-photo-preview").classList.add("hidden");
+  document.getElementById("cat-photo-input").value = "";
+  document.getElementById("cat-photo-status").textContent = "";
   document.getElementById("cat-modal-title").textContent = "犬猫を登録";
   document.getElementById("cat-submit-btn").textContent = "登録する";
 }
+
+let currentCatPhotoData = null;
+document.getElementById("cat-photo-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById("cat-photo-status");
+  statusEl.textContent = "画像を処理しています...";
+  try {
+    const compressed = await compressImageToDataUrl(file, 700, 0.7);
+    if (compressed.length > 700000) {
+      statusEl.textContent = "画像が大きすぎます。別の写真でお試しください。";
+      return;
+    }
+    currentCatPhotoData = compressed;
+    const preview = document.getElementById("cat-photo-preview");
+    preview.src = compressed;
+    preview.classList.remove("hidden");
+    statusEl.textContent = "設定しました。";
+  } catch (err) {
+    statusEl.textContent = "画像の読み込みに失敗しました。別の写真でお試しください。";
+  }
+});
 
 // ---------- フォーム送信 ----------
 document.getElementById("form-cat").addEventListener("submit", async (e) => {
@@ -924,7 +1051,17 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     sex: document.getElementById("cat-sex").value,
     age: document.getElementById("cat-age").value.trim(),
     intake: document.getElementById("cat-intake").value,
-    memo: document.getElementById("cat-memo").value.trim()
+    memo: document.getElementById("cat-memo").value.trim(),
+    intro: document.getElementById("cat-intro").value.trim(),
+    personalityTags: Array.from(document.querySelectorAll(".personality-tag:checked")).map((cb) => cb.value),
+    personalityOther: document.getElementById("cat-personality-other").value.trim(),
+    canDoTags: Array.from(document.querySelectorAll(".can-do-tag:checked")).map((cb) => cb.value),
+    canDoOther: document.getElementById("cat-candoo-other").value.trim(),
+    playTags: Array.from(document.querySelectorAll(".play-tag:checked")).map((cb) => cb.value),
+    playOther: document.getElementById("cat-play-other").value.trim(),
+    food: document.getElementById("cat-food").value.trim(),
+    detailMemo: document.getElementById("cat-detail-memo").value.trim(),
+    photoData: currentCatPhotoData || ""
   };
 
   catSubmitBtn.disabled = true;
@@ -1030,6 +1167,7 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
   e.preventDefault();
   const type = document.getElementById("medical-type").value;
   const isMedication = type === "投薬";
+  const isVirusTest = type === "ウイルス検査";
   const medicationTiming = isMedication
     ? Array.from(document.querySelectorAll(".medication-timing:checked")).map((cb) => cb.value)
     : [];
@@ -1043,7 +1181,9 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
     medicationTiming,
     medicationMethod: isMedication ? document.getElementById("medical-method").value : "",
     dosage: isMedication ? document.getElementById("medical-dosage").value.trim() : "",
-    endDate: isMedication ? document.getElementById("medical-end-date").value : ""
+    endDate: isMedication ? document.getElementById("medical-end-date").value : "",
+    fivResult: isVirusTest ? document.getElementById("medical-fiv").value : "",
+    felvResult: isVirusTest ? document.getElementById("medical-felv").value : ""
   };
 
   if (editingMedicalId) {
@@ -1057,6 +1197,7 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
   }
   e.target.reset();
   medicationDetailWrap.classList.add("hidden");
+      virusTestDetailWrap.classList.add("hidden");
   resetMedicalModalToAddMode();
   modalMedical.classList.remove("open");
 });

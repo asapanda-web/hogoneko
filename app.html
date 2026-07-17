@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title id="page-title">犬猫の健康管理</title>
-<link rel="stylesheet" href="style.css?v=1784282369">
+<link rel="stylesheet" href="style.css?v=1784285912">
 </head>
 <body>
 
@@ -70,6 +70,45 @@
         <button class="btn btn-outline btn-small" id="toggle-status-btn"></button>
         <button class="btn btn-danger btn-small hidden" id="delete-cat-btn">この子のデータを完全削除</button>
       </div>
+      <div id="print-buttons-wrap" style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-outline btn-small" id="print-cat-btn">🖨️ この子の記録を印刷</button>
+        <button class="btn btn-outline btn-small" id="print-profile-btn">🐾 譲渡プロフィールを印刷</button>
+      </div>
+      <p class="hint-text" id="print-hint-text">母子手帳と同じB6サイズ(128×182mm)のレイアウトで印刷されます。普通のA4用紙にそのまま印刷され、記録が多い場合は自動的に2枚目・3枚目に続きます。切り取ってミニバインダーなどに挟んで使えます。</p>
+
+      <!-- 譲渡プロフィールシート(印刷時のみ表示) -->
+      <div id="profile-sheet" class="hidden">
+        <div class="profile-sheet-inner">
+          <div class="profile-photo-wrap">
+            <img id="profile-photo" alt="">
+          </div>
+          <div class="profile-name" id="profile-name"></div>
+          <div class="profile-meta" id="profile-meta"></div>
+          <div class="profile-tags" id="profile-tags"></div>
+          <div class="profile-intro" id="profile-intro"></div>
+          <table class="profile-table">
+            <tr><td>避妊・去勢</td><td id="profile-neuter"></td></tr>
+            <tr><td>ワクチン</td><td id="profile-vaccine"></td></tr>
+            <tr><td>猫エイズ(FIV)</td><td id="profile-fiv"></td></tr>
+            <tr><td>白血病(FeLV)</td><td id="profile-felv"></td></tr>
+            <tr><td>駆虫</td><td id="profile-deworm"></td></tr>
+          </table>
+
+          <div class="profile-section-title hidden" id="profile-candoo-title">🎓 できること</div>
+          <div class="profile-tags" id="profile-candoo-tags"></div>
+
+          <div class="profile-section-title hidden" id="profile-play-title">🎮 好きな遊び</div>
+          <div class="profile-tags" id="profile-play-tags"></div>
+
+          <div class="profile-section-title hidden" id="profile-food-title">🍽 今食べているご飯</div>
+          <div class="profile-freetext" id="profile-food"></div>
+
+          <div class="profile-section-title hidden" id="profile-memo-title">📝 詳しいメモ</div>
+          <div class="profile-freetext" id="profile-memo"></div>
+
+          <div class="profile-footer">🐾 ご縁がありますように 🐾</div>
+        </div>
+      </div>
 
       <div class="tabs">
         <button class="tab-btn active" data-tab="daily">日々の記録</button>
@@ -132,7 +171,69 @@
       <input type="text" id="cat-age" placeholder="例: 推定2歳 / 2023年5月頃">
       <label>保護開始日</label>
       <input type="date" id="cat-intake">
-      <label>メモ(任意)</label>
+
+      <label style="margin-top:20px; padding-top:14px; border-top:1px solid var(--border); display:block;">譲渡プロフィール用の情報(任意)</label>
+      <p class="hint-text">避妊去勢・ワクチン・ウイルス検査・駆虫は、医療記録に登録すると自動で反映されます。ここでは写真と紹介文だけ入力してください。</p>
+
+      <label>この子専用の写真</label>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <img id="cat-photo-preview" class="hidden" style="width:70px;height:70px;object-fit:cover;border-radius:10px;border:2px solid var(--border);">
+        <input type="file" id="cat-photo-input" accept="image/*">
+      </div>
+      <p class="hint-text" id="cat-photo-status"></p>
+
+      <label>💕 性格(あてはまるものを選んでください・複数選択可)</label>
+      <div class="checkbox-group">
+        <label class="checkbox-item"><input type="checkbox" value="甘えん坊" class="personality-tag"> 甘えん坊</label>
+        <label class="checkbox-item"><input type="checkbox" value="おっとり" class="personality-tag"> おっとり</label>
+        <label class="checkbox-item"><input type="checkbox" value="やんちゃ" class="personality-tag"> やんちゃ</label>
+        <label class="checkbox-item"><input type="checkbox" value="人懐っこい" class="personality-tag"> 人懐っこい</label>
+        <label class="checkbox-item"><input type="checkbox" value="人見知り" class="personality-tag"> 人見知り</label>
+        <label class="checkbox-item"><input type="checkbox" value="しっかり者" class="personality-tag"> しっかり者</label>
+        <label class="checkbox-item"><input type="checkbox" value="好奇心旺盛" class="personality-tag"> 好奇心旺盛</label>
+        <label class="checkbox-item"><input type="checkbox" value="ビビり" class="personality-tag"> ビビり</label>
+        <label class="checkbox-item"><input type="checkbox" value="マイペース" class="personality-tag"> マイペース</label>
+        <label class="checkbox-item"><input type="checkbox" value="寂しがり屋" class="personality-tag"> 寂しがり屋</label>
+        <label class="checkbox-item"><input type="checkbox" value="他の猫と仲良くできる" class="personality-tag"> 他の猫と仲良くできる</label>
+        <label class="checkbox-item"><input type="checkbox" value="他の猫が苦手" class="personality-tag"> 他の猫が苦手</label>
+        <label class="checkbox-item"><input type="checkbox" value="犬と仲良くできる" class="personality-tag"> 犬と仲良くできる</label>
+        <label class="checkbox-item"><input type="checkbox" value="子供が好き" class="personality-tag"> 子供が好き</label>
+        <label class="checkbox-item"><input type="checkbox" value="抱っこが好き" class="personality-tag"> 抱っこが好き</label>
+        <label class="checkbox-item"><input type="checkbox" value="抱っこが苦手" class="personality-tag"> 抱っこが苦手</label>
+        <label class="checkbox-item"><input type="checkbox" value="よく鳴く" class="personality-tag"> よく鳴く</label>
+        <label class="checkbox-item"><input type="checkbox" value="鳴き声が控えめ" class="personality-tag"> 鳴き声が控えめ</label>
+      </div>
+      <input type="text" id="cat-personality-other" placeholder="性格その他(自由記述)">
+
+      <label>🎓 できること(あてはまるものを選んでください・複数選択可)</label>
+      <div class="checkbox-group">
+        <label class="checkbox-item"><input type="checkbox" value="トイレ" class="can-do-tag"> トイレ</label>
+        <label class="checkbox-item"><input type="checkbox" value="爪とぎ" class="can-do-tag"> 爪とぎ</label>
+        <label class="checkbox-item"><input type="checkbox" value="爪切り" class="can-do-tag"> 爪切り</label>
+        <label class="checkbox-item"><input type="checkbox" value="お風呂" class="can-do-tag"> お風呂</label>
+      </div>
+      <input type="text" id="cat-candoo-other" placeholder="できることその他(自由記述)">
+
+      <label>🎮 好きな遊び(あてはまるものを選んでください・複数選択可)</label>
+      <div class="checkbox-group">
+        <label class="checkbox-item"><input type="checkbox" value="ねこじゃらし" class="play-tag"> ねこじゃらし</label>
+        <label class="checkbox-item"><input type="checkbox" value="ボール転がし" class="play-tag"> ボール転がし</label>
+        <label class="checkbox-item"><input type="checkbox" value="かくれんぼ" class="play-tag"> かくれんぼ</label>
+        <label class="checkbox-item"><input type="checkbox" value="高いところに登る" class="play-tag"> 高いところに登る</label>
+        <label class="checkbox-item"><input type="checkbox" value="追いかけっこ" class="play-tag"> 追いかけっこ</label>
+      </div>
+      <input type="text" id="cat-play-other" placeholder="好きな遊びその他(自由記述)">
+
+      <label>🍽 今食べているご飯(任意)</label>
+      <textarea id="cat-food" placeholder="例: ピュリナワン子猫用(カリカリ)、1日3回。以前はロイヤルカナン成長前期でした。"></textarea>
+
+      <label>紹介文(名前の由来や簡単な自己紹介など)</label>
+      <textarea id="cat-intro" placeholder="性格や、この子の魅力が伝わる紹介文"></textarea>
+
+      <label>📝 詳しいメモ(譲渡プロフィールに表示されます・生活の様子など)</label>
+      <textarea id="cat-detail-memo" placeholder="ケージの使い方、夜の様子、慣れてきた時の様子など、詳しい生活情報"></textarea>
+
+      <label>メモ(任意・スタッフ内部用、プロフィールには表示されません)</label>
       <textarea id="cat-memo" placeholder="性格や特徴など"></textarea>
       <p class="hint-text" id="cat-form-status"></p>
       <div class="modal-actions">
@@ -263,6 +364,9 @@
         <option value="通院">通院</option>
         <option value="投薬">投薬</option>
         <option value="手術">手術</option>
+        <option value="避妊去勢">避妊去勢</option>
+        <option value="ウイルス検査">ウイルス検査</option>
+        <option value="駆虫">駆虫</option>
         <option value="その他">その他</option>
       </select>
       <label>日付</label>
@@ -296,6 +400,19 @@
         <label>投薬終了予定日(任意)</label>
         <input type="date" id="medical-end-date">
         <p class="hint-text">終了予定日を設定すると、その日以降は日々の記録の投薬チェックに出てこなくなります。</p>
+      </div>
+
+      <div id="virus-test-detail-wrap" class="hidden detail-box">
+        <label>猫エイズ(FIV)の結果</label>
+        <select id="medical-fiv">
+          <option value="陰性">陰性</option>
+          <option value="陽性">陽性</option>
+        </select>
+        <label>白血病(FeLV)の結果</label>
+        <select id="medical-felv">
+          <option value="陰性">陰性</option>
+          <option value="陽性">陽性</option>
+        </select>
       </div>
 
       <label>次回予定日(任意)</label>
@@ -348,6 +465,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=1784282369"></script>
+<script type="module" src="app.js?v=1784285912"></script>
 </body>
 </html>
