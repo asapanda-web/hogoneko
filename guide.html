@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title id="page-title">使い方ガイド</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff6996">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="保護ログ">
 <link rel="stylesheet" href="style.css?v=1784285912">
 <style>
   .guide-container { max-width: 720px; margin: 0 auto; padding: 24px 20px 60px; }
@@ -132,7 +137,18 @@
       <p>A. 「預りメンバー」の役割の方は、新しい犬猫の登録はできない仕組みになっています(登録は管理者・責任者・シェルターメンバーのみ)。自分が担当している猫の記録追加は問題なくできます。</p>
 
       <h3>Q. 猫や犬のプロフィールに写真を載せたい</h3>
-      <p>A. 現在、犬猫ごとの記録に写真を添付する機能はありません(ログイン画面・メイン画面の「壁紙」機能とは別のものです)。写真を保存する仕組みを追加すること自体は可能ですが、なるべくデータ量を少なくし、長期的に使い続けられる仕様にしています。写真のような画像データを保存すると維持費がかかるようになるため、今のところは見送っています。今後、写真機能への要望が多ければ、有料化も含めて改めて検討したいと考えています。</p>
+      <p>A. 「この子専用の写真」欄からアップロードできます(犬猫の登録・編集画面から設定可能)。</p>
+      <p>このアプリはボランティア活動においてより活動しやすくなればいいなという気持ちから作成したアプリです。自分の無理のない範囲で維持して無償で提供しています。そのため、以下の点はご了承ください。</p>
+      <ul>
+        <li>写真は自動的に圧縮してから保存しているため、画質はかなり粗くなります(印刷や拡大表示すると、その分目立つ場合があります)</li>
+        <li>より高画質な写真を保存できるようにしたり、登録する犬猫の数や写真の枚数が今後大きく増えていったりすると、無償で提供するのが難しくなる可能性があります</li>
+        <li>また、新しい機能の要望などが増えて対応の負担が大きくなった場合は、今後このアプリを広告付きや有料で提供させていただく形も検討することになるかもしれません</li>
+      </ul>
+
+      <h3>Q. このアプリは無料で使えるの？頭数の上限はある？</h3>
+      <p>A. 現在は自分の無理のない範囲で維持して無償で提供しています。</p>
+      <p>このアプリは登録する犬猫の数や日々の記録・写真のデータ量が今後大きく増えていくと、無償提供が難しくなる可能性もありますが、今のところ写真だけでもおよそ1,500〜3,500頭分のデータは保存できるように作られています(写真の圧縮具合によって差があります)。</p>
+      <p>団体の規模が大きくなってきたり、長く使い続けている中で心配な状況になってきたら、その時はまた相談させてください。</p>
     </div>
   </div>
 </div>
@@ -142,6 +158,15 @@
   const titleText = ORG_NAME ? `${APP_TITLE}(${ORG_NAME})` : APP_TITLE;
   document.getElementById("brand-title").textContent = `🐾 ${titleText}`;
   document.getElementById("page-title").textContent = `使い方ガイド | ${titleText}`;
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js").catch(() => {
+        // 登録に失敗しても、通常のWebアプリとしては問題なく動作します
+      });
+    });
+  }
 </script>
 </body>
 </html>
