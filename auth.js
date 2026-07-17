@@ -98,6 +98,7 @@ form.addEventListener("submit", async (e) => {
 
       const inviteRole = document.getElementById("invite-role").value;
       const inviteCode = document.getElementById("invite-code").value.trim();
+      let approvalNeeded = true;
 
       if (inviteRole && inviteCode) {
         // 招待コード付きの登録を試みる。コードが正しければその役割ですぐ使えるようになる
@@ -108,6 +109,7 @@ form.addEventListener("submit", async (e) => {
             inviteCode: inviteCode,
             createdAt: serverTimestamp()
           });
+          approvalNeeded = false;
         } catch (inviteErr) {
           // コードが間違っていた場合は、通常通り「未設定」で登録する
           await setDoc(doc(db, "users", cred.user.uid), {
@@ -126,6 +128,27 @@ form.addEventListener("submit", async (e) => {
           role: "未設定",
           createdAt: serverTimestamp()
         });
+      }
+
+      if (approvalNeeded) {
+        // 承認待ちの場合は、管理者へのお知らせメールを案内する画面を表示する
+        form.classList.add("hidden");
+        document.getElementById("signup-complete-username").textContent = rawInput;
+        const notice = document.getElementById("signup-complete-notice");
+        notice.classList.remove("hidden");
+
+        document.getElementById("notify-admin-btn").addEventListener("click", () => {
+          const subject = encodeURIComponent("【新規登録のお知らせ】権限設定をお願いします");
+          const body = encodeURIComponent(
+            `新しく登録しました。\nユーザー名: ${rawInput}\n\n「メンバー管理」画面から役割の設定をお願いします。`
+          );
+          window.location.href = `mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`;
+        });
+        document.getElementById("signup-complete-continue-btn").addEventListener("click", () => {
+          window.location.href = "app.html";
+        });
+        submitBtn.disabled = false;
+        return;
       }
     } else {
       await signInWithEmailAndPassword(auth, email, password);

@@ -54,6 +54,15 @@
       <p class="error-msg" id="error-msg"></p>
     </form>
 
+    <div id="signup-complete-notice" class="hidden" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+      <p class="hint-text">
+        登録が完了しました。あとは管理者に「ユーザー名: <strong id="signup-complete-username"></strong>」を伝えれば、権限を設定してもらえます。<br>
+        下のボタンを押すと、お使いのメールアプリが開き、宛先・件名・本文が自動で入力された状態になります。そのまま送信するだけでOKです。
+      </p>
+      <button type="button" class="btn btn-primary" id="notify-admin-btn" style="width:100%; margin-top:8px;">📧 管理者にメールでお知らせする</button>
+      <button type="button" class="btn btn-outline" id="signup-complete-continue-btn" style="width:100%; margin-top:8px;">アプリを開く</button>
+    </div>
+
     <p style="text-align:center; margin-top:18px;">
       <button type="button" class="btn btn-ghost" id="toggle-mode">アカウントを持っていない方はこちら(新規登録)</button>
     </p>
