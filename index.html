@@ -39,6 +39,17 @@
         6文字以上にしてください。数字だけ(例: <span class="mono">123456</span>)、アルファベットだけ(例: <span class="mono">abcdef</span>)、数字とアルファベットを混ぜたもの、どれでも大丈夫です。
       </p>
 
+      <div id="invite-code-wrap" class="hidden" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+        <label for="invite-role">招待コードをお持ちの方はこちら(任意)</label>
+        <select id="invite-role">
+          <option value="">選択しない(管理者の設定を待つ)</option>
+          <option value="シェルターメンバー">シェルターメンバーとして登録</option>
+          <option value="預りメンバー">預りメンバーとして登録</option>
+        </select>
+        <input type="text" id="invite-code" placeholder="招待コードを入力" style="margin-top:8px;">
+        <p class="hint-text">正しい招待コードを入力すると、承認を待たずにすぐ使い始められます。分からない場合は空欄のままで大丈夫です。</p>
+      </div>
+
       <button type="submit" class="btn btn-primary" id="submit-btn">ログイン</button>
       <p class="error-msg" id="error-msg"></p>
     </form>

@@ -20,6 +20,7 @@ const errorMsg = document.getElementById("error-msg");
 const submitBtn = document.getElementById("submit-btn");
 const toggleBtn = document.getElementById("toggle-mode");
 const passwordHint = document.getElementById("password-hint");
+const inviteCodeWrap = document.getElementById("invite-code-wrap");
 
 let isSignup = false;
 
@@ -38,8 +39,31 @@ toggleBtn.addEventListener("click", () => {
     : "アカウントを持っていない方はこちら(新規登録)";
   passwordHint.style.display = isSignup ? "block" : "none";
   document.getElementById("signup-reset-hint").style.display = isSignup ? "block" : "none";
+  inviteCodeWrap.classList.toggle("hidden", !isSignup);
   errorMsg.style.display = "none";
 });
+
+// ---------- 招待リンク(QRコード)から開いた場合、招待コードを自動入力する ----------
+(function applyInviteFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const role = params.get("role");
+  const code = params.get("code");
+  if (!role || !code) return;
+
+  // 新規登録モードに自動で切り替える
+  isSignup = true;
+  submitBtn.textContent = "新規登録する";
+  toggleBtn.textContent = "すでにアカウントをお持ちの方はこちら(ログイン)";
+  passwordHint.style.display = "block";
+  document.getElementById("signup-reset-hint").style.display = "block";
+  inviteCodeWrap.classList.remove("hidden");
+
+  const inviteRoleSelect = document.getElementById("invite-role");
+  const inviteCodeInput = document.getElementById("invite-code");
+  if (role === "shelter") inviteRoleSelect.value = "シェルターメンバー";
+  if (role === "foster") inviteRoleSelect.value = "預りメンバー";
+  inviteCodeInput.value = code;
+})();
 
 // 入力が「@」を含んでいれば本物のメールアドレスとしてそのまま使い、
 // 含んでいなければユーザー名とみなして内部的な擬似メール形式に変換する
@@ -71,13 +95,38 @@ form.addEventListener("submit", async (e) => {
   try {
     if (isSignup) {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
-      // 役割は最初「未設定」。管理者がFirebaseコンソールで役割を割り当てるまでは
-      // データが見えない状態になる(Firestoreのルールで制御)
-      await setDoc(doc(db, "users", cred.user.uid), {
-        username: rawInput,
-        role: "未設定",
-        createdAt: serverTimestamp()
-      });
+
+      const inviteRole = document.getElementById("invite-role").value;
+      const inviteCode = document.getElementById("invite-code").value.trim();
+
+      if (inviteRole && inviteCode) {
+        // 招待コード付きの登録を試みる。コードが正しければその役割ですぐ使えるようになる
+        try {
+          await setDoc(doc(db, "users", cred.user.uid), {
+            username: rawInput,
+            role: inviteRole,
+            inviteCode: inviteCode,
+            createdAt: serverTimestamp()
+          });
+        } catch (inviteErr) {
+          // コードが間違っていた場合は、通常通り「未設定」で登録する
+          await setDoc(doc(db, "users", cred.user.uid), {
+            username: rawInput,
+            role: "未設定",
+            createdAt: serverTimestamp()
+          });
+          errorMsg.textContent = "招待コードが正しくなかったため、通常登録になりました。管理者による設定をお待ちください。";
+          errorMsg.style.display = "block";
+        }
+      } else {
+        // 役割は最初「未設定」。管理者がFirebaseコンソールで役割を割り当てるまでは
+        // データが見えない状態になる(Firestoreのルールで制御)
+        await setDoc(doc(db, "users", cred.user.uid), {
+          username: rawInput,
+          role: "未設定",
+          createdAt: serverTimestamp()
+        });
+      }
     } else {
       await signInWithEmailAndPassword(auth, email, password);
     }

@@ -83,6 +83,22 @@
     <button type="button" class="btn btn-primary" id="copy-url-btn" style="width:100%; margin-top:10px;">リンクをコピーする</button>
     <p class="copy-status" id="copy-status"></p>
 
+    <div class="invite-steps" style="border-top:none; padding-top:0; margin-top:28px;">
+      <strong>🔑 役割つきの招待リンク・QRコードを作る</strong>
+      <p style="margin-top:6px;">招待コードをお持ちの場合、役割とコードを入れて「作る」を押すと、<strong>タップ(読み取る)だけで役割とコードが自動入力された状態</strong>のリンク・QRコードが作れます。ユーザー名・パスワードの入力だけで登録が完了するので簡単です。</p>
+      <select id="invite-gen-role" style="margin-top:8px;">
+        <option value="shelter">シェルターメンバー用</option>
+        <option value="foster">預り宅用</option>
+      </select>
+      <input type="text" id="invite-gen-code" placeholder="招待コードを入力" style="margin-top:8px;">
+      <button type="button" class="btn btn-outline" id="invite-gen-btn" style="width:100%; margin-top:8px;">このコードでリンク・QRを作る</button>
+
+      <div id="invite-qrcode-box" style="text-align:center; margin-top:16px;"></div>
+      <div class="url-box" id="invite-url-text" style="display:none;"></div>
+      <button type="button" class="btn btn-primary hidden" id="invite-copy-btn" style="width:100%; margin-top:10px;">この招待リンクをコピーする</button>
+      <p class="copy-status" id="invite-copy-status"></p>
+    </div>
+
     <div class="invite-steps">
       <strong>スマホで受け取った人へ:</strong>
       <ol style="padding-left:20px; margin-top:6px;">
@@ -124,6 +140,48 @@
     } catch (err) {
       statusEl.textContent = "コピーできませんでした。上の欄を長押しして手動でコピーしてください。";
     }
+  });
+
+  // ---------- 役割つき招待リンク・QRコードの生成 ----------
+  let inviteQr = null;
+  document.getElementById("invite-gen-btn").addEventListener("click", () => {
+    const role = document.getElementById("invite-gen-role").value;
+    const code = document.getElementById("invite-gen-code").value.trim();
+    const statusEl = document.getElementById("invite-copy-status");
+    const urlTextEl = document.getElementById("invite-url-text");
+    const copyBtn = document.getElementById("invite-copy-btn");
+
+    if (!code) {
+      statusEl.textContent = "招待コードを入力してください。";
+      return;
+    }
+
+    const inviteUrl = `${siteUrl}?role=${encodeURIComponent(role)}&code=${encodeURIComponent(code)}`;
+
+    const qrBox = document.getElementById("invite-qrcode-box");
+    qrBox.innerHTML = "";
+    inviteQr = new QRCode(qrBox, {
+      text: inviteUrl,
+      width: 200,
+      height: 200,
+      colorDark: "#5a3a1e",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    urlTextEl.textContent = inviteUrl;
+    urlTextEl.style.display = "block";
+    copyBtn.classList.remove("hidden");
+    statusEl.textContent = "";
+
+    copyBtn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(inviteUrl);
+        statusEl.textContent = "コピーしました。";
+      } catch (err) {
+        statusEl.textContent = "コピーできませんでした。上の欄を長押しして手動でコピーしてください。";
+      }
+    };
   });
 
   if ("serviceWorker" in navigator) {
