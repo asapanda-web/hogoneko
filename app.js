@@ -97,9 +97,15 @@ function showDetail(catId, catData) {
   document.getElementById("fab-btn").classList.remove("hidden"); // 記録の追加は誰でも可能
   document.getElementById("detail-name").textContent = catData.name;
   const detailAvatarEl = document.getElementById("detail-avatar");
-  detailAvatarEl.textContent = catData.species === "犬" ? "🐕" : "🐱";
   detailAvatarEl.classList.toggle("avatar-dog", catData.species === "犬");
   detailAvatarEl.classList.toggle("avatar-cat", catData.species !== "犬");
+  if (catData.photoData) {
+    detailAvatarEl.style.overflow = "hidden";
+    detailAvatarEl.innerHTML = `<img src="${catData.photoData}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+  } else {
+    detailAvatarEl.style.overflow = "";
+    detailAvatarEl.textContent = catData.species === "犬" ? "🐕" : "🐱";
+  }
   const locationText = catData.location === "個人宅預かり"
     ? `${FOSTER_LABEL}${catData.fosterName ? "(" + catData.fosterName + ")" : ""}`
     : FACILITY_LABEL;
@@ -577,8 +583,11 @@ function renderCatList() {
       ? `${FOSTER_LABEL}${cat.fosterName ? "(" + escapeHtml(cat.fosterName) + ")" : ""}`
       : FACILITY_LABEL;
     const adoptedBadge = cat.status === "譲渡済み" ? `<span class="location-badge adopted-badge">譲渡済み</span>` : "";
+    const avatarInner = cat.photoData
+      ? `<img src="${cat.photoData}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`
+      : (cat.species === "犬" ? "🐕" : "🐱");
     card.innerHTML = `
-      <div class="cat-avatar ${cat.species === "犬" ? "avatar-dog" : "avatar-cat"}">${cat.species === "犬" ? "🐕" : "🐱"}</div>
+      <div class="cat-avatar ${cat.species === "犬" ? "avatar-dog" : "avatar-cat"}"${cat.photoData ? ' style="overflow:hidden;"' : ""}>${avatarInner}</div>
       <div style="flex:1">
         <div class="name">${escapeHtml(cat.name)}<span class="location-badge">${locationLabel}</span>${adoptedBadge}</div>
         <div class="meta">${[cat.sex, cat.age].filter(Boolean).map(escapeHtml).join(" ・ ")}</div>
@@ -778,6 +787,11 @@ function openMedicalEditModal(recordId, rec) {
   medicationDetailWrap.classList.toggle("hidden", !isMedication);
   medicalTitleLabel.textContent = isMedication ? "薬の名前" : "件名";
 
+  // 編集時は、ワクチンの種類選択ではなく件名を直接編集できるようにする
+  vaccineSelectWrap.classList.add("hidden");
+  medicalTitleWrap.classList.remove("hidden");
+  nextDateWrap.classList.toggle("hidden", rec.type === "避妊去勢");
+
   document.querySelectorAll(".medication-timing").forEach((cb) => {
     cb.checked = !!(rec.medicationTiming && rec.medicationTiming.includes(cb.value));
   });
@@ -896,14 +910,45 @@ const medicationDetailWrap = document.getElementById("medication-detail-wrap");
 const medicalTitleLabel = document.getElementById("medical-title-label");
 const medicalTitleInput = document.getElementById("medical-title");
 const virusTestDetailWrap = document.getElementById("virus-test-detail-wrap");
-medicalTypeEl.addEventListener("change", () => {
+const nextDateWrap = document.getElementById("next-date-wrap");
+const vaccineSelectWrap = document.getElementById("vaccine-select-wrap");
+const medicalTitleWrap = document.getElementById("medical-title-wrap");
+const vaccineKindSelect = document.getElementById("vaccine-kind-select");
+const vaccineCountSelect = document.getElementById("vaccine-count-select");
+
+function updateVaccineTitleFromSelects() {
+  const kind = vaccineKindSelect.value;
+  const count = vaccineCountSelect.value;
+  if (kind === "その他") {
+    // 「その他」の場合は件名欄を表示して手入力してもらう
+    medicalTitleWrap.classList.remove("hidden");
+    medicalTitleInput.value = "";
+  } else {
+    medicalTitleWrap.classList.add("hidden");
+    medicalTitleInput.value = `${kind} ${count}`;
+  }
+}
+vaccineKindSelect.addEventListener("change", updateVaccineTitleFromSelects);
+vaccineCountSelect.addEventListener("change", updateVaccineTitleFromSelects);
+
+function updateMedicalTypeUI() {
   const isMedication = medicalTypeEl.value === "投薬";
   const isVirusTest = medicalTypeEl.value === "ウイルス検査";
+  const isVaccine = medicalTypeEl.value === "ワクチン";
+  const isNeuter = medicalTypeEl.value === "避妊去勢";
   medicationDetailWrap.classList.toggle("hidden", !isMedication);
   virusTestDetailWrap.classList.toggle("hidden", !isVirusTest);
+  vaccineSelectWrap.classList.toggle("hidden", !isVaccine);
+  nextDateWrap.classList.toggle("hidden", isNeuter);
   medicalTitleLabel.textContent = isMedication ? "薬の名前" : "件名";
   medicalTitleInput.placeholder = isMedication ? "例: メタカム / 下痢止め" : "例: 混合ワクチン1回目";
-});
+  if (isVaccine) {
+    updateVaccineTitleFromSelects();
+  } else {
+    medicalTitleWrap.classList.remove("hidden");
+  }
+}
+medicalTypeEl.addEventListener("change", updateMedicalTypeUI);
 
 // ---------- モーダル制御 ----------
 const modalCat = document.getElementById("modal-cat");
@@ -936,8 +981,7 @@ document.getElementById("fab-btn").addEventListener("click", () => {
     } else if (activeTab === "medical") {
       document.getElementById("form-medical").reset();
       resetMedicalModalToAddMode();
-      medicationDetailWrap.classList.add("hidden");
-      virusTestDetailWrap.classList.add("hidden");
+      updateMedicalTypeUI();
       document.getElementById("medical-date").valueAsDate = new Date();
       modalMedical.classList.add("open");
     }
@@ -1214,8 +1258,7 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
     });
   }
   e.target.reset();
-  medicationDetailWrap.classList.add("hidden");
-      virusTestDetailWrap.classList.add("hidden");
+  updateMedicalTypeUI();
   resetMedicalModalToAddMode();
   modalMedical.classList.remove("open");
 });

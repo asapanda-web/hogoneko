@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285915">
+<link rel="stylesheet" href="style.css?v=1784285917">
 </head>
 <body>
 
@@ -80,7 +80,7 @@
         <button class="btn btn-outline btn-small" id="print-cat-btn">🖨️ この子の記録を印刷</button>
         <button class="btn btn-outline btn-small" id="print-profile-btn">🐾 譲渡プロフィールを印刷</button>
       </div>
-      <p class="hint-text" id="print-hint-text">母子手帳と同じB6サイズ(128×182mm)のレイアウトで印刷されます。普通のA4用紙にそのまま印刷され、記録が多い場合は自動的に2枚目・3枚目に続きます。切り取ってミニバインダーなどに挟んで使えます。</p>
+      <p class="hint-text" id="print-hint-text">B6サイズ(128×182mm)のレイアウトで印刷されます。普通のA4用紙にそのまま印刷され、記録が多い場合は自動的に2枚目・3枚目に続きます。切り取ることでミニバインダーに保存できます。</p>
 
       <!-- 譲渡プロフィールシート(印刷時のみ表示) -->
       <div id="profile-sheet" class="hidden">
@@ -392,8 +392,29 @@
       </select>
       <label>日付</label>
       <input type="date" id="medical-date" required>
-      <label id="medical-title-label">件名</label>
-      <input type="text" id="medical-title" placeholder="例: 混合ワクチン1回目" required>
+
+      <div id="vaccine-select-wrap" class="hidden detail-box">
+        <label>ワクチンの種類</label>
+        <select id="vaccine-kind-select">
+          <option value="混合ワクチン">混合ワクチン</option>
+          <option value="狂犬病ワクチン">狂犬病ワクチン</option>
+          <option value="猫白血病ワクチン">猫白血病ワクチン</option>
+          <option value="その他">その他(下の件名欄に直接入力)</option>
+        </select>
+        <label>回数</label>
+        <select id="vaccine-count-select">
+          <option value="1回目">1回目</option>
+          <option value="2回目">2回目</option>
+          <option value="3回目">3回目</option>
+          <option value="4回目">4回目</option>
+          <option value="5回目">5回目</option>
+        </select>
+      </div>
+
+      <div id="medical-title-wrap">
+        <label id="medical-title-label">件名</label>
+        <input type="text" id="medical-title" placeholder="例: 混合ワクチン1回目" required>
+      </div>
       <label>詳細(任意)</label>
       <textarea id="medical-detail" placeholder="病院名、獣医師の所見など"></textarea>
 
@@ -436,8 +457,10 @@
         </select>
       </div>
 
-      <label>次回予定日(任意)</label>
-      <input type="date" id="medical-next">
+      <div id="next-date-wrap">
+        <label>次回予定日(任意)</label>
+        <input type="date" id="medical-next">
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-outline" data-close>キャンセル</button>
         <button type="submit" class="btn btn-primary" id="medical-submit-btn">追加する</button>
@@ -486,7 +509,7 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=1784285914"></script>
+<script type="module" src="app.js?v=1784285917"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
