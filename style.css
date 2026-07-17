@@ -48,21 +48,21 @@ a { color: inherit; }
   transform: translate(-50%, -50%);
   width: auto;
   height: auto;
-  max-width: min(70vw, 520px);
-  max-height: 65vh;
+  max-width: min(55vw, 420px);
+  max-height: 50vh;
   object-fit: contain;
   border-radius: 20px;
   border: 6px solid #fff;
   box-shadow: 0 8px 28px rgba(43, 38, 32, 0.2);
-  opacity: 0.9;
+  opacity: 0.75;
   z-index: -1;
   pointer-events: none;
 }
 
 @media (max-width: 640px) {
   #wallpaper-img {
-    max-width: 78vw;
-    max-height: 45vh;
+    max-width: 70vw;
+    max-height: 35vh;
   }
 }
 
@@ -419,6 +419,7 @@ input:focus, select:focus, textarea:focus {
   padding: 40px 20px;
   color: var(--ink-soft);
   font-size: 14px;
+  text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 10px rgba(255,255,255,0.7);
 }
 
 /* ---------- Cat detail ---------- */
@@ -471,6 +472,7 @@ input:focus, select:focus, textarea:focus {
   cursor: pointer;
   position: relative;
   margin-right: 18px;
+  text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 10px rgba(255,255,255,0.7);
 }
 
 .tab-btn.active { color: var(--accent-ink); }
