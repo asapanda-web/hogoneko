@@ -58,6 +58,7 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  alert("デバッグ情報:\nuid=" + user.uid + "\nexists=" + userDocSnap.exists() + "\ndata=" + JSON.stringify(userDocSnap.data())); // 一時的なデバッグ表示、後で削除します
   document.title = `[role:${currentRole}/uid:${currentUid}] デバッグ中`; // 一時的なデバッグ表示、後で削除します
   applyRoleUI();
   listenCats();
