@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285925">
+<link rel="stylesheet" href="style.css?v=1784285926">
 </head>
 <body>
 
@@ -56,6 +56,7 @@
       <label class="checkbox-item" style="margin-top:10px;">
         <input type="checkbox" id="show-adopted-toggle"> 譲渡済みの子も表示する
       </label>
+      <button class="btn btn-outline btn-small hidden" id="group-toilet-btn" style="margin-top:10px;">🐾 まとめて排泄を記録</button>
       <div class="cat-list" id="cat-list"></div>
       <p class="empty-state hidden" id="empty-cats">まだ登録されている猫がいません。右下の+から登録しましょう。</p>
     </section>
@@ -316,6 +317,7 @@
       <select id="daily-urine-status">
         <option value="正常">正常</option>
         <option value="異常">異常(詳しく記録する)</option>
+        <option value="共同のため不明(あり)">共同トイレのため個体不明(排尿あり)</option>
         <option value="無し">無し(排尿確認できず)</option>
       </select>
       <div id="urine-detail-wrap" class="hidden detail-box">
@@ -344,6 +346,7 @@
       <select id="daily-stool-status">
         <option value="正常">正常</option>
         <option value="異常">異常(詳しく記録する)</option>
+        <option value="共同のため不明(あり)">共同トイレのため個体不明(排便あり)</option>
         <option value="無し">無し(排便確認できず)</option>
       </select>
       <div id="stool-detail-wrap" class="hidden detail-box">
@@ -528,6 +531,54 @@
   </div>
 </div>
 
+<!-- まとめて排泄記録モーダル -->
+<div class="modal-overlay" id="modal-group-toilet">
+  <div class="modal">
+    <h3>🐾 まとめて排泄を記録</h3>
+    <p class="hint-text">兄弟猫などで共同のトイレを使っていて、個体ごとの排泄が分からない時に、まとめて「あった」だけ記録できます。体重・食欲などは通常通り個別に記録してください。</p>
+    <form id="form-group-toilet">
+      <label>日付</label>
+      <input type="date" id="group-toilet-date" required>
+
+      <label>時間帯</label>
+      <select id="group-toilet-time">
+        <option value="早朝">早朝</option>
+        <option value="朝">朝</option>
+        <option value="昼">昼</option>
+        <option value="夕方">夕方</option>
+        <option value="夜">夜</option>
+        <option value="深夜">深夜</option>
+      </select>
+
+      <label>尿</label>
+      <select id="group-toilet-urine">
+        <option value="skip">記録しない</option>
+        <option value="あり">あった</option>
+        <option value="なし">無かった(確認できず)</option>
+      </select>
+
+      <label>便</label>
+      <select id="group-toilet-stool">
+        <option value="skip">記録しない</option>
+        <option value="あり">あった</option>
+        <option value="なし">無かった(確認できず)</option>
+      </select>
+
+      <label>メモ(任意・全員分に入ります)</label>
+      <textarea id="group-toilet-memo" placeholder="様子など"></textarea>
+
+      <label style="margin-top:14px; display:block;">対象の猫(複数選択可)</label>
+      <div id="group-toilet-cat-list" class="checkbox-group"></div>
+      <p class="hint-text" id="group-toilet-status"></p>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-close>キャンセル</button>
+        <button type="submit" class="btn btn-primary" id="group-toilet-submit-btn">記録する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- 体重グラフモーダル -->
 <div class="modal-overlay" id="modal-weight-chart">
   <div class="modal">
@@ -584,7 +635,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script type="module" src="app.js?v=1784285925"></script>
+<script type="module" src="app.js?v=1784285926"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

@@ -465,6 +465,9 @@ function applyRoleUI() {
   const filterTabs = document.querySelector(".filter-tabs");
   if (filterTabs) filterTabs.classList.toggle("hidden", !isFullAdmin());
 
+  // まとめて排泄記録は、犬猫の記録を書き込める役割の人だけに表示
+  document.getElementById("group-toilet-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
+
   // シェルターメンバーは「個人宅預かり」の登録はできない(施設側で割り当てるため選択肢を消す)
   if (isShelterMember()) {
     const option = document.querySelector('#cat-location option[value="個人宅預かり"]');
@@ -1494,6 +1497,79 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
   updateMedicalTypeUI();
   resetMedicalModalToAddMode();
   modalMedical.classList.remove("open");
+});
+
+// ---------- まとめて排泄記録 ----------
+const modalGroupToilet = document.getElementById("modal-group-toilet");
+
+document.getElementById("group-toilet-btn").addEventListener("click", () => {
+  document.getElementById("form-group-toilet").reset();
+  document.getElementById("group-toilet-date").valueAsDate = new Date();
+  document.getElementById("group-toilet-time").value = "朝";
+  document.getElementById("group-toilet-status").textContent = "";
+  renderGroupToiletCatList();
+  modalGroupToilet.classList.add("open");
+});
+
+function renderGroupToiletCatList() {
+  const listEl = document.getElementById("group-toilet-cat-list");
+  listEl.innerHTML = "";
+  if (!latestCatsSnapshot) return;
+  latestCatsSnapshot.docs.forEach((docSnap) => {
+    const cat = docSnap.data();
+    if (cat.status === "譲渡済み") return; // 譲渡済みの子は対象から外す
+    const label = document.createElement("label");
+    label.className = "checkbox-item";
+    label.innerHTML = `<input type="checkbox" value="${docSnap.id}" class="group-toilet-cat"> ${escapeHtml(cat.name)}`;
+    listEl.appendChild(label);
+  });
+}
+
+document.getElementById("form-group-toilet").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const statusEl = document.getElementById("group-toilet-status");
+  const submitBtn = document.getElementById("group-toilet-submit-btn");
+
+  const catIds = Array.from(document.querySelectorAll(".group-toilet-cat:checked")).map((cb) => cb.value);
+  if (catIds.length === 0) {
+    statusEl.textContent = "対象の猫を1匹以上選んでください。";
+    return;
+  }
+
+  const date = document.getElementById("group-toilet-date").value;
+  const timeOfDay = document.getElementById("group-toilet-time").value;
+  const urineChoice = document.getElementById("group-toilet-urine").value;
+  const stoolChoice = document.getElementById("group-toilet-stool").value;
+  const memo = document.getElementById("group-toilet-memo").value.trim();
+
+  const urine = urineChoice === "skip" ? { status: "" } : { status: urineChoice === "あり" ? "共同のため不明(あり)" : "無し" };
+  const stool = stoolChoice === "skip" ? { status: "" } : { status: stoolChoice === "あり" ? "共同のため不明(あり)" : "無し" };
+
+  submitBtn.disabled = true;
+  statusEl.textContent = "記録しています...";
+  try {
+    await Promise.all(catIds.map((catId) =>
+      addDoc(collection(db, "cats", catId, "dailyLogs"), {
+        date,
+        timeOfDay,
+        careTime: "",
+        weight: "",
+        appetite: { status: "" },
+        urine,
+        stool,
+        medications: [],
+        memo,
+        recordedBy: currentUsername,
+        createdAt: serverTimestamp()
+      })
+    ));
+    statusEl.textContent = "";
+    modalGroupToilet.classList.remove("open");
+  } catch (err) {
+    statusEl.textContent = `保存に失敗しました(${err.code || err.message || "不明なエラー"})。`;
+  } finally {
+    submitBtn.disabled = false;
+  }
 });
 
 // ---------- 体重グラフ ----------
