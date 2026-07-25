@@ -755,7 +755,7 @@ function listenMedicalRecords(catId) {
         ? (rec.singleDose
             ? `<div class="detail">単発の服薬${rec.singleDoseTime ? "(" + escapeHtml(rec.singleDoseTime) + ")" : ""}${rec.medicationMethod ? " ／ " + escapeHtml(rec.medicationMethod) : ""}${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}</div>`
             : (rec.medicationTiming && rec.medicationTiming.length
-                ? `<div class="detail">${rec.medicationMethod ? escapeHtml(rec.medicationMethod) + " ／ " : ""}投薬タイミング: ${escapeHtml(rec.medicationTiming.join("・"))}${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}${rec.endDate ? " ／ 終了予定: " + escapeHtml(rec.endDate) : ""}</div>`
+                ? `<div class="detail">${rec.medicationMethod ? escapeHtml(rec.medicationMethod) + " ／ " : ""}1日${rec.medicationTiming.length}回(${escapeHtml(rec.medicationTiming.join("・"))})${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}${rec.endDate ? " ／ 終了予定: " + escapeHtml(rec.endDate) : ""}</div>`
                 : ""))
         : "";
       const photoHtml = rec.photoData
@@ -817,6 +817,7 @@ function openMedicalEditModal(recordId, rec) {
   document.querySelectorAll(".medication-timing").forEach((cb) => {
     cb.checked = !!(rec.medicationTiming && rec.medicationTiming.includes(cb.value));
   });
+  medicationFrequencyPreset.value = "";
   document.getElementById("medical-method").value = rec.medicationMethod || "飲み薬(内服)";
   document.getElementById("medical-dosage").value = rec.dosage || "";
   document.getElementById("medical-end-date").value = rec.endDate || "";
@@ -854,6 +855,7 @@ function resetMedicalModalToAddMode() {
   medicationEnddateWrap.classList.remove("hidden");
   singleDoseTimeWrap.classList.add("hidden");
   document.getElementById("medical-single-dose-time").value = "";
+  medicationFrequencyPreset.value = "";
 }
 
 let currentMedicalPhotoData = null;
@@ -1073,6 +1075,15 @@ function updateVaccineTitleFromSelects() {
 }
 vaccineKindSelect.addEventListener("change", updateVaccineTitleFromSelects);
 vaccineCountSelect.addEventListener("change", updateVaccineTitleFromSelects);
+
+const medicationFrequencyPreset = document.getElementById("medication-frequency-preset");
+medicationFrequencyPreset.addEventListener("change", () => {
+  if (!medicationFrequencyPreset.value) return;
+  const selectedTimings = medicationFrequencyPreset.value.split(",");
+  document.querySelectorAll(".medication-timing").forEach((cb) => {
+    cb.checked = selectedTimings.includes(cb.value);
+  });
+});
 
 const medicationTimingWrap = document.getElementById("medication-timing-wrap");
 const medicationEnddateWrap = document.getElementById("medication-enddate-wrap");

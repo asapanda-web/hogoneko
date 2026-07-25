@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285923">
+<link rel="stylesheet" href="style.css?v=1784285924">
 </head>
 <body>
 
@@ -451,7 +451,17 @@
         </label>
 
         <div id="medication-timing-wrap">
-          <label>投薬するタイミング(複数選択可)</label>
+          <label>よくある頻度から選ぶ(任意)</label>
+          <select id="medication-frequency-preset">
+            <option value="">自分でタイミングを選ぶ</option>
+            <option value="朝">1日1回(朝)</option>
+            <option value="夜">1日1回(夜)</option>
+            <option value="朝,夜">1日2回(朝・夜)</option>
+            <option value="朝,夕方">1日2回(朝・夕方)</option>
+            <option value="朝,昼,夕方">1日3回(朝・昼・夕方)</option>
+            <option value="朝,昼,夜">1日3回(朝・昼・夜)</option>
+          </select>
+          <label style="margin-top:10px;">投薬するタイミング(複数選択可・上で選ぶと自動でチェックされます)</label>
           <div class="checkbox-group">
             <label class="checkbox-item"><input type="checkbox" value="早朝" class="medication-timing"> 早朝</label>
             <label class="checkbox-item"><input type="checkbox" value="朝" class="medication-timing"> 朝</label>
@@ -563,7 +573,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script type="module" src="app.js?v=1784285923"></script>
+<script type="module" src="app.js?v=1784285924"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
