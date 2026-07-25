@@ -33,6 +33,7 @@ let currentUsername = null;
 let currentCatId = null;
 let unsubCats = null;
 let unsubDaily = null;
+let latestDailySnapshot = null;
 let unsubMedical = null;
 
 // ---------- 認証チェック ----------
@@ -603,6 +604,7 @@ function listenDailyLogs(catId) {
   if (unsubDaily) unsubDaily();
   const q = query(collection(db, "cats", catId, "dailyLogs"), orderBy("date", "desc"));
   unsubDaily = onSnapshot(q, (snap) => {
+    latestDailySnapshot = snap;
     const listEl = document.getElementById("daily-list");
     const emptyEl = document.getElementById("empty-daily");
     listEl.innerHTML = "";
@@ -649,8 +651,15 @@ function listenDailyLogs(catId) {
           <div class="detail">${formatStool(log.stool)}</div>
           ${formatMedications(log.medications)}
           ${log.memo ? `<div class="detail">${escapeHtml(log.memo)}</div>` : ""}
-          <button class="btn btn-ghost btn-small" style="margin-top:6px;padding:0;" data-del>削除</button>
+          <div style="display:flex; gap:14px; margin-top:6px;">
+            <button class="btn btn-ghost btn-small" style="padding:0;" data-edit>編集</button>
+            <button class="btn btn-ghost btn-small" style="padding:0;" data-del>削除</button>
+          </div>
         `;
+        card.querySelector("[data-edit]").addEventListener("click", (e) => {
+          e.stopPropagation();
+          openDailyEditModal(id, log);
+        });
         card.querySelector("[data-del]").addEventListener("click", (e) => {
           e.stopPropagation();
           if (confirm("この記録を削除しますか？")) {
@@ -669,6 +678,9 @@ function formatAppetite(appetite) {
   let text = `食欲: ${escapeHtml(appetite.status || "-")}`;
   if (appetite.status === "一部残した" && appetite.remainGrams) {
     text += `(${escapeHtml(appetite.remainGrams)}g残す)`;
+  }
+  if (appetite.status === "子猫用(%)" && appetite.eatenPercent !== undefined && appetite.eatenPercent !== "") {
+    text += `(${escapeHtml(appetite.eatenPercent)}%食べた)`;
   }
   return text;
 }
@@ -716,6 +728,8 @@ const tagClass = {
   "通院": "tag-hospital",
   "投薬": "tag-medication",
   "手術": "tag-hospital",
+  "怪我": "tag-hospital",
+  "嘔吐": "tag-other",
   "その他": "tag-other"
 };
 
@@ -740,6 +754,9 @@ function listenMedicalRecords(catId) {
       const medicationInfo = rec.type === "投薬" && rec.medicationTiming && rec.medicationTiming.length
         ? `<div class="detail">${rec.medicationMethod ? escapeHtml(rec.medicationMethod) + " ／ " : ""}投薬タイミング: ${escapeHtml(rec.medicationTiming.join("・"))}${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}${rec.endDate ? " ／ 終了予定: " + escapeHtml(rec.endDate) : ""}</div>`
         : "";
+      const photoHtml = rec.photoData
+        ? `<img src="${rec.photoData}" alt="" style="width:100%;max-width:220px;border-radius:10px;margin-top:8px;display:block;">`
+        : "";
       card.innerHTML = `
         <div class="row1">
           <span class="date mono">${rec.date}</span>
@@ -748,6 +765,7 @@ function listenMedicalRecords(catId) {
         <div class="detail" style="font-weight:500;color:var(--ink);margin-top:6px;">${escapeHtml(rec.title)}</div>
         ${rec.detail ? `<div class="detail">${escapeHtml(rec.detail)}</div>` : ""}
         ${medicationInfo}
+        ${photoHtml}
         ${rec.next ? `<div class="detail">次回予定: ${escapeHtml(rec.next)}</div>` : ""}
         <div style="display:flex; gap:14px; margin-top:6px;">
           <button class="btn btn-ghost btn-small" style="padding:0;" data-edit>編集</button>
@@ -799,6 +817,17 @@ function openMedicalEditModal(recordId, rec) {
   document.getElementById("medical-dosage").value = rec.dosage || "";
   document.getElementById("medical-end-date").value = rec.endDate || "";
 
+  currentMedicalPhotoData = rec.photoData || null;
+  const medicalPhotoPreview = document.getElementById("medical-photo-preview");
+  if (currentMedicalPhotoData) {
+    medicalPhotoPreview.src = currentMedicalPhotoData;
+    medicalPhotoPreview.classList.remove("hidden");
+  } else {
+    medicalPhotoPreview.classList.add("hidden");
+  }
+  document.getElementById("medical-photo-input").value = "";
+  document.getElementById("medical-photo-status").textContent = "";
+
   modalMedical.classList.add("open");
 }
 
@@ -806,7 +835,34 @@ function resetMedicalModalToAddMode() {
   editingMedicalId = null;
   document.getElementById("medical-modal-title").textContent = "医療記録を追加";
   document.getElementById("medical-submit-btn").textContent = "追加する";
+  currentMedicalPhotoData = null;
+  document.getElementById("medical-photo-preview").classList.add("hidden");
+  document.getElementById("medical-photo-input").value = "";
+  document.getElementById("medical-photo-status").textContent = "";
 }
+
+let currentMedicalPhotoData = null;
+document.getElementById("medical-photo-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById("medical-photo-status");
+  statusEl.textContent = "画像を処理しています...";
+  try {
+    const compressed = await compressImageToDataUrl(file, 700, 0.7);
+    if (compressed.length > 700000) {
+      statusEl.textContent = "画像が大きすぎます。別の写真でお試しください。";
+      return;
+    }
+    currentMedicalPhotoData = compressed;
+    const preview = document.getElementById("medical-photo-preview");
+    preview.src = compressed;
+    preview.classList.remove("hidden");
+    statusEl.textContent = "設定しました。";
+  } catch (err) {
+    statusEl.textContent = "画像の読み込みに失敗しました。別の写真でお試しください。";
+  }
+});
+
 
 // ---------- 日々の記録フォーム: 投薬チェックリストの生成 ----------
 const timeOfDayEl = document.getElementById("daily-time-of-day");
@@ -850,6 +906,26 @@ function renderMedicationChecklist() {
   });
 }
 
+// 編集時: その記録を追加した時点で実際にチェックされていた投薬内容をそのまま再現する
+// (現在の投薬予定と食い違っていても、記録した当時の内容を優先する)
+function renderMedicationChecklistFromLog(medications) {
+  medChecklistEl.innerHTML = "";
+  if (!medications || medications.length === 0) {
+    medChecklistWrap.classList.add("hidden");
+    return;
+  }
+  medChecklistWrap.classList.remove("hidden");
+  medications.forEach((m) => {
+    const row = document.createElement("label");
+    row.className = "med-check-item";
+    row.innerHTML = `
+      <input type="checkbox" class="med-given" data-record-id="${m.recordId || ""}" data-label="${escapeHtml(m.label)}" ${m.given ? "checked" : ""}>
+      <span class="med-label">${escapeHtml(m.label)}</span>
+    `;
+    medChecklistEl.appendChild(row);
+  });
+}
+
 timeOfDayEl.addEventListener("change", renderMedicationChecklist);
 document.getElementById("daily-date").addEventListener("change", renderMedicationChecklist);
 
@@ -881,8 +957,10 @@ catLocationEl.addEventListener("change", () => {
 // ---------- 日々の記録フォーム: 詳細欄の表示切り替え ----------
 const appetiteStatusEl = document.getElementById("daily-appetite-status");
 const appetiteRemainWrap = document.getElementById("appetite-remain-wrap");
+const appetitePercentWrap = document.getElementById("appetite-percent-wrap");
 appetiteStatusEl.addEventListener("change", () => {
   appetiteRemainWrap.classList.toggle("hidden", appetiteStatusEl.value !== "一部残した");
+  appetitePercentWrap.classList.toggle("hidden", appetiteStatusEl.value !== "子猫用(%)");
 });
 
 const urineStatusEl = document.getElementById("daily-urine-status");
@@ -899,9 +977,59 @@ stoolStatusEl.addEventListener("change", () => {
 
 function resetDailyFormExtras() {
   appetiteRemainWrap.classList.add("hidden");
+  appetitePercentWrap.classList.add("hidden");
   urineDetailWrap.classList.add("hidden");
   stoolDetailWrap.classList.add("hidden");
   document.querySelectorAll(".stool-type").forEach((cb) => (cb.checked = false));
+}
+
+// ---------- 日々の記録の編集 ----------
+let editingDailyId = null;
+
+function openDailyEditModal(logId, log) {
+  editingDailyId = logId;
+  document.getElementById("daily-modal-title").textContent = "日々の記録を編集";
+  document.getElementById("daily-submit-btn").textContent = "更新する";
+
+  document.getElementById("daily-date").value = log.date || "";
+  document.getElementById("daily-time-of-day").value = log.timeOfDay || "朝";
+  document.getElementById("daily-care-time").value = log.careTime || "";
+  document.getElementById("daily-weight").value = log.weight || "";
+
+  const appetite = typeof log.appetite === "object" && log.appetite ? log.appetite : { status: log.appetite || "完食" };
+  appetiteStatusEl.value = appetite.status || "完食";
+  appetiteRemainWrap.classList.toggle("hidden", appetiteStatusEl.value !== "一部残した");
+  appetitePercentWrap.classList.toggle("hidden", appetiteStatusEl.value !== "子猫用(%)");
+  document.getElementById("daily-appetite-remain").value = appetite.remainGrams || "";
+  document.getElementById("daily-appetite-percent").value = appetite.eatenPercent || "";
+
+  const urine = typeof log.urine === "object" && log.urine ? log.urine : { status: log.urine || "正常" };
+  urineStatusEl.value = urine.status || "正常";
+  urineDetailWrap.classList.toggle("hidden", urineStatusEl.value !== "異常");
+  document.getElementById("daily-urine-blood").value = urine.blood || "なし";
+  document.getElementById("daily-urine-volume").value = urine.volume || "普通";
+  document.getElementById("daily-urine-color").value = urine.color || "普通(淡い黄色)";
+
+  const stool = typeof log.stool === "object" && log.stool ? log.stool : { status: log.stool || "正常" };
+  stoolStatusEl.value = stool.status || "正常";
+  stoolDetailWrap.classList.toggle("hidden", stoolStatusEl.value !== "異常");
+  document.querySelectorAll(".stool-type").forEach((cb) => {
+    cb.checked = !!(stool.types && stool.types.includes(cb.value));
+  });
+  document.getElementById("daily-stool-volume").value = stool.volume || "普通";
+  document.getElementById("daily-stool-color").value = stool.color || "普通(茶色)";
+
+  document.getElementById("daily-memo").value = log.memo || "";
+
+  renderMedicationChecklistFromLog(log.medications);
+
+  modalDaily.classList.add("open");
+}
+
+function resetDailyModalToAddMode() {
+  editingDailyId = null;
+  document.getElementById("daily-modal-title").textContent = "日々の記録を追加";
+  document.getElementById("daily-submit-btn").textContent = "追加する";
 }
 
 // ---------- 医療記録フォーム: 投薬詳細欄の表示切り替え ----------
@@ -960,6 +1088,7 @@ document.querySelectorAll("[data-close]").forEach((btn) => {
     const overlay = btn.closest(".modal-overlay");
     overlay.classList.remove("open");
     if (overlay.id === "modal-medical") resetMedicalModalToAddMode();
+    if (overlay.id === "modal-daily") resetDailyModalToAddMode();
     if (overlay.id === "modal-cat") {
       resetCatModalToAddMode();
       fosterNameWrap.classList.add("hidden");
@@ -973,6 +1102,7 @@ document.getElementById("fab-btn").addEventListener("click", () => {
     const activeTab = document.querySelector(".tab-btn.active").dataset.tab;
     if (activeTab === "daily") {
       document.getElementById("form-daily").reset();
+      resetDailyModalToAddMode();
       document.getElementById("daily-date").valueAsDate = new Date();
       document.getElementById("daily-time-of-day").value = "朝";
       resetDailyFormExtras();
@@ -1183,10 +1313,14 @@ document.getElementById("form-daily").addEventListener("submit", async (e) => {
     given: cb.checked
   }));
 
+  const appetiteStatusValue = document.getElementById("daily-appetite-status").value;
   const appetite = {
-    status: document.getElementById("daily-appetite-status").value,
-    remainGrams: document.getElementById("daily-appetite-status").value === "一部残した"
+    status: appetiteStatusValue,
+    remainGrams: appetiteStatusValue === "一部残した"
       ? document.getElementById("daily-appetite-remain").value
+      : "",
+    eatenPercent: appetiteStatusValue === "子猫用(%)"
+      ? document.getElementById("daily-appetite-percent").value
       : ""
   };
 
@@ -1207,7 +1341,7 @@ document.getElementById("form-daily").addEventListener("submit", async (e) => {
     color: stoolStatus === "異常" ? document.getElementById("daily-stool-color").value : ""
   };
 
-  await addDoc(collection(db, "cats", currentCatId, "dailyLogs"), {
+  const dailyData = {
     date: document.getElementById("daily-date").value,
     timeOfDay: document.getElementById("daily-time-of-day").value,
     careTime: document.getElementById("daily-care-time").value,
@@ -1216,10 +1350,19 @@ document.getElementById("form-daily").addEventListener("submit", async (e) => {
     urine,
     stool,
     medications,
-    memo: document.getElementById("daily-memo").value.trim(),
-    recordedBy: currentUsername,
-    createdAt: serverTimestamp()
-  });
+    memo: document.getElementById("daily-memo").value.trim()
+  };
+
+  if (editingDailyId) {
+    await updateDoc(doc(db, "cats", currentCatId, "dailyLogs", editingDailyId), dailyData);
+  } else {
+    await addDoc(collection(db, "cats", currentCatId, "dailyLogs"), {
+      ...dailyData,
+      recordedBy: currentUsername,
+      createdAt: serverTimestamp()
+    });
+  }
+  resetDailyModalToAddMode();
   e.target.reset();
   resetDailyFormExtras();
   modalDaily.classList.remove("open");
@@ -1245,7 +1388,8 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
     dosage: isMedication ? document.getElementById("medical-dosage").value.trim() : "",
     endDate: isMedication ? document.getElementById("medical-end-date").value : "",
     fivResult: isVirusTest ? document.getElementById("medical-fiv").value : "",
-    felvResult: isVirusTest ? document.getElementById("medical-felv").value : ""
+    felvResult: isVirusTest ? document.getElementById("medical-felv").value : "",
+    photoData: currentMedicalPhotoData || ""
   };
 
   if (editingMedicalId) {
@@ -1263,7 +1407,79 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
   modalMedical.classList.remove("open");
 });
 
-// ---------- ユーティリティ ----------
+// ---------- 体重グラフ ----------
+const modalWeightChart = document.getElementById("modal-weight-chart");
+let weightChartInstance = null;
+
+document.getElementById("weight-chart-btn").addEventListener("click", () => {
+  renderWeightChart();
+  modalWeightChart.classList.add("open");
+});
+
+function renderWeightChart() {
+  const emptyEl = document.getElementById("weight-chart-empty");
+  const canvasEl = document.getElementById("weight-chart-canvas");
+
+  if (weightChartInstance) {
+    weightChartInstance.destroy();
+    weightChartInstance = null;
+  }
+
+  if (!latestDailySnapshot) {
+    emptyEl.classList.remove("hidden");
+    canvasEl.classList.add("hidden");
+    return;
+  }
+
+  const timeOfDayRank = { "早朝": 0, "朝": 1, "昼": 2, "夕方": 3, "夜": 4, "深夜": 5 };
+  const points = latestDailySnapshot.docs
+    .map((docSnap) => docSnap.data())
+    .filter((log) => log.weight !== undefined && log.weight !== null && log.weight !== "")
+    .map((log) => ({
+      date: log.date,
+      timeOfDay: log.timeOfDay,
+      weight: parseFloat(log.weight)
+    }))
+    .filter((p) => !isNaN(p.weight))
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return (timeOfDayRank[a.timeOfDay] ?? 9) - (timeOfDayRank[b.timeOfDay] ?? 9);
+    });
+
+  if (points.length === 0) {
+    emptyEl.classList.remove("hidden");
+    canvasEl.classList.add("hidden");
+    return;
+  }
+  emptyEl.classList.add("hidden");
+  canvasEl.classList.remove("hidden");
+
+  weightChartInstance = new Chart(canvasEl.getContext("2d"), {
+    type: "line",
+    data: {
+      labels: points.map((p) => `${p.date}${p.timeOfDay ? " " + p.timeOfDay : ""}`),
+      datasets: [{
+        label: "体重(kg)",
+        data: points.map((p) => p.weight),
+        borderColor: "#e08a3c",
+        backgroundColor: "rgba(224,138,60,0.15)",
+        tension: 0.25,
+        fill: true,
+        pointRadius: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { title: { display: true, text: "kg" } }
+      }
+    }
+  });
+}
+
+
 function escapeHtml(str) {
   if (!str) return "";
   return String(str)

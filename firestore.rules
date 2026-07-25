@@ -11,47 +11,71 @@
 // - 新規登録した人は最初 role が「未設定」になり、管理者がこのコンソールの
 //   Firestore Database > データ タブで users コレクションの中の該当ドキュメントを開き、
 //   role フィールドを書き換えることで権限が有効になります
-
+//
+// 【招待コードについて】
+// - config/inviteCodes ドキュメントに shelter / foster という2つのフィールドで
+//   招待コードの文字列を保存しておくと、新規登録時に正しいコードを入力した人は
+//   承認待ちなしですぐにその役割で使い始められます
+// - このドキュメントはコード側には一切書かれておらず、Firestoreの中にしか
+//   保存されないので、ブラウザのソースを見ても招待コードは分かりません
+// - 招待コードの設定・変更は、Firestore Database > データ タブから
+//   config コレクション > inviteCodes ドキュメントを開いて直接編集してください
+//   (無ければ新規作成: コレクションID "config" / ドキュメントID "inviteCodes" /
+//    フィールド shelter(文字列)・foster(文字列))
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
     function isSignedIn() {
       return request.auth != null;
     }
-
     function myRole() {
       return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
         : "未設定";
     }
-
     function isFullAdmin() {
       return myRole() == "管理者" || myRole() == "責任者";
     }
-
     function isShelterMember() {
       return myRole() == "シェルターメンバー";
     }
-
     function catAllowsRead(catData) {
       return isFullAdmin()
         || (catData.location == "施設" && isShelterMember())
         || (catData.location == "個人宅預かり" && request.auth.uid in catData.assignedFosterUids);
     }
-
+    // 招待コードの設定(管理者・責任者のみ読み書き可能。新規登録時の照合はルール内部のget()で行うため、
+    // 一般ユーザーに読み取りを許可する必要はありません)
+    match /config/inviteCodes {
+      allow read, write: if isFullAdmin();
+    }
     // ユーザーの役割情報
     match /users/{userId} {
       // 自分の情報と、管理者・責任者はみんなの情報を読める
       allow read: if isSignedIn() && (request.auth.uid == userId || isFullAdmin());
-      // 新規登録時、自分自身のドキュメントを role:"未設定" で作成することだけ許可
-      allow create: if isSignedIn() && request.auth.uid == userId && request.resource.data.role == "未設定";
+      // 新規登録時、自分自身のドキュメントを作成することを許可。
+      // role は次のいずれかの場合のみ許可:
+      //   ・"未設定"(招待コードなしの通常登録)
+      //   ・"シェルターメンバー"(正しいシェルター用招待コードを入力した場合)
+      //   ・"預りメンバー"(正しい預り宅用招待コードを入力した場合)
+      allow create: if isSignedIn() && request.auth.uid == userId && (
+        request.resource.data.role == "未設定"
+        || (
+          request.resource.data.role == "シェルターメンバー"
+          && exists(/databases/$(database)/documents/config/inviteCodes)
+          && request.resource.data.inviteCode == get(/databases/$(database)/documents/config/inviteCodes).data.shelter
+        )
+        || (
+          request.resource.data.role == "預りメンバー"
+          && exists(/databases/$(database)/documents/config/inviteCodes)
+          && request.resource.data.inviteCode == get(/databases/$(database)/documents/config/inviteCodes).data.foster
+        )
+      );
       // role の変更は管理者・責任者のみ。本人はusername等その他項目のみ更新可能
       allow update: if isFullAdmin()
         || (isSignedIn() && request.auth.uid == userId && request.resource.data.role == resource.data.role);
       allow delete: if isFullAdmin();
     }
-
     // 犬猫本体の情報
     match /cats/{catId} {
       allow read: if isSignedIn() && catAllowsRead(resource.data);
@@ -59,13 +83,16 @@ service cloud.firestore {
         || (isShelterMember() && request.resource.data.location == "施設");
       allow update, delete: if isFullAdmin()
         || (isShelterMember() && resource.data.location == "施設");
-
-      // 日々の記録
-      match /dailyLogs/{logId} {
-        allow read, create, delete: if isSignedIn()
+      // 変更履歴
+      match /history/{historyId} {
+        allow read, create: if isSignedIn()
           && catAllowsRead(get(/databases/$(database)/documents/cats/$(catId)).data);
       }
-
+      // 日々の記録
+      match /dailyLogs/{logId} {
+        allow read, create, update, delete: if isSignedIn()
+          && catAllowsRead(get(/databases/$(database)/documents/cats/$(catId)).data);
+      }
       // 医療記録
       match /medicalRecords/{recordId} {
         allow read, create, update, delete: if isSignedIn()
