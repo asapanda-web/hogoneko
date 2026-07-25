@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285924">
+<link rel="stylesheet" href="style.css?v=1784285925">
 </head>
 <body>
 
@@ -451,24 +451,35 @@
         </label>
 
         <div id="medication-timing-wrap">
-          <label>よくある頻度から選ぶ(任意)</label>
-          <select id="medication-frequency-preset">
-            <option value="">自分でタイミングを選ぶ</option>
-            <option value="朝">1日1回(朝)</option>
-            <option value="夜">1日1回(夜)</option>
-            <option value="朝,夜">1日2回(朝・夜)</option>
-            <option value="朝,夕方">1日2回(朝・夕方)</option>
-            <option value="朝,昼,夕方">1日3回(朝・昼・夕方)</option>
-            <option value="朝,昼,夜">1日3回(朝・昼・夜)</option>
-          </select>
-          <label style="margin-top:10px;">投薬するタイミング(複数選択可・上で選ぶと自動でチェックされます)</label>
-          <div class="checkbox-group">
-            <label class="checkbox-item"><input type="checkbox" value="早朝" class="medication-timing"> 早朝</label>
-            <label class="checkbox-item"><input type="checkbox" value="朝" class="medication-timing"> 朝</label>
-            <label class="checkbox-item"><input type="checkbox" value="昼" class="medication-timing"> 昼</label>
-            <label class="checkbox-item"><input type="checkbox" value="夕方" class="medication-timing"> 夕方</label>
-            <label class="checkbox-item"><input type="checkbox" value="夜" class="medication-timing"> 夜</label>
-            <label class="checkbox-item"><input type="checkbox" value="深夜" class="medication-timing"> 深夜</label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="medical-flexible-timing"> 時間帯を問わない(体調を見て投薬・チェックするまでその日は毎回表示されます)
+          </label>
+
+          <div id="flexible-timing-detail">
+            <label>1日に何回まで</label>
+            <input type="number" id="medical-daily-limit" min="1" max="10" value="1" style="max-width:100px;">
+          </div>
+
+          <div id="fixed-timing-detail">
+            <label>よくある頻度から選ぶ(任意)</label>
+            <select id="medication-frequency-preset">
+              <option value="">自分でタイミングを選ぶ</option>
+              <option value="朝">1日1回(朝)</option>
+              <option value="夜">1日1回(夜)</option>
+              <option value="朝,夜">1日2回(朝・夜)</option>
+              <option value="朝,夕方">1日2回(朝・夕方)</option>
+              <option value="朝,昼,夕方">1日3回(朝・昼・夕方)</option>
+              <option value="朝,昼,夜">1日3回(朝・昼・夜)</option>
+            </select>
+            <label style="margin-top:10px;">投薬するタイミング(複数選択可・上で選ぶと自動でチェックされます)</label>
+            <div class="checkbox-group">
+              <label class="checkbox-item"><input type="checkbox" value="早朝" class="medication-timing"> 早朝</label>
+              <label class="checkbox-item"><input type="checkbox" value="朝" class="medication-timing"> 朝</label>
+              <label class="checkbox-item"><input type="checkbox" value="昼" class="medication-timing"> 昼</label>
+              <label class="checkbox-item"><input type="checkbox" value="夕方" class="medication-timing"> 夕方</label>
+              <label class="checkbox-item"><input type="checkbox" value="夜" class="medication-timing"> 夜</label>
+              <label class="checkbox-item"><input type="checkbox" value="深夜" class="medication-timing"> 深夜</label>
+            </div>
           </div>
         </div>
         <div id="single-dose-time-wrap" class="hidden">
@@ -573,7 +584,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script type="module" src="app.js?v=1784285924"></script>
+<script type="module" src="app.js?v=1784285925"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

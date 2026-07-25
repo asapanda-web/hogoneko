@@ -754,9 +754,11 @@ function listenMedicalRecords(catId) {
       const medicationInfo = rec.type === "投薬"
         ? (rec.singleDose
             ? `<div class="detail">単発の服薬${rec.singleDoseTime ? "(" + escapeHtml(rec.singleDoseTime) + ")" : ""}${rec.medicationMethod ? " ／ " + escapeHtml(rec.medicationMethod) : ""}${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}</div>`
-            : (rec.medicationTiming && rec.medicationTiming.length
-                ? `<div class="detail">${rec.medicationMethod ? escapeHtml(rec.medicationMethod) + " ／ " : ""}1日${rec.medicationTiming.length}回(${escapeHtml(rec.medicationTiming.join("・"))})${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}${rec.endDate ? " ／ 終了予定: " + escapeHtml(rec.endDate) : ""}</div>`
-                : ""))
+            : rec.flexibleTiming
+              ? `<div class="detail">${rec.medicationMethod ? escapeHtml(rec.medicationMethod) + " ／ " : ""}時間帯を問わず 1日${rec.dailyLimit || 1}回まで${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}${rec.endDate ? " ／ 終了予定: " + escapeHtml(rec.endDate) : ""}</div>`
+              : (rec.medicationTiming && rec.medicationTiming.length
+                  ? `<div class="detail">${rec.medicationMethod ? escapeHtml(rec.medicationMethod) + " ／ " : ""}1日${rec.medicationTiming.length}回(${escapeHtml(rec.medicationTiming.join("・"))})${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}${rec.endDate ? " ／ 終了予定: " + escapeHtml(rec.endDate) : ""}</div>`
+                  : ""))
         : "";
       const photoHtml = rec.photoData
         ? `<img src="${rec.photoData}" alt="" style="width:100%;max-width:220px;border-radius:10px;margin-top:8px;display:block;">`
@@ -818,6 +820,11 @@ function openMedicalEditModal(recordId, rec) {
     cb.checked = !!(rec.medicationTiming && rec.medicationTiming.includes(cb.value));
   });
   medicationFrequencyPreset.value = "";
+
+  flexibleTimingCheckbox.checked = !!rec.flexibleTiming;
+  flexibleTimingDetail.classList.toggle("hidden", !flexibleTimingCheckbox.checked);
+  fixedTimingDetail.classList.toggle("hidden", flexibleTimingCheckbox.checked);
+  document.getElementById("medical-daily-limit").value = rec.dailyLimit || 1;
   document.getElementById("medical-method").value = rec.medicationMethod || "飲み薬(内服)";
   document.getElementById("medical-dosage").value = rec.dosage || "";
   document.getElementById("medical-end-date").value = rec.endDate || "";
@@ -856,6 +863,10 @@ function resetMedicalModalToAddMode() {
   singleDoseTimeWrap.classList.add("hidden");
   document.getElementById("medical-single-dose-time").value = "";
   medicationFrequencyPreset.value = "";
+  flexibleTimingCheckbox.checked = false;
+  flexibleTimingDetail.classList.add("hidden");
+  fixedTimingDetail.classList.remove("hidden");
+  document.getElementById("medical-daily-limit").value = "1";
 }
 
 let currentMedicalPhotoData = null;
@@ -886,6 +897,19 @@ const timeOfDayEl = document.getElementById("daily-time-of-day");
 const medChecklistWrap = document.getElementById("medication-checklist-wrap");
 const medChecklistEl = document.getElementById("medication-checklist");
 
+function countGivenToday(recordId, dateStr) {
+  if (!latestDailySnapshot) return 0;
+  let count = 0;
+  latestDailySnapshot.docs.forEach((docSnap) => {
+    const log = docSnap.data();
+    if (log.date !== dateStr) return;
+    (log.medications || []).forEach((m) => {
+      if (m.recordId === recordId && m.given) count++;
+    });
+  });
+  return count;
+}
+
 function renderMedicationChecklist() {
   medChecklistEl.innerHTML = "";
   if (!latestMedicalSnapshot) {
@@ -898,8 +922,12 @@ function renderMedicationChecklist() {
   const activeMeds = latestMedicalSnapshot.docs.filter((docSnap) => {
     const rec = docSnap.data();
     if (rec.type !== "投薬") return false;
-    if (!rec.medicationTiming || !rec.medicationTiming.includes(timeOfDay)) return false;
     if (rec.endDate && rec.endDate < today) return false; // 終了予定日を過ぎたものは出さない
+    if (rec.flexibleTiming) {
+      const limit = rec.dailyLimit || 1;
+      return countGivenToday(docSnap.id, today) < limit; // その日の回数がまだ上限に達していなければ表示
+    }
+    if (!rec.medicationTiming || !rec.medicationTiming.includes(timeOfDay)) return false;
     return true;
   });
 
@@ -912,7 +940,8 @@ function renderMedicationChecklist() {
   activeMeds.forEach((docSnap) => {
     const rec = docSnap.data();
     const methodText = rec.medicationMethod ? `[${rec.medicationMethod}] ` : "";
-    const label = `${methodText}${rec.title}${rec.dosage ? "(" + rec.dosage + ")" : ""}`;
+    const flexibleNote = rec.flexibleTiming ? "[時間帯問わず] " : "";
+    const label = `${flexibleNote}${methodText}${rec.title}${rec.dosage ? "(" + rec.dosage + ")" : ""}`;
     const row = document.createElement("label");
     row.className = "med-check-item";
     row.innerHTML = `
@@ -1083,6 +1112,18 @@ medicationFrequencyPreset.addEventListener("change", () => {
   document.querySelectorAll(".medication-timing").forEach((cb) => {
     cb.checked = selectedTimings.includes(cb.value);
   });
+});
+
+const flexibleTimingCheckbox = document.getElementById("medical-flexible-timing");
+const flexibleTimingDetail = document.getElementById("flexible-timing-detail");
+const fixedTimingDetail = document.getElementById("fixed-timing-detail");
+flexibleTimingCheckbox.addEventListener("change", () => {
+  flexibleTimingDetail.classList.toggle("hidden", !flexibleTimingCheckbox.checked);
+  fixedTimingDetail.classList.toggle("hidden", flexibleTimingCheckbox.checked);
+  if (flexibleTimingCheckbox.checked) {
+    document.querySelectorAll(".medication-timing").forEach((cb) => (cb.checked = false));
+    medicationFrequencyPreset.value = "";
+  }
 });
 
 const medicationTimingWrap = document.getElementById("medication-timing-wrap");
@@ -1416,7 +1457,8 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
   const isMedication = type === "投薬";
   const isVirusTest = type === "ウイルス検査";
   const isSingleDose = isMedication && singleDoseCheckbox.checked;
-  const medicationTiming = isMedication && !isSingleDose
+  const isFlexibleTiming = isMedication && !isSingleDose && flexibleTimingCheckbox.checked;
+  const medicationTiming = isMedication && !isSingleDose && !isFlexibleTiming
     ? Array.from(document.querySelectorAll(".medication-timing:checked")).map((cb) => cb.value)
     : [];
 
@@ -1432,6 +1474,8 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
     endDate: isMedication && !isSingleDose ? document.getElementById("medical-end-date").value : "",
     singleDose: isSingleDose,
     singleDoseTime: isSingleDose ? document.getElementById("medical-single-dose-time").value : "",
+    flexibleTiming: isFlexibleTiming,
+    dailyLimit: isFlexibleTiming ? parseInt(document.getElementById("medical-daily-limit").value, 10) || 1 : null,
     fivResult: isVirusTest ? document.getElementById("medical-fiv").value : "",
     felvResult: isVirusTest ? document.getElementById("medical-felv").value : "",
     photoData: currentMedicalPhotoData || ""
