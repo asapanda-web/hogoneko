@@ -751,8 +751,12 @@ function listenMedicalRecords(catId) {
       const rec = docSnap.data();
       const card = document.createElement("div");
       card.className = "log-card";
-      const medicationInfo = rec.type === "投薬" && rec.medicationTiming && rec.medicationTiming.length
-        ? `<div class="detail">${rec.medicationMethod ? escapeHtml(rec.medicationMethod) + " ／ " : ""}投薬タイミング: ${escapeHtml(rec.medicationTiming.join("・"))}${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}${rec.endDate ? " ／ 終了予定: " + escapeHtml(rec.endDate) : ""}</div>`
+      const medicationInfo = rec.type === "投薬"
+        ? (rec.singleDose
+            ? `<div class="detail">単発の服薬${rec.singleDoseTime ? "(" + escapeHtml(rec.singleDoseTime) + ")" : ""}${rec.medicationMethod ? " ／ " + escapeHtml(rec.medicationMethod) : ""}${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}</div>`
+            : (rec.medicationTiming && rec.medicationTiming.length
+                ? `<div class="detail">${rec.medicationMethod ? escapeHtml(rec.medicationMethod) + " ／ " : ""}投薬タイミング: ${escapeHtml(rec.medicationTiming.join("・"))}${rec.dosage ? " ／ 分量: " + escapeHtml(rec.dosage) : ""}${rec.endDate ? " ／ 終了予定: " + escapeHtml(rec.endDate) : ""}</div>`
+                : ""))
         : "";
       const photoHtml = rec.photoData
         ? `<img src="${rec.photoData}" alt="" style="width:100%;max-width:220px;border-radius:10px;margin-top:8px;display:block;">`
@@ -817,6 +821,12 @@ function openMedicalEditModal(recordId, rec) {
   document.getElementById("medical-dosage").value = rec.dosage || "";
   document.getElementById("medical-end-date").value = rec.endDate || "";
 
+  singleDoseCheckbox.checked = !!rec.singleDose;
+  medicationTimingWrap.classList.toggle("hidden", singleDoseCheckbox.checked);
+  medicationEnddateWrap.classList.toggle("hidden", singleDoseCheckbox.checked);
+  singleDoseTimeWrap.classList.toggle("hidden", !singleDoseCheckbox.checked);
+  document.getElementById("medical-single-dose-time").value = rec.singleDoseTime || "";
+
   currentMedicalPhotoData = rec.photoData || null;
   const medicalPhotoPreview = document.getElementById("medical-photo-preview");
   if (currentMedicalPhotoData) {
@@ -839,6 +849,11 @@ function resetMedicalModalToAddMode() {
   document.getElementById("medical-photo-preview").classList.add("hidden");
   document.getElementById("medical-photo-input").value = "";
   document.getElementById("medical-photo-status").textContent = "";
+  singleDoseCheckbox.checked = false;
+  medicationTimingWrap.classList.remove("hidden");
+  medicationEnddateWrap.classList.remove("hidden");
+  singleDoseTimeWrap.classList.add("hidden");
+  document.getElementById("medical-single-dose-time").value = "";
 }
 
 let currentMedicalPhotoData = null;
@@ -1058,6 +1073,22 @@ function updateVaccineTitleFromSelects() {
 }
 vaccineKindSelect.addEventListener("change", updateVaccineTitleFromSelects);
 vaccineCountSelect.addEventListener("change", updateVaccineTitleFromSelects);
+
+const medicationTimingWrap = document.getElementById("medication-timing-wrap");
+const medicationEnddateWrap = document.getElementById("medication-enddate-wrap");
+const singleDoseTimeWrap = document.getElementById("single-dose-time-wrap");
+const singleDoseCheckbox = document.getElementById("medical-single-dose");
+singleDoseCheckbox.addEventListener("change", () => {
+  medicationTimingWrap.classList.toggle("hidden", singleDoseCheckbox.checked);
+  medicationEnddateWrap.classList.toggle("hidden", singleDoseCheckbox.checked);
+  singleDoseTimeWrap.classList.toggle("hidden", !singleDoseCheckbox.checked);
+  if (singleDoseCheckbox.checked) {
+    document.querySelectorAll(".medication-timing").forEach((cb) => (cb.checked = false));
+    document.getElementById("medical-end-date").value = "";
+  } else {
+    document.getElementById("medical-single-dose-time").value = "";
+  }
+});
 
 function updateMedicalTypeUI() {
   const isMedication = medicalTypeEl.value === "投薬";
@@ -1373,7 +1404,8 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
   const type = document.getElementById("medical-type").value;
   const isMedication = type === "投薬";
   const isVirusTest = type === "ウイルス検査";
-  const medicationTiming = isMedication
+  const isSingleDose = isMedication && singleDoseCheckbox.checked;
+  const medicationTiming = isMedication && !isSingleDose
     ? Array.from(document.querySelectorAll(".medication-timing:checked")).map((cb) => cb.value)
     : [];
 
@@ -1386,7 +1418,9 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
     medicationTiming,
     medicationMethod: isMedication ? document.getElementById("medical-method").value : "",
     dosage: isMedication ? document.getElementById("medical-dosage").value.trim() : "",
-    endDate: isMedication ? document.getElementById("medical-end-date").value : "",
+    endDate: isMedication && !isSingleDose ? document.getElementById("medical-end-date").value : "",
+    singleDose: isSingleDose,
+    singleDoseTime: isSingleDose ? document.getElementById("medical-single-dose-time").value : "",
     fivResult: isVirusTest ? document.getElementById("medical-fiv").value : "",
     felvResult: isVirusTest ? document.getElementById("medical-felv").value : "",
     photoData: currentMedicalPhotoData || ""

@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285920">
+<link rel="stylesheet" href="style.css?v=1784285922">
 </head>
 <body>
 
@@ -444,20 +444,41 @@
           <option value="注射">注射</option>
           <option value="その他">その他(メモに記載)</option>
         </select>
-        <label>投薬するタイミング(複数選択可)</label>
-        <div class="checkbox-group">
-          <label class="checkbox-item"><input type="checkbox" value="早朝" class="medication-timing"> 早朝</label>
-          <label class="checkbox-item"><input type="checkbox" value="朝" class="medication-timing"> 朝</label>
-          <label class="checkbox-item"><input type="checkbox" value="昼" class="medication-timing"> 昼</label>
-          <label class="checkbox-item"><input type="checkbox" value="夕方" class="medication-timing"> 夕方</label>
-          <label class="checkbox-item"><input type="checkbox" value="夜" class="medication-timing"> 夜</label>
-          <label class="checkbox-item"><input type="checkbox" value="深夜" class="medication-timing"> 深夜</label>
+
+        <label class="checkbox-item" style="margin-top:6px;">
+          <input type="checkbox" id="medical-single-dose"> 単発の服薬(その日だけ・日々の記録の投薬チェックには出しません)
+        </label>
+
+        <div id="medication-timing-wrap">
+          <label>投薬するタイミング(複数選択可)</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" value="早朝" class="medication-timing"> 早朝</label>
+            <label class="checkbox-item"><input type="checkbox" value="朝" class="medication-timing"> 朝</label>
+            <label class="checkbox-item"><input type="checkbox" value="昼" class="medication-timing"> 昼</label>
+            <label class="checkbox-item"><input type="checkbox" value="夕方" class="medication-timing"> 夕方</label>
+            <label class="checkbox-item"><input type="checkbox" value="夜" class="medication-timing"> 夜</label>
+            <label class="checkbox-item"><input type="checkbox" value="深夜" class="medication-timing"> 深夜</label>
+          </div>
+        </div>
+        <div id="single-dose-time-wrap" class="hidden">
+          <label>飲ませた時間帯(任意)</label>
+          <select id="medical-single-dose-time">
+            <option value="">選択しない</option>
+            <option value="早朝">早朝</option>
+            <option value="朝">朝</option>
+            <option value="昼">昼</option>
+            <option value="夕方">夕方</option>
+            <option value="夜">夜</option>
+            <option value="深夜">深夜</option>
+          </select>
         </div>
         <label>1回あたりの分量</label>
         <input type="text" id="medical-dosage" placeholder="例: 1錠 / 2分の1錠 / 5ml">
-        <label>投薬終了予定日(任意)</label>
-        <input type="date" id="medical-end-date">
-        <p class="hint-text">終了予定日を設定すると、その日以降は日々の記録の投薬チェックに出てこなくなります。</p>
+        <div id="medication-enddate-wrap">
+          <label>投薬終了予定日(任意)</label>
+          <input type="date" id="medical-end-date">
+          <p class="hint-text">終了予定日を設定すると、その日以降は日々の記録の投薬チェックに出てこなくなります。</p>
+        </div>
       </div>
 
       <div id="virus-test-detail-wrap" class="hidden detail-box">
@@ -541,7 +562,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script type="module" src="app.js?v=1784285920"></script>
+<script type="module" src="app.js?v=1784285922"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
