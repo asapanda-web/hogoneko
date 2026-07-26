@@ -1,5 +1,8 @@
 import { auth, db } from "./firebase-config.js?v=1784218044";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  onAuthStateChanged, signOut,
+  EmailAuthProvider, reauthenticateWithCredential, updateEmail, deleteUser
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection, addDoc, deleteDoc, doc, getDoc, getDocs, onSnapshot,
   query, where, orderBy, serverTimestamp, updateDoc, writeBatch, setDoc
@@ -30,6 +33,7 @@ function isShelterMember() {
 
 let currentUser = null;
 let currentUsername = null;
+let currentLoginUsername = null;
 let currentCatId = null;
 let unsubCats = null;
 let unsubDaily = null;
@@ -50,6 +54,7 @@ onAuthStateChanged(auth, async (user) => {
   const userData = userDocSnap.exists() ? userDocSnap.data() : {};
   const loginUsername = userData.username || (user.email || "").split("@")[0];
   currentUsername = userData.displayName || loginUsername; // 表示名があればそちらを優先(無ければログイン用の名前)
+  currentLoginUsername = loginUsername;
   storedCustomWallpaperData = userData.customWallpaperData || null;
   applyWallpaper(userData.wallpaper || "photo-common", userData.customWallpaperData);
 
@@ -1651,6 +1656,97 @@ function renderWeightChart() {
 }
 
 
+// ---------- アカウント設定 ----------
+const modalAccountSettings = document.getElementById("modal-account-settings");
+
+document.getElementById("account-settings-btn").addEventListener("click", () => {
+  document.getElementById("account-display-name").value = currentUsername || "";
+  document.getElementById("account-new-id").value = "";
+  document.getElementById("account-id-current-password").value = "";
+  document.getElementById("account-display-name-status").textContent = "";
+  document.getElementById("account-id-status").textContent = "";
+  document.getElementById("account-delete-password").value = "";
+  document.getElementById("account-delete-status").textContent = "";
+  modalAccountSettings.classList.add("open");
+});
+
+// 表示名の変更(パスワード不要)
+document.getElementById("account-display-name-save-btn").addEventListener("click", async () => {
+  const statusEl = document.getElementById("account-display-name-status");
+  const newName = document.getElementById("account-display-name").value.trim();
+  if (!newName) {
+    statusEl.textContent = "表示名を入力してください。";
+    return;
+  }
+  statusEl.textContent = "保存しています...";
+  try {
+    await updateDoc(doc(db, "users", currentUid), { displayName: newName });
+    currentUsername = newName;
+    statusEl.textContent = "表示名を変更しました。次の記録から反映されます。";
+  } catch (err) {
+    statusEl.textContent = "保存に失敗しました。もう一度お試しください。";
+  }
+});
+
+// ログインID(ユーザー名/メールアドレス)の変更(本人確認のためパスワードが必要)
+document.getElementById("account-id-save-btn").addEventListener("click", async () => {
+  const statusEl = document.getElementById("account-id-status");
+  const newIdRaw = document.getElementById("account-new-id").value.trim();
+  const currentPassword = document.getElementById("account-id-current-password").value;
+
+  if (!newIdRaw) {
+    statusEl.textContent = "新しいユーザー名またはメールアドレスを入力してください。";
+    return;
+  }
+  if (!newIdRaw.includes("@") && !/^[A-Za-z0-9_]+$/.test(newIdRaw)) {
+    statusEl.textContent = "ユーザー名は半角英数字とアンダースコアのみ使えます。";
+    return;
+  }
+  if (!currentPassword) {
+    statusEl.textContent = "確認のため、現在のパスワードを入力してください。";
+    return;
+  }
+
+  const newEmail = newIdRaw.includes("@") ? newIdRaw : `${newIdRaw.toLowerCase()}@hogoneko-app.local`;
+  statusEl.textContent = "変更しています...";
+  try {
+    const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+    await reauthenticateWithCredential(currentUser, credential);
+    await updateEmail(currentUser, newEmail);
+    await updateDoc(doc(db, "users", currentUid), { username: newIdRaw });
+    currentLoginUsername = newIdRaw;
+    statusEl.textContent = "ログインIDを変更しました。次回から新しいIDでログインしてください。";
+    document.getElementById("account-id-current-password").value = "";
+  } catch (err) {
+    statusEl.textContent = "変更できませんでした(パスワードが違うか、既に使われているIDの可能性があります)。";
+  }
+});
+
+// 退会(アカウント削除、本人確認のためパスワードが必要)
+document.getElementById("account-delete-btn").addEventListener("click", async () => {
+  const statusEl = document.getElementById("account-delete-status");
+  const currentPassword = document.getElementById("account-delete-password").value;
+
+  if (!currentPassword) {
+    statusEl.textContent = "確認のため、現在のパスワードを入力してください。";
+    return;
+  }
+  const sure = confirm("本当にアカウントを削除して退会しますか？\nこの操作は取り消せません(このIDでは二度とログインできなくなります)。\n※これまでの記録は削除されず、そのまま残ります。");
+  if (!sure) return;
+
+  statusEl.textContent = "削除しています...";
+  try {
+    const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+    await reauthenticateWithCredential(currentUser, credential);
+    await deleteDoc(doc(db, "users", currentUid));
+    await deleteUser(currentUser);
+    window.location.href = "index.html";
+  } catch (err) {
+    statusEl.textContent = "削除できませんでした。パスワードをご確認ください。";
+  }
+});
+
+// ---------- ユーティリティ ----------
 function escapeHtml(str) {
   if (!str) return "";
   return String(str)

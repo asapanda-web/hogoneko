@@ -74,7 +74,8 @@ service cloud.firestore {
       // role の変更は管理者・責任者のみ。本人はusername等その他項目のみ更新可能
       allow update: if isFullAdmin()
         || (isSignedIn() && request.auth.uid == userId && request.resource.data.role == resource.data.role);
-      allow delete: if isFullAdmin();
+      // 削除は管理者・責任者に加えて、本人による退会(自分のドキュメントの削除)も許可
+      allow delete: if isFullAdmin() || (isSignedIn() && request.auth.uid == userId);
     }
     // 犬猫本体の情報
     match /cats/{catId} {
