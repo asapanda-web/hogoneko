@@ -196,6 +196,12 @@ function updateProfileDerivedFields() {
   document.getElementById("profile-candoo-tags").innerHTML =
     candooTags.map((t) => `<span class="profile-tag-badge">${escapeHtml(t)}</span>`).join("");
 
+  const dislikeTags = [...(catData.canDislikeTags || [])];
+  if (catData.canDislikeOther) dislikeTags.push(catData.canDislikeOther);
+  document.getElementById("profile-dislike-title").classList.toggle("hidden", dislikeTags.length === 0);
+  document.getElementById("profile-dislike-tags").innerHTML =
+    dislikeTags.map((t) => `<span class="profile-tag-badge">${escapeHtml(t)}</span>`).join("");
+
   const playTags = [...(catData.playTags || [])];
   if (catData.playOther) playTags.push(catData.playOther);
   document.getElementById("profile-play-title").classList.toggle("hidden", playTags.length === 0);
@@ -1240,6 +1246,7 @@ async function openCatEditModal(catId, catData) {
   document.getElementById("cat-intro").value = catData.intro || "";
   document.getElementById("cat-personality-other").value = catData.personalityOther || "";
   document.getElementById("cat-candoo-other").value = catData.canDoOther || "";
+  document.getElementById("cat-dislike-other").value = catData.canDislikeOther || "";
   document.getElementById("cat-play-other").value = catData.playOther || "";
   document.getElementById("cat-food").value = catData.food || "";
   document.getElementById("cat-detail-memo").value = catData.detailMemo || "";
@@ -1248,6 +1255,9 @@ async function openCatEditModal(catId, catData) {
   });
   document.querySelectorAll(".can-do-tag").forEach((cb) => {
     cb.checked = !!(catData.canDoTags && catData.canDoTags.includes(cb.value));
+  });
+  document.querySelectorAll(".can-dislike-tag").forEach((cb) => {
+    cb.checked = !!(catData.canDislikeTags && catData.canDislikeTags.includes(cb.value));
   });
   document.querySelectorAll(".play-tag").forEach((cb) => {
     cb.checked = !!(catData.playTags && catData.playTags.includes(cb.value));
@@ -1346,6 +1356,8 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     personalityOther: document.getElementById("cat-personality-other").value.trim(),
     canDoTags: Array.from(document.querySelectorAll(".can-do-tag:checked")).map((cb) => cb.value),
     canDoOther: document.getElementById("cat-candoo-other").value.trim(),
+    canDislikeTags: Array.from(document.querySelectorAll(".can-dislike-tag:checked")).map((cb) => cb.value),
+    canDislikeOther: document.getElementById("cat-dislike-other").value.trim(),
     playTags: Array.from(document.querySelectorAll(".play-tag:checked")).map((cb) => cb.value),
     playOther: document.getElementById("cat-play-other").value.trim(),
     food: document.getElementById("cat-food").value.trim(),

@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285928">
+<link rel="stylesheet" href="style.css?v=1784285931">
 </head>
 <body>
 
@@ -82,7 +82,7 @@
         <button class="btn btn-outline btn-small" id="print-cat-btn">🖨️ この子の記録を印刷</button>
         <button class="btn btn-outline btn-small" id="print-profile-btn">🐾 譲渡プロフィールを印刷</button>
       </div>
-      <p class="hint-text" id="print-hint-text">B6サイズ(128×182mm)のレイアウトで印刷されます。普通のA4用紙にそのまま印刷され、記録が多い場合は自動的に2枚目・3枚目に続きます。切り取ることでミニバインダーに保存できます。</p>
+      <p class="hint-text" id="print-hint-text">B6サイズ(128×182mm)のレイアウトで印刷されます。普通のA4用紙にそのまま印刷され、記録が多い場合は自動的に2枚目・3枚目に続きます。切り取ることでミニバインダーに保存できます。<strong>印刷はパソコンからのご利用をおすすめします</strong>(スマホのブラウザでは印刷できない場合や、レイアウトが崩れる場合があります)。</p>
 
       <!-- 譲渡プロフィールシート(印刷時のみ表示) -->
       <div id="profile-sheet" class="hidden">
@@ -104,6 +104,9 @@
 
           <div class="profile-section-title hidden" id="profile-candoo-title">🎓 できること</div>
           <div class="profile-tags" id="profile-candoo-tags"></div>
+
+          <div class="profile-section-title hidden" id="profile-dislike-title">🙅 苦手なこと</div>
+          <div class="profile-tags" id="profile-dislike-tags"></div>
 
           <div class="profile-section-title hidden" id="profile-play-title">🎮 好きな遊び</div>
           <div class="profile-tags" id="profile-play-tags"></div>
@@ -234,6 +237,21 @@
       </div>
       <input type="text" id="cat-candoo-other" placeholder="できることその他(自由記述)">
 
+      <label>🙅 苦手なこと(あてはまるものを選んでください・複数選択可)</label>
+      <div class="checkbox-group">
+        <label class="checkbox-item"><input type="checkbox" value="爪切りが苦手" class="can-dislike-tag"> 爪切りが苦手</label>
+        <label class="checkbox-item"><input type="checkbox" value="お風呂・シャンプーが苦手" class="can-dislike-tag"> お風呂・シャンプーが苦手</label>
+        <label class="checkbox-item"><input type="checkbox" value="病院が苦手" class="can-dislike-tag"> 病院が苦手</label>
+        <label class="checkbox-item"><input type="checkbox" value="車での移動が苦手" class="can-dislike-tag"> 車での移動が苦手</label>
+        <label class="checkbox-item"><input type="checkbox" value="大きな音に驚きやすい" class="can-dislike-tag"> 大きな音に驚きやすい</label>
+        <label class="checkbox-item" data-species="cat"><input type="checkbox" value="トイレの粗相がある" class="can-dislike-tag"> トイレの粗相がある</label>
+        <label class="checkbox-item" data-species="cat"><input type="checkbox" value="爪とぎで家具を傷つけることがある" class="can-dislike-tag"> 爪とぎで家具を傷つけることがある</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="無駄吠えすることがある" class="can-dislike-tag"> 無駄吠えすることがある</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="留守番が苦手" class="can-dislike-tag"> 留守番が苦手</label>
+        <label class="checkbox-item" data-species="dog"><input type="checkbox" value="引っ張り癖がある" class="can-dislike-tag"> 引っ張り癖がある</label>
+      </div>
+      <input type="text" id="cat-dislike-other" placeholder="苦手なことその他・詳しいニュアンス(自由記述、例: 爪切りは嫌がるがネット使用時ならできる)">
+
       <label>🎮 好きな遊び(あてはまるものを選んでください・複数選択可)</label>
       <div class="checkbox-group">
         <label class="checkbox-item" data-species="cat"><input type="checkbox" value="ねこじゃらし" class="play-tag"> ねこじゃらし</label>
@@ -249,7 +267,7 @@
       <input type="text" id="cat-play-other" placeholder="好きな遊びその他(自由記述)">
 
       <label>🍽 今食べているご飯(任意)</label>
-      <textarea id="cat-food" placeholder="例: ピュリナワン子猫用(カリカリ)、1日3回。以前はロイヤルカナン成長前期でした。"></textarea>
+      <textarea id="cat-food" placeholder="例: ピュリナワン子猫用(カリカリ)、カルカン子猫用(パウチ)"></textarea>
 
       <label>紹介文(名前の由来や簡単な自己紹介など)</label>
       <textarea id="cat-intro" placeholder="性格や、この子の魅力が伝わる紹介文"></textarea>
@@ -671,7 +689,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script type="module" src="app.js?v=1784285928"></script>
+<script type="module" src="app.js?v=1784285931"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
