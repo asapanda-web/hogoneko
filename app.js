@@ -324,9 +324,11 @@ async function loadMembersList() {
     const currentMemberRole = member.role || "未設定";
     const row = document.createElement("div");
     row.className = "member-row";
+    const isEmailLogin = member.username && member.username.includes("@");
+    const idDisplay = isEmailLogin ? "メールアドレス" : (member.username || uid);
     const nameLabel = member.displayName && member.displayName !== member.username
-      ? `${member.displayName}(ID: ${member.username || uid})`
-      : (member.username || uid);
+      ? `${member.displayName}(ID: ${idDisplay})`
+      : idDisplay;
 
     // 管理者・責任者はこの画面からは変更不可(表示のみ)。誤操作や不用意な権限昇格を防ぐため、
     // Firebaseコンソールから直接設定する運用のままにしています。
