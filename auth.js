@@ -21,8 +21,18 @@ const submitBtn = document.getElementById("submit-btn");
 const toggleBtn = document.getElementById("toggle-mode");
 const passwordHint = document.getElementById("password-hint");
 const inviteCodeWrap = document.getElementById("invite-code-wrap");
+const displayNameWrap = document.getElementById("display-name-wrap");
+const displayNameInput = document.getElementById("display-name");
+const displayNameRequiredMark = document.getElementById("display-name-required-mark");
 
 let isSignup = false;
+
+// メールアドレス形式(@を含む)で登録しようとしている場合、表示名を必須にする
+function updateDisplayNameRequirement() {
+  const isEmailStyle = emailInput.value.trim().includes("@");
+  displayNameRequiredMark.classList.toggle("hidden", !isEmailStyle);
+}
+emailInput.addEventListener("input", updateDisplayNameRequirement);
 
 // すでにログイン済みならダッシュボードへ
 onAuthStateChanged(auth, (user) => {
@@ -40,6 +50,8 @@ toggleBtn.addEventListener("click", () => {
   passwordHint.style.display = isSignup ? "block" : "none";
   document.getElementById("signup-reset-hint").style.display = isSignup ? "block" : "none";
   inviteCodeWrap.classList.toggle("hidden", !isSignup);
+  displayNameWrap.classList.toggle("hidden", !isSignup);
+  updateDisplayNameRequirement();
   errorMsg.style.display = "none";
 });
 
@@ -57,6 +69,7 @@ toggleBtn.addEventListener("click", () => {
   passwordHint.style.display = "block";
   document.getElementById("signup-reset-hint").style.display = "block";
   inviteCodeWrap.classList.remove("hidden");
+  displayNameWrap.classList.remove("hidden");
 
   const inviteRoleSelect = document.getElementById("invite-role");
   const inviteCodeInput = document.getElementById("invite-code");
@@ -92,6 +105,20 @@ form.addEventListener("submit", async (e) => {
 
   const email = resolveEmail(rawInput);
 
+  // 表示名のチェック(メールアドレス登録の場合は必須)
+  let displayName = displayNameInput.value.trim();
+  if (isSignup) {
+    if (rawInput.includes("@") && !displayName) {
+      errorMsg.textContent = "メールアドレスで登録する場合は、表示名の入力が必須です。";
+      errorMsg.style.display = "block";
+      submitBtn.disabled = false;
+      return;
+    }
+    if (!displayName) {
+      displayName = rawInput; // ユーザー名登録で表示名を空欄にした場合、ユーザー名をそのまま表示名にする
+    }
+  }
+
   try {
     if (isSignup) {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
@@ -105,6 +132,7 @@ form.addEventListener("submit", async (e) => {
         try {
           await setDoc(doc(db, "users", cred.user.uid), {
             username: rawInput,
+            displayName,
             role: inviteRole,
             inviteCode: inviteCode,
             createdAt: serverTimestamp()
@@ -114,6 +142,7 @@ form.addEventListener("submit", async (e) => {
           // コードが間違っていた場合は、通常通り「未設定」で登録する
           await setDoc(doc(db, "users", cred.user.uid), {
             username: rawInput,
+            displayName,
             role: "未設定",
             createdAt: serverTimestamp()
           });
@@ -125,6 +154,7 @@ form.addEventListener("submit", async (e) => {
         // データが見えない状態になる(Firestoreのルールで制御)
         await setDoc(doc(db, "users", cred.user.uid), {
           username: rawInput,
+          displayName,
           role: "未設定",
           createdAt: serverTimestamp()
         });
@@ -133,14 +163,14 @@ form.addEventListener("submit", async (e) => {
       if (approvalNeeded) {
         // 承認待ちの場合は、管理者へのお知らせメールを案内する画面を表示する
         form.classList.add("hidden");
-        document.getElementById("signup-complete-username").textContent = rawInput;
+        document.getElementById("signup-complete-username").textContent = `${displayName}(ログイン用: ${rawInput})`;
         const notice = document.getElementById("signup-complete-notice");
         notice.classList.remove("hidden");
 
         document.getElementById("notify-admin-btn").addEventListener("click", () => {
           const subject = encodeURIComponent("【新規登録のお知らせ】権限設定をお願いします");
           const body = encodeURIComponent(
-            `新しく登録しました。\nユーザー名: ${rawInput}\n\n「メンバー管理」画面から役割の設定をお願いします。`
+            `新しく登録しました。\n表示名: ${displayName}\nログイン用ユーザー名: ${rawInput}\n\n「メンバー管理」画面から役割の設定をお願いします。`
           );
           window.location.href = `mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`;
         });

@@ -39,6 +39,16 @@
         6文字以上にしてください。数字だけ(例: <span class="mono">123456</span>)、アルファベットだけ(例: <span class="mono">abcdef</span>)、数字とアルファベットを混ぜたもの、どれでも大丈夫です。
       </p>
 
+      <div id="display-name-wrap" class="hidden" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+        <label for="display-name">表示名<span id="display-name-required-mark" class="hidden" style="color:#c0392b;">(必須)</span></label>
+        <input type="text" id="display-name" placeholder="例: やまだ">
+        <p class="hint-text" id="display-name-hint">
+          記録・変更履歴に表示される名前です。ログイン用のユーザー名(またはメールアドレス)とは別に設定できます。<br>
+          <strong>ユーザー名(半角英数字)で登録する場合</strong>は空欄でもOKです。空欄の場合は、そのユーザー名がそのまま表示名になります。<br>
+          <strong>メールアドレスで登録する場合</strong>は、表示名の入力が必須です(メールアドレスがそのまま表示されるのを防ぐためです)。
+        </p>
+      </div>
+
       <div id="invite-code-wrap" class="hidden" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
         <label for="invite-role">招待コードをお持ちの方はこちら(任意)</label>
         <select id="invite-role">

@@ -44,16 +44,17 @@ onAuthStateChanged(auth, async (user) => {
   }
   currentUser = user;
   currentUid = user.uid;
-  currentUsername = (user.email || "").split("@")[0];
 
   const userDocSnap = await getDoc(doc(db, "users", user.uid));
   currentRole = userDocSnap.exists() ? userDocSnap.data().role : "未設定";
   const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+  const loginUsername = userData.username || (user.email || "").split("@")[0];
+  currentUsername = userData.displayName || loginUsername; // 表示名があればそちらを優先(無ければログイン用の名前)
   storedCustomWallpaperData = userData.customWallpaperData || null;
   applyWallpaper(userData.wallpaper || "photo-common", userData.customWallpaperData);
 
   if (currentRole === "未設定") {
-    document.getElementById("pending-username").textContent = currentUsername;
+    document.getElementById("pending-username").textContent = loginUsername;
     document.getElementById("view-pending").classList.remove("hidden");
     document.getElementById("fab-btn").classList.add("hidden");
     return;
@@ -312,12 +313,15 @@ async function loadMembersList() {
     const currentMemberRole = member.role || "未設定";
     const row = document.createElement("div");
     row.className = "member-row";
+    const nameLabel = member.displayName && member.displayName !== member.username
+      ? `${member.displayName}(ID: ${member.username || uid})`
+      : (member.username || uid);
 
     // 管理者・責任者はこの画面からは変更不可(表示のみ)。誤操作や不用意な権限昇格を防ぐため、
     // Firebaseコンソールから直接設定する運用のままにしています。
     if (currentMemberRole === "管理者" || currentMemberRole === "責任者") {
       row.innerHTML = `
-        <span class="member-name">${escapeHtml(member.username || uid)}</span>
+        <span class="member-name">${escapeHtml(nameLabel)}</span>
         <span class="hint-text" style="margin:0;">${escapeHtml(currentMemberRole)}(Firebaseコンソールから変更)</span>
       `;
       listEl.appendChild(row);
@@ -325,7 +329,7 @@ async function loadMembersList() {
     }
 
     row.innerHTML = `
-      <span class="member-name">${escapeHtml(member.username || uid)}</span>
+      <span class="member-name">${escapeHtml(nameLabel)}</span>
       <select data-uid="${uid}">
         <option value="未設定">未設定</option>
         <option value="シェルターメンバー">シェルターメンバー</option>
