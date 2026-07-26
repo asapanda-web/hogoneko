@@ -720,8 +720,10 @@ function formatStool(stool) {
 
 function formatMedications(medications) {
   if (!medications || medications.length === 0) return "";
-  const items = medications.map((m) => `${escapeHtml(m.label)}: ${m.given ? "投与済み" : "投与できず"}`);
-  return `<div class="detail">投薬: ${items.join(" ／ ")}</div>`;
+  const givenItems = medications.filter((m) => m.given);
+  if (givenItems.length === 0) return "";
+  const items = givenItems.map((m) => escapeHtml(m.label));
+  return `<div class="detail">投薬済み: ${items.join(" ／ ")}</div>`;
 }
 
 // ---------- 医療記録 ----------
