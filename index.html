@@ -24,7 +24,7 @@
       <p class="hint-text">
         ユーザー名にする場合は、半角(小さいサイズ)のアルファベット(a〜z)と数字(0〜9)が使えます。<br>
         例: <span class="mono">tanaka1</span>(名前+数字)、<span class="mono">12345</span>(数字だけ)、<span class="mono">tanaka</span>(アルファベットだけ)、どれでも大丈夫です。<br>
-        ひらがな・カタカナ・漢字は使えませんのでご注意ください。
+        ひらがな・カタカナ・漢字は使えませんのでご注意ください。漢字などで名前を残したい場合は、この下に出てくる「表示名」欄をご利用ください。
       </p>
 
       <p class="hint-text" id="signup-reset-hint" style="display:none;">
@@ -41,9 +41,10 @@
 
       <div id="display-name-wrap" class="hidden" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
         <label for="display-name">表示名<span id="display-name-required-mark" class="hidden" style="color:#c0392b;">(必須)</span></label>
-        <input type="text" id="display-name" placeholder="例: やまだ">
+        <input type="text" id="display-name" placeholder="例: 田中">
         <p class="hint-text" id="display-name-hint">
-          記録・変更履歴に表示される名前です。ログイン用のユーザー名(またはメールアドレス)とは別に設定できます。<br>
+          記録・変更履歴に表示される名前です。ログイン用のユーザー名(またはメールアドレス)とは別に設定でき、<strong>漢字・ひらがな・カタカナも使えます</strong>(ユーザー名は半角英数字のみですが、表示名は自由です)。<br>
+          例: ユーザー名を <span class="mono">tanaka</span> にして、表示名を「田中」にすると、ログインは <span class="mono">tanaka</span>、記録には「田中」と表示されます。<br>
           <strong>ユーザー名(半角英数字)で登録する場合</strong>は空欄でもOKです。空欄の場合は、そのユーザー名がそのまま表示名になります。<br>
           <strong>メールアドレスで登録する場合</strong>は、表示名の入力が必須です(メールアドレスがそのまま表示されるのを防ぐためです)。
         </p>
