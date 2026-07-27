@@ -335,7 +335,7 @@ async function loadMembersList() {
     if (currentMemberRole === "管理者" || currentMemberRole === "責任者") {
       row.innerHTML = `
         <span class="member-name">${escapeHtml(nameLabel)}</span>
-        <span class="hint-text" style="margin:0;">${escapeHtml(currentMemberRole)}(Firebaseコンソールから変更)</span>
+        <span class="hint-text" style="margin:0;">${escapeHtml(roleDisplayLabel(currentMemberRole))}(Firebaseコンソールから変更)</span>
       `;
       listEl.appendChild(row);
       return;
@@ -493,6 +493,12 @@ function applyRoleUI() {
 }
 
 let fosterListLoaded = false;
+// 役割の表示用ラベル(「管理者」は団体の役職と紛らわしいので、アプリ内の権限だと分かるようにする)
+function roleDisplayLabel(role) {
+  if (role === "管理者") return "アプリ管理者";
+  return role;
+}
+
 async function populateFosterDropdown() {
   if (fosterListLoaded) return;
   const selectEl = document.getElementById("cat-foster-user");
@@ -507,7 +513,7 @@ async function populateFosterDropdown() {
     if (!u.role || u.role === "未設定") return; // 未設定の人は選択肢に出さない
     const opt = document.createElement("option");
     opt.value = docSnap.id; // uid
-    opt.textContent = `${u.displayName || u.username || docSnap.id}(${u.role})`;
+    opt.textContent = `${u.displayName || u.username || docSnap.id}(${roleDisplayLabel(u.role)})`;
     selectEl.appendChild(opt);
   });
   if (!selectEl.options.length) {
