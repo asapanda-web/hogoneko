@@ -507,7 +507,7 @@ async function populateFosterDropdown() {
     if (!u.role || u.role === "未設定") return; // 未設定の人は選択肢に出さない
     const opt = document.createElement("option");
     opt.value = docSnap.id; // uid
-    opt.textContent = `${u.username || docSnap.id}(${u.role})`;
+    opt.textContent = `${u.displayName || u.username || docSnap.id}(${u.role})`;
     selectEl.appendChild(opt);
   });
   if (!selectEl.options.length) {
