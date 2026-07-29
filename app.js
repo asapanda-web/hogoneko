@@ -300,6 +300,9 @@ document.getElementById("daily-load-more-btn").addEventListener("click", () => {
 
 // ---------- スクロール時に猫の名前を固定表示する ----------
 const stickyCatBar = document.getElementById("sticky-cat-bar");
+stickyCatBar.addEventListener("click", () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
 const catHeaderEl = document.querySelector(".cat-header");
 window.addEventListener("scroll", () => {
   if (viewDetail.classList.contains("hidden") || !catHeaderEl) {
