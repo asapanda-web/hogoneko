@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285935">
+<link rel="stylesheet" href="style.css?v=1784285937">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -28,6 +28,10 @@
 
 <img id="wallpaper-img" class="hidden" alt="">
 <div class="screen">
+  <div id="sticky-cat-bar" class="hidden" style="position:fixed; top:0; left:0; right:0; z-index:60; background:#fff; padding:10px 16px; display:flex; align-items:center; gap:10px; box-shadow:0 2px 8px rgba(0,0,0,0.12);">
+    <span id="sticky-cat-avatar" style="width:32px; height:32px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#f0e8dd; font-size:16px; flex-shrink:0;"></span>
+    <span id="sticky-cat-name" style="font-weight:600; font-size:15px;"></span>
+  </div>
   <div class="topbar">
     <div class="brand" id="brand-title">🐾 犬猫の健康管理</div>
     <div class="topbar-actions" style="display:flex; gap:8px;">
@@ -149,6 +153,9 @@
         <button class="btn btn-outline btn-small" id="weight-chart-btn" style="margin-bottom:12px;">📈 体重グラフを見る</button>
         <div id="daily-list"></div>
         <p class="empty-state hidden" id="empty-daily">まだ記録がありません。</p>
+        <div id="daily-load-more-wrap" class="hidden" style="text-align:center; margin-top:12px;">
+          <button type="button" class="btn btn-outline btn-small" id="daily-load-more-btn">もっと見る</button>
+        </div>
       </div>
 
       <div id="tab-medical" class="hidden">
@@ -702,7 +709,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script type="module" src="app.js?v=1784285935"></script>
+<script type="module" src="app.js?v=1784285937"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

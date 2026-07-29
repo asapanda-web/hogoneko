@@ -93,6 +93,7 @@ function showDashboard() {
   if (unsubMedical) unsubMedical();
   viewDetail.classList.add("hidden");
   viewDashboard.classList.remove("hidden");
+  document.getElementById("sticky-cat-bar").classList.add("hidden");
   // 犬猫の新規登録は 管理者・責任者・シェルターメンバー のみ
   document.getElementById("fab-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
 }
@@ -112,6 +113,16 @@ function showDetail(catId, catData) {
   } else {
     detailAvatarEl.style.overflow = "";
     detailAvatarEl.textContent = catData.species === "犬" ? "🐕" : "🐱";
+  }
+
+  // スクロール時に固定表示するミニバーの中身も更新
+  document.getElementById("sticky-cat-name").textContent = catData.name;
+  const stickyAvatarEl = document.getElementById("sticky-cat-avatar");
+  if (catData.photoData) {
+    stickyAvatarEl.innerHTML = `<img src="${catData.photoData}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+  } else {
+    stickyAvatarEl.innerHTML = "";
+    stickyAvatarEl.textContent = catData.species === "犬" ? "🐕" : "🐱";
   }
   const locationText = catData.location === "個人宅預かり"
     ? `${FOSTER_LABEL}${catData.fosterName ? "(" + catData.fosterName + ")" : ""}`
@@ -281,6 +292,23 @@ function listenHistory(catId) {
     });
   });
 }
+
+document.getElementById("daily-load-more-btn").addEventListener("click", () => {
+  dailyDisplayDayLimit += 7;
+  renderDailyList();
+});
+
+// ---------- スクロール時に猫の名前を固定表示する ----------
+const stickyCatBar = document.getElementById("sticky-cat-bar");
+const catHeaderEl = document.querySelector(".cat-header");
+window.addEventListener("scroll", () => {
+  if (viewDetail.classList.contains("hidden") || !catHeaderEl) {
+    stickyCatBar.classList.add("hidden");
+    return;
+  }
+  const headerBottom = catHeaderEl.getBoundingClientRect().bottom;
+  stickyCatBar.classList.toggle("hidden", headerBottom > 0);
+});
 
 document.getElementById("back-to-list").addEventListener("click", showDashboard);
 
@@ -626,76 +654,97 @@ function renderCatList() {
 }
 
 // ---------- 日々の記録 ----------
+let dailyDisplayDayLimit = 7; // 最初に表示する日数(「もっと見る」で増える)
+
 function listenDailyLogs(catId) {
   if (unsubDaily) unsubDaily();
+  dailyDisplayDayLimit = 7; // 猫を開き直すたびに表示件数をリセット
   const q = query(collection(db, "cats", catId, "dailyLogs"), orderBy("date", "desc"));
   unsubDaily = onSnapshot(q, (snap) => {
     latestDailySnapshot = snap;
-    const listEl = document.getElementById("daily-list");
-    const emptyEl = document.getElementById("empty-daily");
-    listEl.innerHTML = "";
-    if (snap.empty) {
-      emptyEl.classList.remove("hidden");
-      return;
+    renderDailyList();
+  });
+}
+
+function renderDailyList() {
+  const snap = latestDailySnapshot;
+  const listEl = document.getElementById("daily-list");
+  const emptyEl = document.getElementById("empty-daily");
+  const loadMoreWrap = document.getElementById("daily-load-more-wrap");
+  listEl.innerHTML = "";
+  if (!snap || snap.empty) {
+    emptyEl.classList.remove("hidden");
+    loadMoreWrap.classList.add("hidden");
+    return;
+  }
+  emptyEl.classList.add("hidden");
+
+  const timeOfDayRank = { "早朝": 0, "朝": 1, "昼": 2, "夕方": 3, "夜": 4, "深夜": 5 };
+  const docsArray = snap.docs.map((docSnap) => ({ id: docSnap.id, log: docSnap.data() }));
+
+  // 同じ日付ごとにグループ化し、グループ内は時間帯の早い順に並べる
+  const groups = [];
+  docsArray.forEach((item) => {
+    let group = groups.find((g) => g.date === item.log.date);
+    if (!group) {
+      group = { date: item.log.date, items: [] };
+      groups.push(group);
     }
-    emptyEl.classList.add("hidden");
+    group.items.push(item);
+  });
+  groups.forEach((g) => {
+    g.items.sort((a, b) => (timeOfDayRank[a.log.timeOfDay] ?? 9) - (timeOfDayRank[b.log.timeOfDay] ?? 9));
+  });
 
-    const timeOfDayRank = { "早朝": 0, "朝": 1, "昼": 2, "夕方": 3, "夜": 4, "深夜": 5 };
-    const docsArray = snap.docs.map((docSnap) => ({ id: docSnap.id, log: docSnap.data() }));
+  // groups は日付の新しい順に並んでいるので、直近◯日分だけに絞る
+  const visibleGroups = groups.slice(0, dailyDisplayDayLimit);
+  const remainingDays = groups.length - visibleGroups.length;
 
-    // 同じ日付ごとにグループ化し、グループ内は時間帯の早い順に並べる
-    const groups = [];
-    docsArray.forEach((item) => {
-      let group = groups.find((g) => g.date === item.log.date);
-      if (!group) {
-        group = { date: item.log.date, items: [] };
-        groups.push(group);
-      }
-      group.items.push(item);
-    });
-    groups.forEach((g) => {
-      g.items.sort((a, b) => (timeOfDayRank[a.log.timeOfDay] ?? 9) - (timeOfDayRank[b.log.timeOfDay] ?? 9));
-    });
+  visibleGroups.forEach((group) => {
+    const dateHeader = document.createElement("div");
+    dateHeader.className = "daily-date-header";
+    dateHeader.textContent = group.date;
+    listEl.appendChild(dateHeader);
 
-    groups.forEach((group) => {
-      const dateHeader = document.createElement("div");
-      dateHeader.className = "daily-date-header";
-      dateHeader.textContent = group.date;
-      listEl.appendChild(dateHeader);
-
-      group.items.forEach(({ id, log }) => {
-        const card = document.createElement("div");
-        card.className = "log-card";
-        const timeLabel = [log.timeOfDay, log.careTime].filter(Boolean).join(" ");
-        card.innerHTML = `
-          <div class="row1">
-            <span class="date mono">${escapeHtml(timeLabel || "-")}</span>
-            <span class="weight mono">${log.weight ? log.weight + " kg" : "体重未測定"}</span>
-          </div>
-          <div class="detail">${formatAppetite(log.appetite)}</div>
-          <div class="detail">${formatUrine(log.urine)}</div>
-          <div class="detail">${formatStool(log.stool)}</div>
-          ${formatMedications(log.medications)}
-          ${log.memo ? `<div class="detail">${escapeHtml(log.memo)}</div>` : ""}
-          <div style="display:flex; gap:14px; margin-top:6px;">
-            <button class="btn btn-ghost btn-small" style="padding:0;" data-edit>編集</button>
-            <button class="btn btn-ghost btn-small" style="padding:0;" data-del>削除</button>
-          </div>
-        `;
-        card.querySelector("[data-edit]").addEventListener("click", (e) => {
-          e.stopPropagation();
-          openDailyEditModal(id, log);
-        });
-        card.querySelector("[data-del]").addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (confirm("この記録を削除しますか？")) {
-            deleteDoc(doc(db, "cats", catId, "dailyLogs", id));
-          }
-        });
-        listEl.appendChild(card);
+    group.items.forEach(({ id, log }) => {
+      const card = document.createElement("div");
+      card.className = "log-card";
+      const timeLabel = [log.timeOfDay, log.careTime].filter(Boolean).join(" ");
+      card.innerHTML = `
+        <div class="row1">
+          <span class="date mono">${escapeHtml(timeLabel || "-")}</span>
+          <span class="weight mono">${log.weight ? log.weight + " kg" : "体重未測定"}</span>
+        </div>
+        <div class="detail">${formatAppetite(log.appetite)}</div>
+        <div class="detail">${formatUrine(log.urine)}</div>
+        <div class="detail">${formatStool(log.stool)}</div>
+        ${formatMedications(log.medications)}
+        ${log.memo ? `<div class="detail">${escapeHtml(log.memo)}</div>` : ""}
+        <div style="display:flex; gap:14px; margin-top:6px;">
+          <button class="btn btn-ghost btn-small" style="padding:0;" data-edit>編集</button>
+          <button class="btn btn-ghost btn-small" style="padding:0;" data-del>削除</button>
+        </div>
+      `;
+      card.querySelector("[data-edit]").addEventListener("click", (e) => {
+        e.stopPropagation();
+        openDailyEditModal(id, log);
       });
+      card.querySelector("[data-del]").addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (confirm("この記録を削除しますか？")) {
+          deleteDoc(doc(db, "cats", currentCatId, "dailyLogs", id));
+        }
+      });
+      listEl.appendChild(card);
     });
   });
+
+  if (remainingDays > 0) {
+    loadMoreWrap.classList.remove("hidden");
+    document.getElementById("daily-load-more-btn").textContent = `もっと見る(残り${remainingDays}日分)`;
+  } else {
+    loadMoreWrap.classList.add("hidden");
+  }
 }
 
 function formatAppetite(appetite) {
