@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285949">
+<link rel="stylesheet" href="style.css?v=1784285953">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -141,6 +141,12 @@
 
           <div class="profile-footer">🐾 ご縁がありますように 🐾</div>
         </div>
+      </div>
+
+      <!-- QRコード印刷専用ページ(画面には表示せず、印刷時のみ) -->
+      <div id="print-qr-page" class="hidden">
+        <div id="print-qr-name"></div>
+        <div id="print-qr-canvas-wrap"></div>
       </div>
 
       <!-- 日々記録の印刷専用ページ(まとめ + 空欄記入用紙、画面には表示せず印刷時のみ) -->
@@ -473,6 +479,24 @@
 
       <label>動画URL(任意)</label>
       <input type="url" id="cat-video-url" placeholder="YouTube限定公開・Googleフォトの共有リンクなど">
+
+      <label>団体の連絡先(任意・公開ページに表示されます)</label>
+      <select id="cat-contact-preset">
+        <option value="">選択してください(保存済みの連絡先から選ぶ)</option>
+        <option value="__new__">+ 新しく入力する</option>
+      </select>
+      <div id="contact-type-group" class="checkbox-group" style="margin-top:8px;">
+        <label class="checkbox-item"><input type="checkbox" class="contact-type-cb" data-type="line" data-icon="💬" data-label="LINE"> LINE</label>
+        <label class="checkbox-item"><input type="checkbox" class="contact-type-cb" data-type="instagram" data-icon="📷" data-label="Instagram"> Instagram</label>
+        <label class="checkbox-item"><input type="checkbox" class="contact-type-cb" data-type="twitter" data-icon="🐦" data-label="X(Twitter)"> X(Twitter)</label>
+        <label class="checkbox-item"><input type="checkbox" class="contact-type-cb" data-type="facebook" data-icon="📘" data-label="Facebook"> Facebook</label>
+        <label class="checkbox-item"><input type="checkbox" class="contact-type-cb" data-type="tiktok" data-icon="🎵" data-label="TikTok"> TikTok</label>
+        <label class="checkbox-item"><input type="checkbox" class="contact-type-cb" data-type="tel" data-icon="📞" data-label="電話"> 電話</label>
+        <label class="checkbox-item"><input type="checkbox" class="contact-type-cb" data-type="mail" data-icon="📧" data-label="メール"> メール</label>
+        <label class="checkbox-item"><input type="checkbox" class="contact-type-cb" data-type="url" data-icon="🔗" data-label="ホームページ等"> ホームページ・その他URL</label>
+      </div>
+      <div id="contact-fields-wrap" style="margin-top:8px;"></div>
+      <p class="hint-text">チェックを入れると、その種類の入力欄が出てきます。プルダウンで保存済みの連絡先を選ぶと、まとめて自動で入力されます(空欄のままなら、初期設定の連絡先が使われます)。</p>
 
       <label class="checkbox-item" style="margin-top:14px;">
         <input type="checkbox" id="cat-is-published"> この子を公開ページに掲載する
@@ -807,8 +831,12 @@
   <div class="modal">
     <h3>公開ページのQRコード</h3>
     <p class="hint-text">このQRコードを読み取ると、ログイン不要でこの子の公開ページが開きます。譲渡会などでお使いください。</p>
+    <div id="public-qr-name" style="text-align:center; font-weight:700; font-size:16px; color:var(--accent-ink); margin-top:6px;"></div>
     <div id="public-qr-box" style="text-align:center; margin-top:10px;"></div>
     <div class="url-box" id="public-qr-url-text" style="margin-top:10px; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-size:12px; word-break:break-all;"></div>
+    <button type="button" class="btn btn-primary" id="public-qr-share-btn" style="width:100%; margin-top:10px;">📤 共有する</button>
+    <button type="button" class="btn btn-outline" id="public-qr-print-btn" style="width:100%; margin-top:8px;">🖨️ QRコードを印刷する</button>
+    <p class="hint-text" id="public-qr-share-status"></p>
     <div class="modal-actions">
       <button type="button" class="btn btn-outline" data-close>閉じる</button>
     </div>
@@ -907,7 +935,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285949"></script>
+<script type="module" src="app.js?v=1784285953"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

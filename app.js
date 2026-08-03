@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection, addDoc, deleteDoc, doc, getDoc, getDocs, onSnapshot,
-  query, where, orderBy, serverTimestamp, updateDoc, writeBatch, setDoc
+  query, where, orderBy, serverTimestamp, updateDoc, writeBatch, setDoc, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ORG_NAME, APP_TITLE, FACILITY_LABEL, FOSTER_LABEL } from "./site-config.js?v=1784218044";
 
@@ -75,13 +75,19 @@ document.getElementById("logout-btn").addEventListener("click", () => {
 
 document.getElementById("print-cat-btn").addEventListener("click", () => {
   document.body.classList.remove("print-mode-profile");
+  document.body.classList.remove("print-mode-qr");
   buildPrintDailySummary();
   window.print();
 });
 
 document.getElementById("print-profile-btn").addEventListener("click", () => {
+  document.body.classList.remove("print-mode-qr");
   document.body.classList.add("print-mode-profile");
   window.print();
+});
+
+window.addEventListener("afterprint", () => {
+  document.body.classList.remove("print-mode-qr");
 });
 
 // ---------- 印刷用: 体重の推移グラフ ----------
@@ -195,6 +201,102 @@ function buildPrintDailySummary() {
   contentEl.innerHTML = html;
 }
 
+// ---------- 団体の連絡先(種類をチェックして入力する、保存済みの組み合わせから選ぶこともできる) ----------
+let contactPresets = []; // 各要素は contactItems と同じ形の配列(過去に保存した組み合わせ)
+let contactPresetsLoaded = false;
+
+function renderContactFields(checkedValues) {
+  // checkedValuesが渡されればその値を使う({type: value} の形)。無ければ現在の入力値を維持する。
+  const wrap = document.getElementById("contact-fields-wrap");
+  const existingValues = {};
+  wrap.querySelectorAll("input[data-contact-value]").forEach((input) => {
+    existingValues[input.dataset.contactValue] = input.value;
+  });
+  wrap.innerHTML = "";
+  document.querySelectorAll(".contact-type-cb:checked").forEach((cb) => {
+    const type = cb.dataset.type;
+    const value = checkedValues && checkedValues[type] !== undefined ? checkedValues[type] : (existingValues[type] || "");
+    const row = document.createElement("div");
+    row.style.marginTop = "6px";
+    row.innerHTML = `
+      <label style="margin:6px 0 4px;">${cb.dataset.icon} ${cb.dataset.label}</label>
+      <input type="text" data-contact-value="${type}" placeholder="例: ${cb.dataset.label}のアカウント名や番号">
+    `;
+    wrap.appendChild(row);
+    row.querySelector("input").value = value;
+  });
+}
+document.querySelectorAll(".contact-type-cb").forEach((cb) => {
+  cb.addEventListener("change", () => renderContactFields());
+});
+
+function getContactItemsFromForm() {
+  const items = [];
+  document.querySelectorAll(".contact-type-cb:checked").forEach((cb) => {
+    const input = document.querySelector(`#contact-fields-wrap input[data-contact-value="${cb.dataset.type}"]`);
+    const value = input ? input.value.trim() : "";
+    if (value) {
+      items.push({ type: cb.dataset.type, icon: cb.dataset.icon, label: cb.dataset.label, value });
+    }
+  });
+  return items;
+}
+
+function setContactItemsToForm(items) {
+  const list = items || [];
+  const valueMap = {};
+  document.querySelectorAll(".contact-type-cb").forEach((cb) => {
+    const match = list.find((it) => it.type === cb.dataset.type);
+    cb.checked = !!match;
+    if (match) valueMap[cb.dataset.type] = match.value;
+  });
+  renderContactFields(valueMap);
+}
+
+async function loadContactPresets() {
+  if (contactPresetsLoaded) return;
+  try {
+    const snap = await getDoc(doc(db, "config", "contactPresets"));
+    contactPresets = snap.exists() ? (snap.data().list || []) : [];
+  } catch (err) {
+    contactPresets = [];
+  }
+  contactPresetsLoaded = true;
+  populateContactPresetSelect();
+}
+
+function populateContactPresetSelect() {
+  const selectEl = document.getElementById("cat-contact-preset");
+  const currentValue = selectEl.value;
+  selectEl.innerHTML = `
+    <option value="">選択してください(保存済みの連絡先から選ぶ)</option>
+    ${contactPresets.map((items, i) => `<option value="${i}">${escapeHtml(items.map((it) => it.label).join("・"))}</option>`).join("")}
+    <option value="__new__">+ 新しく入力する</option>
+  `;
+  if ([...selectEl.options].some((o) => o.value === currentValue)) {
+    selectEl.value = currentValue;
+  }
+}
+
+document.getElementById("cat-contact-preset").addEventListener("change", (e) => {
+  const val = e.target.value;
+  if (val === "__new__" || val === "") return; // 新しく入力する場合は、そのまま自由に書いてもらう
+  const preset = contactPresets[parseInt(val, 10)];
+  if (preset) setContactItemsToForm(preset);
+});
+
+async function saveContactPresetIfNew(items) {
+  if (!items || items.length === 0) return;
+  const alreadyExists = contactPresets.some((p) => JSON.stringify(p) === JSON.stringify(items));
+  if (alreadyExists) return;
+  try {
+    await setDoc(doc(db, "config", "contactPresets"), { list: arrayUnion(items) }, { merge: true });
+    contactPresets.push(items);
+  } catch (err) {
+    // 保存に失敗しても、この子自身の連絡先は保存されているので問題ない
+  }
+}
+
 // ---------- 画面切り替え ----------
 const viewDashboard = document.getElementById("view-dashboard");
 const viewDetail = document.getElementById("view-detail");
@@ -306,8 +408,49 @@ function showDetail(catId, catData) {
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.M
       });
+      document.getElementById("public-qr-name").textContent = catData.name || "";
       document.getElementById("public-qr-url-text").textContent = publicUrl;
+      document.getElementById("public-qr-share-status").textContent = "";
       document.getElementById("modal-public-qr").classList.add("open");
+
+      document.getElementById("public-qr-share-btn").onclick = async () => {
+        const shareStatusEl = document.getElementById("public-qr-share-status");
+        const shareData = {
+          title: `${catData.name || ""}の公開ページ`,
+          text: `${catData.name || "この子"}の公開ページです。よかったら見てください🐾`,
+          url: publicUrl
+        };
+        if (navigator.share) {
+          try {
+            await navigator.share(shareData);
+          } catch (err) {
+            // 共有をキャンセルした場合などは何もしない
+          }
+        } else {
+          try {
+            await navigator.clipboard.writeText(publicUrl);
+            shareStatusEl.textContent = "共有機能が使えない端末のため、リンクをコピーしました。";
+          } catch (err) {
+            shareStatusEl.textContent = "コピーできませんでした。上のリンクを長押しして手動でコピーしてください。";
+          }
+        }
+      };
+
+      document.getElementById("public-qr-print-btn").onclick = () => {
+        document.getElementById("print-qr-name").textContent = catData.name || "";
+        const printWrap = document.getElementById("print-qr-canvas-wrap");
+        printWrap.innerHTML = "";
+        new QRCode(printWrap, {
+          text: publicUrl,
+          width: 240,
+          height: 240,
+          colorDark: "#5a3a1e",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        document.body.classList.add("print-mode-qr");
+        window.print();
+      };
     };
   } else {
     publicPageWrap.classList.add("hidden");
@@ -1436,6 +1579,7 @@ document.getElementById("fab-btn").addEventListener("click", () => {
   } else {
     resetCatModalToAddMode();
     fosterNameWrap.classList.add("hidden");
+    loadContactPresets();
     modalCat.classList.add("open");
   }
 });
@@ -1537,6 +1681,10 @@ async function openCatEditModal(catId, catData) {
     if (currentFosterUid) fosterSelect.value = currentFosterUid;
   }
 
+  await loadContactPresets();
+  document.getElementById("cat-contact-preset").value = "";
+  setContactItemsToForm(catData.contactItems);
+
   modalCat.classList.add("open");
 }
 
@@ -1555,6 +1703,8 @@ function resetCatModalToAddMode() {
   foodFreeWrap.classList.remove("hidden");
   foodItemizedWrap.classList.add("hidden");
   document.getElementById("cat-is-published").checked = false;
+  document.getElementById("cat-contact-preset").value = "";
+  setContactItemsToForm([]);
   document.getElementById("cat-modal-title").textContent = "犬猫を登録";
   document.getElementById("cat-submit-btn").textContent = "登録する";
   updateSpeciesTagVisibility();
@@ -1658,6 +1808,7 @@ async function syncPublicProfile(catId, data) {
     litterCleaning: data.litterCleaning,
     litterMemo: data.litterMemo,
     videoUrl: data.videoUrl,
+    contactItems: data.contactItems || [],
     photoData: data.publicPhotoData || data.photoData || "",
     neuterStatus: hasNeuter ? "済" : "未",
     vaccineStatus: vaccineCount > 0 ? `済(${vaccineCount}回)` : "未",
@@ -1733,6 +1884,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     videoUrl: document.getElementById("cat-video-url").value.trim(),
     publicPhotoData: currentCatPublicPhotoData || "",
     isPublished: document.getElementById("cat-is-published").checked,
+    contactItems: getContactItemsFromForm(),
     detailMemo: document.getElementById("cat-detail-memo").value.trim(),
     photoData: currentCatPhotoData || ""
   };
@@ -1758,6 +1910,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
 
       await updateDoc(doc(db, "cats", editingCatId), data);
       if (changes.length) await addHistoryEntry(editingCatId, changes.join(" ／ "));
+      await saveContactPresetIfNew(data.contactItems);
 
       const updatedCatData = { ...before, ...data };
       await syncPublicProfile(editingCatId, updatedCatData);
@@ -1774,6 +1927,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
         createdBy: currentUsername,
         createdAt: serverTimestamp()
       });
+      await saveContactPresetIfNew(data.contactItems);
       await syncPublicProfile(newCatRef.id, { ...data, status: "保護中" });
       catFormStatus.textContent = "登録しました。";
       e.target.reset();
