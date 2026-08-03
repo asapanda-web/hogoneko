@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285954">
+<link rel="stylesheet" href="style.css?v=1784285955">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -833,11 +833,11 @@
 <div class="modal-overlay" id="modal-public-qr">
   <div class="modal">
     <h3>公開ページのQRコード</h3>
-    <p class="hint-text">このQRコードを読み取ると、ログイン不要でこの子の公開ページが開きます。譲渡会などでお使いください。</p>
+    <p class="hint-text">この子の紹介ページをスマホのカメラで読み取ってもらえます。譲渡会などでお使いください。</p>
     <div id="public-qr-name" style="text-align:center; font-weight:700; font-size:16px; color:var(--accent-ink); margin-top:6px;"></div>
     <div id="public-qr-box" style="text-align:center; margin-top:10px;"></div>
-    <div class="url-box" id="public-qr-url-text" style="margin-top:10px; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-size:12px; word-break:break-all;"></div>
-    <button type="button" class="btn btn-primary" id="public-qr-share-btn" style="width:100%; margin-top:10px;">📤 共有する</button>
+    <button type="button" class="btn btn-outline" id="public-qr-copy-btn" style="width:100%; margin-top:10px;">🔗 リンクをコピー</button>
+    <button type="button" class="btn btn-primary" id="public-qr-share-btn" style="width:100%; margin-top:8px;">📤 共有する</button>
     <button type="button" class="btn btn-outline" id="public-qr-print-btn" style="width:100%; margin-top:8px;">🖨️ QRコードを印刷する</button>
     <p class="hint-text" id="public-qr-share-status"></p>
     <div class="modal-actions">
@@ -938,7 +938,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285954"></script>
+<script type="module" src="app.js?v=1784285955"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

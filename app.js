@@ -410,9 +410,18 @@ function showDetail(catId, catData) {
         correctLevel: QRCode.CorrectLevel.M
       });
       document.getElementById("public-qr-name").textContent = catData.name || "";
-      document.getElementById("public-qr-url-text").textContent = publicUrl;
       document.getElementById("public-qr-share-status").textContent = "";
       document.getElementById("modal-public-qr").classList.add("open");
+
+      document.getElementById("public-qr-copy-btn").onclick = async () => {
+        const shareStatusEl = document.getElementById("public-qr-share-status");
+        try {
+          await navigator.clipboard.writeText(publicUrl);
+          shareStatusEl.textContent = "リンクをコピーしました。";
+        } catch (err) {
+          shareStatusEl.textContent = "コピーできませんでした。";
+        }
+      };
 
       document.getElementById("public-qr-share-btn").onclick = async () => {
         const shareStatusEl = document.getElementById("public-qr-share-status");
