@@ -14,3 +14,8 @@ export const FOSTER_LABEL = "個人宅預かり";
 
 // アカウント削除依頼など、メンバーからの連絡を受け取るメールアドレス
 export const ADMIN_EMAIL = "asapanda0316@gmail.com";
+
+// 公開ページ(profile.html)の一番下に表示する、団体の連絡先(任意)
+// 空文字 "" にすると表示されません。改行はそのまま反映されます。
+// 例: "お問い合わせ: LINE公式アカウント @torachan\nInstagram: @torachan_adp"
+export const ORG_CONTACT = "";
