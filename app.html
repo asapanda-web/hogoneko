@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285938">
+<link rel="stylesheet" href="style.css?v=1784285945">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -95,11 +95,16 @@
         <button class="btn btn-outline btn-small" id="toggle-status-btn"></button>
         <button class="btn btn-danger btn-small hidden" id="delete-cat-btn">この子のデータを完全削除</button>
       </div>
+      <div id="public-page-wrap" class="hidden" style="margin-bottom:12px;">
+        <a href="#" target="_blank" class="btn btn-outline btn-small" id="public-page-link">🌐 公開ページを見る</a>
+        <button type="button" class="btn btn-outline btn-small" id="public-page-qr-btn">📱 QRコード</button>
+        <span class="hint-text">この子は公開ページに掲載されています(ログイン不要で誰でも見られます)</span>
+      </div>
       <div id="print-buttons-wrap" style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap;">
         <button class="btn btn-outline btn-small" id="print-cat-btn">🖨️ この子の記録を印刷</button>
         <button class="btn btn-outline btn-small" id="print-profile-btn">🐾 譲渡プロフィールを印刷</button>
       </div>
-      <p class="hint-text" id="print-hint-text">B6サイズ(128×182mm)のレイアウトで印刷されます。普通のA4用紙にそのまま印刷され、記録が多い場合は自動的に2枚目・3枚目に続きます。切り取ることでミニバインダーに保存できます。<strong>印刷はパソコンからのご利用をおすすめします</strong>(スマホのブラウザでは印刷できない場合や、レイアウトが崩れる場合があります)。</p>
+      <p class="hint-text" id="print-hint-text">A4用紙(縦向き)、左に「これまでの記録のまとめ(1日1行)」、右に「1週間分の空欄記入用紙」を並べて印刷します。トライアル中の里親さんに渡して、手書きで記録してもらうこともできます。医療記録・変更履歴は別のページに続けて印刷されます。<strong>印刷はパソコンからのご利用をおすすめします</strong>(スマホのブラウザでは印刷できない場合や、レイアウトが崩れる場合があります)。</p>
 
       <!-- 譲渡プロフィールシート(印刷時のみ表示) -->
       <div id="profile-sheet" class="hidden">
@@ -135,6 +140,84 @@
           <div class="profile-freetext" id="profile-memo"></div>
 
           <div class="profile-footer">🐾 ご縁がありますように 🐾</div>
+        </div>
+      </div>
+
+      <!-- 日々記録の印刷専用ページ(まとめ + 空欄記入用紙、画面には表示せず印刷時のみ) -->
+      <div id="print-daily-page" class="hidden">
+        <div id="print-daily-summary-card" class="print-card">
+          <div class="print-card-title">🐾 これまでの記録</div>
+          <div id="print-weight-chart-wrap">
+            <canvas id="print-weight-chart" width="330" height="110"></canvas>
+          </div>
+          <div id="print-daily-summary-content"></div>
+        </div>
+        <div class="print-card">
+          <div class="print-card-title">🐾 記録用紙(1週間分)</div>
+          <p class="print-blank-note">お世話の様子を書き込んでください</p>
+          <div class="print-blank-day">
+            <div class="print-blank-date">　　／　　（　）</div>
+            <table class="print-blank-mini">
+              <tr><td>朝</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>昼</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>夜</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+            </table>
+            <div class="print-blank-line">体重：　　　　kg　メモ：</div>
+          </div>
+          <div class="print-blank-day">
+            <div class="print-blank-date">　　／　　（　）</div>
+            <table class="print-blank-mini">
+              <tr><td>朝</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>昼</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>夜</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+            </table>
+            <div class="print-blank-line">体重：　　　　kg　メモ：</div>
+          </div>
+          <div class="print-blank-day">
+            <div class="print-blank-date">　　／　　（　）</div>
+            <table class="print-blank-mini">
+              <tr><td>朝</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>昼</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>夜</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+            </table>
+            <div class="print-blank-line">体重：　　　　kg　メモ：</div>
+          </div>
+          <div class="print-blank-day">
+            <div class="print-blank-date">　　／　　（　）</div>
+            <table class="print-blank-mini">
+              <tr><td>朝</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>昼</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>夜</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+            </table>
+            <div class="print-blank-line">体重：　　　　kg　メモ：</div>
+          </div>
+          <div class="print-blank-day">
+            <div class="print-blank-date">　　／　　（　）</div>
+            <table class="print-blank-mini">
+              <tr><td>朝</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>昼</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>夜</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+            </table>
+            <div class="print-blank-line">体重：　　　　kg　メモ：</div>
+          </div>
+          <div class="print-blank-day">
+            <div class="print-blank-date">　　／　　（　）</div>
+            <table class="print-blank-mini">
+              <tr><td>朝</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>昼</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>夜</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+            </table>
+            <div class="print-blank-line">体重：　　　　kg　メモ：</div>
+          </div>
+          <div class="print-blank-day">
+            <div class="print-blank-date">　　／　　（　）</div>
+            <table class="print-blank-mini">
+              <tr><td>朝</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>昼</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+              <tr><td>夜</td><td></td><td>食</td><td></td><td>尿</td><td></td><td>便</td><td></td></tr>
+            </table>
+            <div class="print-blank-line">体重：　　　　kg　メモ：</div>
+          </div>
         </div>
       </div>
 
@@ -287,13 +370,111 @@
       <input type="text" id="cat-play-other" placeholder="好きな遊びその他(自由記述)">
 
       <label>🍽 今食べているご飯(任意)</label>
-      <textarea id="cat-food" placeholder="例: ピュリナワン子猫用(カリカリ)、カルカン子猫用(パウチ)"></textarea>
+      <select id="food-input-mode">
+        <option value="free">自由記述で書く</option>
+        <option value="itemized">項目に分けて書く</option>
+      </select>
 
-      <label>紹介文(名前の由来や簡単な自己紹介など)</label>
+      <div id="food-free-wrap">
+        <textarea id="cat-food" placeholder="例: ピュリナワン子猫用(カリカリ)、カルカン子猫用(パウチ)"></textarea>
+      </div>
+
+      <div id="food-itemized-wrap" class="hidden detail-box">
+        <label>フード名(ブランド)</label>
+        <input type="text" id="food-brand" placeholder="例: ロイヤルカナン 成長前期">
+        <label>種類</label>
+        <select id="food-type">
+          <option value="">選択してください</option>
+          <option value="ドライ(カリカリ)">ドライ(カリカリ)</option>
+          <option value="ウェット(パウチ)">ウェット(パウチ)</option>
+          <option value="半生(セミモイスト)">半生(セミモイスト)</option>
+          <option value="フリーズドライ">フリーズドライ</option>
+          <option value="補助食・スープ">補助食・スープ</option>
+          <option value="おやつ">おやつ</option>
+          <option value="その他">その他</option>
+        </select>
+        <label>与え方(複数選択可)</label>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" value="そのまま" class="food-feeding-tag"> そのまま</label>
+          <label class="checkbox-item"><input type="checkbox" value="ふやかして" class="food-feeding-tag"> ふやかして</label>
+          <label class="checkbox-item"><input type="checkbox" value="他のフードと混ぜて" class="food-feeding-tag"> 他のフードと混ぜて</label>
+          <label class="checkbox-item"><input type="checkbox" value="シリンジで給餌" class="food-feeding-tag"> シリンジで給餌</label>
+        </div>
+        <label>量(任意)</label>
+        <input type="text" id="food-amount" placeholder="例: 1回20g">
+        <label>回数</label>
+        <select id="food-frequency">
+          <option value="">選択してください</option>
+          <option value="1日1回">1日1回</option>
+          <option value="1日2回">1日2回</option>
+          <option value="1日3回">1日3回</option>
+          <option value="1日4回">1日4回</option>
+          <option value="1日5回以上">1日5回以上</option>
+          <option value="欲しがる時にあげている">欲しがる時にあげている</option>
+        </select>
+      </div>
+      <input type="text" id="food-comment" placeholder="ご飯についての自由コメント(任意・項目に当てはまらない注意点など)">
+
+      <div id="litter-section-wrap">
+        <label>🚽 トイレ環境(猫のみ・任意)</label>
+        <div class="detail-box">
+          <label>トイレ本体(複数選択可)</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" value="オープン" class="litter-box-tag"> オープン</label>
+            <label class="checkbox-item"><input type="checkbox" value="浅型" class="litter-box-tag"> 浅型</label>
+            <label class="checkbox-item"><input type="checkbox" value="カバー付き" class="litter-box-tag"> カバー付き</label>
+            <label class="checkbox-item"><input type="checkbox" value="システムトイレ" class="litter-box-tag"> システムトイレ</label>
+          </div>
+          <label>猫砂(複数選択可)</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" value="鉱物" class="litter-sand-tag"> 鉱物</label>
+            <label class="checkbox-item"><input type="checkbox" value="紙" class="litter-sand-tag"> 紙</label>
+            <label class="checkbox-item"><input type="checkbox" value="木" class="litter-sand-tag"> 木</label>
+            <label class="checkbox-item"><input type="checkbox" value="おから" class="litter-sand-tag"> おから</label>
+            <label class="checkbox-item"><input type="checkbox" value="ペレット" class="litter-sand-tag"> ペレット</label>
+            <label class="checkbox-item"><input type="checkbox" value="シリカゲル" class="litter-sand-tag"> シリカゲル</label>
+          </div>
+          <input type="text" id="litter-sand-other" placeholder="猫砂その他(自由記述)">
+          <label>砂の粒度</label>
+          <select id="litter-granularity">
+            <option value="">選択してください</option>
+            <option value="細かい">細かい</option>
+            <option value="中粒">中粒</option>
+            <option value="大粒">大粒</option>
+          </select>
+          <label>掃除(任意)</label>
+          <input type="text" id="litter-cleaning" placeholder="例: 1日2回 / 都度">
+          <label>メモ(任意)</label>
+          <textarea id="litter-memo" placeholder="例: 砂の種類を変えると使わないことがある、子猫のため浅型を使用、など"></textarea>
+        </div>
+      </div>
+
+      <label>名前の由来(任意・公開ページに表示されます)</label>
+      <textarea id="cat-name-origin" placeholder="例: ハワイ語で「幸福」という意味から名付けました"></textarea>
+
+      <label>紹介文</label>
       <textarea id="cat-intro" placeholder="性格や、この子の魅力が伝わる紹介文"></textarea>
 
       <label>📝 詳しいメモ(譲渡プロフィールに表示されます・生活の様子など)</label>
       <textarea id="cat-detail-memo" placeholder="ケージの使い方、夜の様子、慣れてきた時の様子など、詳しい生活情報"></textarea>
+
+      <label style="margin-top:20px; padding-top:14px; border-top:1px solid var(--border); display:block;">公開ページ用の情報(任意)</label>
+      <p class="hint-text">ログイン不要で誰でも見られる、譲渡会などで見せられる紹介ページ用の項目です。保護場所・預かり担当者名・内部メモ・保護開始日は表示されません。</p>
+
+      <label>公開ページ用の写真(任意・プロフィール写真とは別に設定できます)</label>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <img id="cat-public-photo-preview" class="hidden" style="width:70px;height:70px;object-fit:cover;border-radius:10px;border:2px solid var(--border);">
+        <input type="file" id="cat-public-photo-input" accept="image/*">
+      </div>
+      <p class="hint-text" id="cat-public-photo-status"></p>
+
+      <label>動画URL(任意)</label>
+      <input type="url" id="cat-video-url" placeholder="YouTube限定公開・Googleフォトの共有リンクなど">
+
+      <label class="checkbox-item" style="margin-top:14px;">
+        <input type="checkbox" id="cat-is-published"> この子を公開ページに掲載する
+      </label>
+      <p class="hint-text">「譲渡済みにする」を押すと、公開ページも自動的に非表示になります。</p>
 
       <label>メモ(任意・スタッフ内部用、プロフィールには表示されません)</label>
       <textarea id="cat-memo" placeholder="性格や特徴など"></textarea>
@@ -618,6 +799,19 @@
   </div>
 </div>
 
+<!-- 公開ページQRコードモーダル -->
+<div class="modal-overlay" id="modal-public-qr">
+  <div class="modal">
+    <h3>公開ページのQRコード</h3>
+    <p class="hint-text">このQRコードを読み取ると、ログイン不要でこの子の公開ページが開きます。譲渡会などでお使いください。</p>
+    <div id="public-qr-box" style="text-align:center; margin-top:10px;"></div>
+    <div class="url-box" id="public-qr-url-text" style="margin-top:10px; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-size:12px; word-break:break-all;"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" data-close>閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- 体重グラフモーダル -->
 <div class="modal-overlay" id="modal-weight-chart">
   <div class="modal">
@@ -709,7 +903,8 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script type="module" src="app.js?v=1784285938"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script type="module" src="app.js?v=1784285945"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

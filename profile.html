@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">プロフィール</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff6996">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: #3a2e26;
+    line-height: 1.7;
+    background: #fdf6f0;
+  }
+  body.sex-male {
+    background-color: #eaf4fb;
+    background-image:
+      radial-gradient(circle at 10% 8%, rgba(125,180,220,0.35) 0 10px, transparent 11px),
+      radial-gradient(circle at 30% 22%, rgba(125,180,220,0.3) 0 7px, transparent 8px);
+  }
+  body.sex-female {
+    background-color: #fdecf1;
+  }
+  .paw-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.5;
+    pointer-events: none;
+    background-repeat: repeat;
+    background-size: 130px 130px;
+  }
+  body.sex-male .paw-bg {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='130'%3E%3Cg fill='%237fb8dd' fill-opacity='0.55'%3E%3Cellipse cx='30' cy='34' rx='10' ry='12'/%3E%3Cellipse cx='18' cy='20' rx='4.5' ry='6'/%3E%3Cellipse cx='42' cy='20' rx='4.5' ry='6'/%3E%3Cellipse cx='11' cy='32' rx='4' ry='5.2'/%3E%3Cellipse cx='49' cy='32' rx='4' ry='5.2'/%3E%3C/g%3E%3Cpath fill='%237fb8dd' fill-opacity='0.5' d='M95 90c-6-6-16-6-20 2-3 6 1 12 8 15 3 8 12 12 19 8 7-4 8-13 4-19-2-3-7-9-11-6z'/%3E%3C/svg%3E");
+  }
+  body.sex-female .paw-bg {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='130'%3E%3Cg fill='%23e8a3bb' fill-opacity='0.55'%3E%3Cellipse cx='30' cy='34' rx='10' ry='12'/%3E%3Cellipse cx='18' cy='20' rx='4.5' ry='6'/%3E%3Cellipse cx='42' cy='20' rx='4.5' ry='6'/%3E%3Cellipse cx='11' cy='32' rx='4' ry='5.2'/%3E%3Cellipse cx='49' cy='32' rx='4' ry='5.2'/%3E%3C/g%3E%3Cpath fill='%23e8a3bb' fill-opacity='0.5' d='M95 90c-6-6-16-6-20 2-3 6 1 12 8 15 3 8 12 12 19 8 7-4 8-13 4-19-2-3-7-9-11-6z'/%3E%3C/svg%3E");
+  }
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 24px 18px 60px;
+  }
+  .card {
+    background: rgba(255,255,255,0.92);
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    padding: 22px 20px;
+    margin-bottom: 16px;
+  }
+  .brand-line {
+    text-align: center;
+    font-size: 13px;
+    color: #8a7a6d;
+    margin-bottom: 14px;
+  }
+  .photo-wrap {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .photo-wrap img {
+    width: 100%;
+    max-width: 360px;
+    max-height: 360px;
+    object-fit: cover;
+    border-radius: 16px;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+  .name {
+    text-align: center;
+    font-size: 26px;
+    font-weight: 700;
+    margin-top: 12px;
+    color: #6a4a30;
+  }
+  .meta {
+    text-align: center;
+    font-size: 14px;
+    color: #8a7a6d;
+    margin-top: 4px;
+  }
+  .name-origin {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #8a7a6d;
+    background: #faf3ea;
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .name-origin-label { font-weight: 700; color: #a97a45; margin-bottom: 3px; }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #a97a45;
+    margin: 18px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid #f0e4d6;
+  }
+  .intro-text { font-size: 14px; white-space: pre-wrap; }
+  .tag-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag-badge {
+    display: inline-block;
+    background: #eef2e9;
+    color: #6b8a5a;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+  .tag-badge.dislike { background: #fbece7; color: #c15a35; }
+  .info-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+  .info-table td { border: 1px solid #eee0d0; padding: 6px 10px; text-align: left; vertical-align: top; }
+  .info-table td:first-child { background: #faf3ea; font-weight: 700; width: 34%; }
+  .video-link {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 10px 16px;
+    background: #ff6996;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .free-note { font-size: 13px; color: #6b5c4d; margin-top: 6px; white-space: pre-wrap; }
+  .loading, .not-found {
+    text-align: center;
+    padding: 80px 20px;
+    color: #8a7a6d;
+    font-size: 14px;
+  }
+  .footer-note {
+    text-align: center;
+    font-size: 12px;
+    color: #a3968a;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="paw-bg"></div>
+
+<div class="wrap">
+  <div class="brand-line" id="brand-line">🐾 読み込んでいます...</div>
+  <div id="content"></div>
+</div>
+
+<script type="module">
+  import { db } from "./firebase-config.js?v=1784218044";
+  import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { ORG_NAME, APP_TITLE } from "./site-config.js?v=1784218044";
+
+  const titleText = ORG_NAME ? `${APP_TITLE}(${ORG_NAME})` : APP_TITLE;
+  document.getElementById("brand-line").textContent = `🐾 ${titleText}`;
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function tagBadges(tags, other, extraClass) {
+    const all = [...(tags || [])];
+    if (other) all.push(other);
+    if (all.length === 0) return "";
+    return `<div class="tag-badges">${all.map((t) => `<span class="tag-badge ${extraClass || ""}">${escapeHtml(t)}</span>`).join("")}</div>`;
+  }
+
+  async function main() {
+    const params = new URLSearchParams(window.location.search);
+    const catId = params.get("id");
+    const contentEl = document.getElementById("content");
+
+    if (!catId) {
+      contentEl.innerHTML = `<div class="not-found">🐾 URLに子の指定がありません。</div>`;
+      return;
+    }
+
+    let snap;
+    try {
+      snap = await getDoc(doc(db, "publicProfiles", catId));
+    } catch (err) {
+      contentEl.innerHTML = `<div class="not-found">読み込みに失敗しました。時間をおいて再度お試しください。</div>`;
+      return;
+    }
+
+    if (!snap.exists()) {
+      contentEl.innerHTML = `<div class="not-found">🐾 このページは非公開になっています。<br>(譲渡が決まった、または準備中の可能性があります)</div>`;
+      return;
+    }
+
+    const data = snap.data();
+    document.body.classList.add(data.sex === "オス" ? "sex-male" : "sex-female");
+    document.getElementById("page-title").textContent = `${data.name || ""} | ${titleText}`;
+
+    const photoHtml = data.photoData
+      ? `<div class="photo-wrap"><img src="${data.photoData}" alt=""></div>`
+      : "";
+
+    const metaText = [data.species, data.sex, data.age].filter(Boolean).join(" ・ ");
+
+    const nameOriginHtml = data.nameOrigin
+      ? `<div class="name-origin"><div class="name-origin-label">名前の由来</div>${escapeHtml(data.nameOrigin)}</div>`
+      : "";
+
+    const introHtml = data.intro
+      ? `<div class="section-title">🐾 この子について</div><div class="intro-text">${escapeHtml(data.intro)}</div>`
+      : "";
+
+    const personalityHtml = tagBadges(data.personalityTags, data.personalityOther)
+      ? `<div class="section-title">💕 性格</div>${tagBadges(data.personalityTags, data.personalityOther)}`
+      : "";
+
+    const canDoHtml = tagBadges(data.canDoTags, data.canDoOther)
+      ? `<div class="section-title">🎓 できること</div>${tagBadges(data.canDoTags, data.canDoOther)}`
+      : "";
+
+    const dislikeHtml = tagBadges(data.canDislikeTags, data.canDislikeOther, "dislike")
+      ? `<div class="section-title">🙅 苦手なこと</div>${tagBadges(data.canDislikeTags, data.canDislikeOther, "dislike")}`
+      : "";
+
+    const playHtml = tagBadges(data.playTags, data.playOther)
+      ? `<div class="section-title">🎮 好きな遊び</div>${tagBadges(data.playTags, data.playOther)}`
+      : "";
+
+    const foodRows = [];
+    if (data.foodMode === "itemized") {
+      if (data.foodBrand) foodRows.push(["フード名", escapeHtml(data.foodBrand)]);
+      if (data.foodType) foodRows.push(["種類", escapeHtml(data.foodType)]);
+      if (data.foodFeedingTags && data.foodFeedingTags.length) foodRows.push(["与え方", escapeHtml(data.foodFeedingTags.join("・"))]);
+      if (data.foodAmount) foodRows.push(["量", escapeHtml(data.foodAmount)]);
+      if (data.foodFrequency) foodRows.push(["回数", escapeHtml(data.foodFrequency)]);
+    } else if (data.food) {
+      foodRows.push(["ご飯", escapeHtml(data.food)]);
+    }
+    const foodHtml = (foodRows.length || data.foodComment)
+      ? `<div class="section-title">🍽 今食べているご飯</div>
+         ${foodRows.length ? `<table class="info-table">${foodRows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}</table>` : ""}
+         ${data.foodComment ? `<div class="free-note">${escapeHtml(data.foodComment)}</div>` : ""}`
+      : "";
+
+    const litterRows = [];
+    if (data.litterBoxTags && data.litterBoxTags.length) litterRows.push(["トイレ本体", escapeHtml(data.litterBoxTags.join("・"))]);
+    const sandList = [...(data.litterSandTags || [])];
+    if (data.litterSandOther) sandList.push(data.litterSandOther);
+    if (sandList.length) litterRows.push(["猫砂", escapeHtml(sandList.join("・"))]);
+    if (data.litterGranularity) litterRows.push(["砂の粒度", escapeHtml(data.litterGranularity)]);
+    if (data.litterCleaning) litterRows.push(["掃除", escapeHtml(data.litterCleaning)]);
+    const litterHtml = (litterRows.length || data.litterMemo)
+      ? `<div class="section-title">🚽 トイレ環境</div>
+         ${litterRows.length ? `<table class="info-table">${litterRows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}</table>` : ""}
+         ${data.litterMemo ? `<div class="free-note">${escapeHtml(data.litterMemo)}</div>` : ""}`
+      : "";
+
+    const medicalHtml = `
+      <div class="section-title">🏥 健康状態</div>
+      <table class="info-table">
+        <tr><td>避妊・去勢</td><td>${escapeHtml(data.neuterStatus || "未")}</td></tr>
+        <tr><td>ワクチン</td><td>${escapeHtml(data.vaccineStatus || "未")}</td></tr>
+        <tr><td>猫エイズ(FIV)</td><td>${escapeHtml(data.fivResult || "未検査")}</td></tr>
+        <tr><td>白血病(FeLV)</td><td>${escapeHtml(data.felvResult || "未検査")}</td></tr>
+        <tr><td>駆虫</td><td>${escapeHtml(data.dewormStatus || "未")}</td></tr>
+      </table>`;
+
+    const detailMemoHtml = data.detailMemo
+      ? `<div class="section-title">📝 詳しい様子</div><div class="intro-text">${escapeHtml(data.detailMemo)}</div>`
+      : "";
+
+    const videoHtml = data.videoUrl
+      ? `<div class="section-title">🎬 動画</div><a class="video-link" href="${escapeHtml(data.videoUrl)}" target="_blank" rel="noopener">動画を見る →</a>`
+      : "";
+
+    contentEl.innerHTML = `
+      <div class="card">
+        ${photoHtml}
+        <div class="name">${escapeHtml(data.name || "")}</div>
+        <div class="meta">${escapeHtml(metaText)}</div>
+        ${nameOriginHtml}
+        ${introHtml}
+        ${videoHtml}
+      </div>
+      <div class="card">
+        ${personalityHtml}
+        ${canDoHtml}
+        ${dislikeHtml}
+        ${playHtml}
+      </div>
+      <div class="card">
+        ${foodHtml}
+        ${litterHtml}
+      </div>
+      <div class="card">
+        ${medicalHtml}
+        ${detailMemoHtml}
+      </div>
+      <div class="footer-note">🐾 ご縁がありますように 🐾</div>
+    `;
+  }
+
+  main();
+</script>
+</body>
+</html>
