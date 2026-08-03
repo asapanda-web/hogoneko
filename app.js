@@ -1666,8 +1666,12 @@ async function syncPublicProfile(catId, data) {
   }, { merge: false });
 }
 
+let isCatFormSubmitting = false;
 document.getElementById("form-cat").addEventListener("submit", async (e) => {
   e.preventDefault();
+  if (isCatFormSubmitting) return; // 二重送信防止(通信中に連打しても2件登録されないようにする)
+  isCatFormSubmitting = true;
+
   const catFormStatus = document.getElementById("cat-form-status");
   const catSubmitBtn = document.getElementById("cat-submit-btn");
   catFormStatus.textContent = "";
@@ -1675,6 +1679,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
   const name = document.getElementById("cat-name").value.trim();
   if (!name) {
     catFormStatus.textContent = "名前を入力してください。";
+    isCatFormSubmitting = false;
     return;
   }
 
@@ -1776,6 +1781,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     catFormStatus.textContent = `保存に失敗しました(${err.code || err.message || "不明なエラー"})。権限設定を確認するか、もう一度お試しください。`;
   } finally {
     catSubmitBtn.disabled = false;
+    isCatFormSubmitting = false;
   }
 });
 
