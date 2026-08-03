@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285953">
+<link rel="stylesheet" href="style.css?v=1784285954">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -479,6 +479,9 @@
 
       <label>動画URL(任意)</label>
       <input type="url" id="cat-video-url" placeholder="YouTube限定公開・Googleフォトの共有リンクなど">
+      <label class="checkbox-item" style="margin-top:8px;">
+        <input type="checkbox" id="cat-video-coming-soon"> 動画・フォト集は準備中(URL未設定のまま公開ページに「準備中」と表示します)
+      </label>
 
       <label>団体の連絡先(任意・公開ページに表示されます)</label>
       <select id="cat-contact-preset">
@@ -935,7 +938,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285953"></script>
+<script type="module" src="app.js?v=1784285954"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

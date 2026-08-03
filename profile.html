@@ -339,7 +339,9 @@
 
     const videoHtml = data.videoUrl
       ? `<div class="section-title">🎬 動画</div><a class="video-link" href="${escapeHtml(data.videoUrl)}" target="_blank" rel="noopener">動画を見る →</a>`
-      : "";
+      : (data.videoComingSoon
+          ? `<div class="section-title">🎬 動画・フォト集</div><div class="free-note">動画・フォト集は追加する際は、こちらに表示されます。</div>`
+          : "");
 
     contentEl.innerHTML = `
       <div class="card">

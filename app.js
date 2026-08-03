@@ -270,7 +270,7 @@ function populateContactPresetSelect() {
   const currentValue = selectEl.value;
   selectEl.innerHTML = `
     <option value="">選択してください(保存済みの連絡先から選ぶ)</option>
-    ${contactPresets.map((items, i) => `<option value="${i}">${escapeHtml(items.map((it) => it.label).join("・"))}</option>`).join("")}
+    ${contactPresets.map((p, i) => `<option value="${i}">${escapeHtml((p.items || []).map((it) => it.label).join("・"))}</option>`).join("")}
     <option value="__new__">+ 新しく入力する</option>
   `;
   if ([...selectEl.options].some((o) => o.value === currentValue)) {
@@ -282,16 +282,17 @@ document.getElementById("cat-contact-preset").addEventListener("change", (e) => 
   const val = e.target.value;
   if (val === "__new__" || val === "") return; // 新しく入力する場合は、そのまま自由に書いてもらう
   const preset = contactPresets[parseInt(val, 10)];
-  if (preset) setContactItemsToForm(preset);
+  if (preset) setContactItemsToForm(preset.items || []);
 });
 
 async function saveContactPresetIfNew(items) {
   if (!items || items.length === 0) return;
-  const alreadyExists = contactPresets.some((p) => JSON.stringify(p) === JSON.stringify(items));
+  const alreadyExists = contactPresets.some((p) => JSON.stringify(p.items) === JSON.stringify(items));
   if (alreadyExists) return;
+  const presetEntry = { items }; // Firestoreは配列の中に配列を直接入れられないため、オブジェクトで包む
   try {
-    await setDoc(doc(db, "config", "contactPresets"), { list: arrayUnion(items) }, { merge: true });
-    contactPresets.push(items);
+    await setDoc(doc(db, "config", "contactPresets"), { list: arrayUnion(presetEntry) }, { merge: true });
+    contactPresets.push(presetEntry);
   } catch (err) {
     // 保存に失敗しても、この子自身の連絡先は保存されているので問題ない
   }
@@ -1658,6 +1659,7 @@ async function openCatEditModal(catId, catData) {
   document.getElementById("cat-name-origin-shared").value = catData.nameOriginShared || "";
   document.getElementById("cat-name-origin").value = catData.nameOrigin || "";
   document.getElementById("cat-video-url").value = catData.videoUrl || "";
+  document.getElementById("cat-video-coming-soon").checked = !!catData.videoComingSoon;
   document.getElementById("cat-is-published").checked = !!catData.isPublished;
 
   currentCatPublicPhotoData = catData.publicPhotoData || null;
@@ -1703,6 +1705,7 @@ function resetCatModalToAddMode() {
   foodFreeWrap.classList.remove("hidden");
   foodItemizedWrap.classList.add("hidden");
   document.getElementById("cat-is-published").checked = false;
+  document.getElementById("cat-video-coming-soon").checked = false;
   document.getElementById("cat-contact-preset").value = "";
   setContactItemsToForm([]);
   document.getElementById("cat-modal-title").textContent = "犬猫を登録";
@@ -1808,6 +1811,7 @@ async function syncPublicProfile(catId, data) {
     litterCleaning: data.litterCleaning,
     litterMemo: data.litterMemo,
     videoUrl: data.videoUrl,
+    videoComingSoon: data.videoComingSoon,
     contactItems: data.contactItems || [],
     photoData: data.publicPhotoData || data.photoData || "",
     neuterStatus: hasNeuter ? "済" : "未",
@@ -1882,6 +1886,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     nameOriginShared: document.getElementById("cat-name-origin-shared").value.trim(),
     nameOrigin: document.getElementById("cat-name-origin").value.trim(),
     videoUrl: document.getElementById("cat-video-url").value.trim(),
+    videoComingSoon: document.getElementById("cat-video-coming-soon").checked,
     publicPhotoData: currentCatPublicPhotoData || "",
     isPublished: document.getElementById("cat-is-published").checked,
     contactItems: getContactItemsFromForm(),
