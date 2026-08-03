@@ -69,6 +69,7 @@
     max-width: 360px;
     max-height: 360px;
     object-fit: cover;
+    object-position: center 20%;
     border-radius: 16px;
     border: 4px solid #fff;
     box-shadow: 0 4px 16px rgba(0,0,0,0.12);
@@ -139,9 +140,10 @@
   }
   .footer-note {
     text-align: center;
-    font-size: 12px;
-    color: #a3968a;
-    margin-top: 20px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #a97a45;
+    margin-top: 24px;
   }
 </style>
 </head>
@@ -271,16 +273,6 @@
          ${data.litterMemo ? `<div class="free-note">${escapeHtml(data.litterMemo)}</div>` : ""}`
       : "";
 
-    const medicalHtml = `
-      <div class="section-title">🏥 健康状態</div>
-      <table class="info-table">
-        <tr><td>避妊・去勢</td><td>${escapeHtml(data.neuterStatus || "未")}</td></tr>
-        <tr><td>ワクチン</td><td>${escapeHtml(data.vaccineStatus || "未")}</td></tr>
-        <tr><td>猫エイズ(FIV)</td><td>${escapeHtml(data.fivResult || "未検査")}</td></tr>
-        <tr><td>白血病(FeLV)</td><td>${escapeHtml(data.felvResult || "未検査")}</td></tr>
-        <tr><td>駆虫</td><td>${escapeHtml(data.dewormStatus || "未")}</td></tr>
-      </table>`;
-
     const detailMemoHtml = data.detailMemo
       ? `<div class="section-title">📝 詳しい様子</div><div class="intro-text">${escapeHtml(data.detailMemo)}</div>`
       : "";
@@ -308,10 +300,7 @@
         ${foodHtml}
         ${litterHtml}
       </div>
-      <div class="card">
-        ${medicalHtml}
-        ${detailMemoHtml}
-      </div>
+      ${detailMemoHtml ? `<div class="card">${detailMemoHtml}</div>` : ""}
       <div class="footer-note">🐾 ご縁がありますように 🐾</div>
     `;
   }
