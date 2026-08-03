@@ -211,8 +211,15 @@
 
     const metaText = data.species || "";
 
-    const nameOriginHtml = data.nameOrigin
-      ? `<div class="name-origin"><div class="name-origin-label">名前の由来</div>${escapeHtml(data.nameOrigin)}</div>`
+    const nameOriginParts = [];
+    if (data.nameOriginShared) {
+      nameOriginParts.push(`<div class="name-origin-label">名前の由来(みんな共通)</div>${escapeHtml(data.nameOriginShared)}`);
+    }
+    if (data.nameOrigin) {
+      nameOriginParts.push(`<div class="name-origin-label">名前の由来(この子ならでは)</div>${escapeHtml(data.nameOrigin)}`);
+    }
+    const nameOriginHtml = nameOriginParts.length
+      ? `<div class="name-origin">${nameOriginParts.join('<div style="height:10px;"></div>')}</div>`
       : "";
 
     const introHtml = data.intro

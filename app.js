@@ -1511,6 +1511,7 @@ async function openCatEditModal(catId, catData) {
   document.getElementById("litter-cleaning").value = catData.litterCleaning || "";
   document.getElementById("litter-memo").value = catData.litterMemo || "";
 
+  document.getElementById("cat-name-origin-shared").value = catData.nameOriginShared || "";
   document.getElementById("cat-name-origin").value = catData.nameOrigin || "";
   document.getElementById("cat-video-url").value = catData.videoUrl || "";
   document.getElementById("cat-is-published").checked = !!catData.isPublished;
@@ -1630,6 +1631,7 @@ async function syncPublicProfile(catId, data) {
     species: data.species,
     sex: data.sex,
     age: data.age,
+    nameOriginShared: data.nameOriginShared,
     nameOrigin: data.nameOrigin,
     intro: data.intro,
     detailMemo: data.detailMemo,
@@ -1726,6 +1728,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     litterGranularity: document.getElementById("litter-granularity").value,
     litterCleaning: document.getElementById("litter-cleaning").value.trim(),
     litterMemo: document.getElementById("litter-memo").value.trim(),
+    nameOriginShared: document.getElementById("cat-name-origin-shared").value.trim(),
     nameOrigin: document.getElementById("cat-name-origin").value.trim(),
     videoUrl: document.getElementById("cat-video-url").value.trim(),
     publicPhotoData: currentCatPublicPhotoData || "",

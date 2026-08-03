@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285947">
+<link rel="stylesheet" href="style.css?v=1784285948">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -449,8 +449,11 @@
         </div>
       </div>
 
-      <label>名前の由来(任意・公開ページに表示されます)</label>
-      <textarea id="cat-name-origin" placeholder="例: ハワイ語で「幸福」という意味から名付けました"></textarea>
+      <label>名前の由来・全体共通(任意・公開ページに表示されます)</label>
+      <textarea id="cat-name-origin-shared" placeholder="例: 兄弟みんなに四つ葉のクローバーにちなんだ名前をつけました(兄弟がいる場合、共通のエピソードなど)"></textarea>
+
+      <label>名前の由来・この子ならでは(任意・公開ページに表示されます)</label>
+      <textarea id="cat-name-origin" placeholder="例: ハワイ語で「希望の光」という意味から"></textarea>
 
       <label>紹介文</label>
       <textarea id="cat-intro" placeholder="性格や、この子の魅力が伝わる紹介文"></textarea>
@@ -904,7 +907,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285947"></script>
+<script type="module" src="app.js?v=1784285948"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
