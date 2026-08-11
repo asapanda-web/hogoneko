@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285959">
+<link rel="stylesheet" href="style.css?v=1784285960">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -855,6 +855,13 @@
   <div class="modal">
     <h3>📱 まとめてQRページを作る</h3>
     <p class="hint-text">選んだ子たちをまとめて紹介できる、QRコード付きのページを作ります。<strong>「公開ページに掲載する」がオンになっている子だけ</strong>選べます。譲渡会で複数の兄弟猫を紹介する時などにお使いください。</p>
+
+    <label>イベント情報(任意・大きな見出しで表示されます)</label>
+    <input type="text" id="group-qr-event" placeholder="例: 8月15日(土) 〇〇ショッピングモール">
+
+    <label>お知らせ(任意)</label>
+    <textarea id="group-qr-notice" placeholder="例: ラミのページを更新しました"></textarea>
+
     <label style="margin-top:10px; display:block;">対象の猫(複数選択可)</label>
     <div id="group-qr-cat-list" class="checkbox-group"></div>
     <p class="hint-text" id="group-qr-status"></p>
@@ -974,7 +981,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285959"></script>
+<script type="module" src="app.js?v=1784285960"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

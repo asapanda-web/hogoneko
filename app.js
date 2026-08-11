@@ -2276,7 +2276,13 @@ document.getElementById("group-qr-open-btn").addEventListener("click", () => {
     statusEl.textContent = "対象の猫を1匹以上選んでください。";
     return;
   }
-  const groupUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}group.html?ids=${catIds.join(",")}`;
+  const event = document.getElementById("group-qr-event").value.trim();
+  const notice = document.getElementById("group-qr-notice").value.trim();
+  const params = new URLSearchParams();
+  params.set("ids", catIds.join(","));
+  if (event) params.set("event", event);
+  if (notice) params.set("notice", notice);
+  const groupUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}group.html?${params.toString()}`;
   window.open(groupUrl, "_blank");
   modalGroupQr.classList.remove("open");
 });

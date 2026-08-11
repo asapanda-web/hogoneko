@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">まとめて紹介ページ</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff6996">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  * { box-sizing: border-box; }
+  .hidden { display: none !important; }
+  body {
+    margin: 0;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: #3a2e26;
+    line-height: 1.7;
+    background: #fdf6f0;
+  }
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+  }
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid #e0d3c2;
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-size: 13px;
+    color: #6a4a30;
+    font-weight: 700;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  h1 {
+    text-align: center;
+    font-size: 20px;
+    color: #6a4a30;
+    margin: 10px 0 4px;
+  }
+  .sub {
+    text-align: center;
+    font-size: 13px;
+    color: #8a7a6d;
+    margin-bottom: 16px;
+  }
+  .event-banner {
+    text-align: center;
+    background: #ff6996;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 14px 16px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .notice-box {
+    background: #fff8ec;
+    border: 1px solid #f0d9a8;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #6b5c4d;
+    white-space: pre-wrap;
+    line-height: 1.8;
+  }
+  .notice-box .notice-label {
+    font-weight: 700;
+    color: #b8860b;
+    margin-bottom: 4px;
+    font-size: 12px;
+  }
+  .print-btn {
+    display: block;
+    margin: 0 auto 20px;
+    background: #ff6996;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+  }
+  .cat-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    text-align: center;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.08);
+  }
+  .cat-card img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .no-photo {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    background: #f0e8dd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+  }
+  .cat-card .name {
+    font-weight: 700;
+    font-size: 15px;
+    color: #6a4a30;
+    margin-top: 8px;
+  }
+  .cat-card .qr-wrap {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+  }
+  .empty-note, .loading {
+    text-align: center;
+    color: #8a7a6d;
+    font-size: 14px;
+    padding: 40px 20px;
+  }
+  .footer-note {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #a97a45;
+    margin-top: 28px;
+  }
+  @media print {
+    .back-btn, .print-btn { display: none !important; }
+    body { background: #fff; }
+    .cat-card { box-shadow: none; border: 1px solid #eee0d0; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <button type="button" class="back-btn" id="back-btn">← 戻る</button>
+  <h1 id="group-title">🐾 まとめて紹介ページ</h1>
+  <div class="event-banner hidden" id="event-banner"></div>
+  <div class="notice-box hidden" id="notice-box">
+    <div class="notice-label">📢 お知らせ</div>
+    <div id="notice-text"></div>
+  </div>
+  <p class="sub">それぞれのQRコードを読み取ると、その子の公開ページが開きます。</p>
+  <button type="button" class="print-btn" id="print-btn">🖨️ このページを印刷する</button>
+  <div id="grid" class="grid">
+    <div class="loading">🐾 読み込んでいます...</div>
+  </div>
+  <div class="footer-note" id="footer-note" style="display:none;">🐾 ご縁がありますように 🐾</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script type="module">
+  import { db } from "./firebase-config.js?v=1784218044";
+  import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { ORG_NAME, APP_TITLE } from "./site-config.js?v=1784218044";
+
+  const titleText = ORG_NAME ? `${APP_TITLE}(${ORG_NAME})` : APP_TITLE;
+  document.getElementById("page-title").textContent = `まとめて紹介ページ | ${titleText}`;
+
+  const backBtn = document.getElementById("back-btn");
+  if (window.history.length > 1) {
+    backBtn.addEventListener("click", () => window.history.back());
+  } else {
+    backBtn.style.display = "none";
+  }
+
+  document.getElementById("print-btn").addEventListener("click", () => window.print());
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  async function main() {
+    const params = new URLSearchParams(window.location.search);
+    const ids = (params.get("ids") || "").split(",").map((s) => s.trim()).filter(Boolean);
+    const grid = document.getElementById("grid");
+
+    const event = params.get("event");
+    if (event) {
+      const banner = document.getElementById("event-banner");
+      banner.textContent = event;
+      banner.classList.remove("hidden");
+    }
+    const notice = params.get("notice");
+    if (notice) {
+      document.getElementById("notice-text").textContent = notice;
+      document.getElementById("notice-box").classList.remove("hidden");
+    }
+
+    if (ids.length === 0) {
+      grid.innerHTML = `<div class="empty-note">🐾 URLに子の指定がありません。</div>`;
+      return;
+    }
+
+    const baseUrl = `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, "")}`;
+    grid.innerHTML = "";
+    let shownCount = 0;
+
+    for (const id of ids) {
+      let snap;
+      try {
+        snap = await getDoc(doc(db, "publicProfiles", id));
+      } catch (err) {
+        continue;
+      }
+      if (!snap.exists()) continue;
+      const data = snap.data();
+      shownCount++;
+
+      const card = document.createElement("div");
+      card.className = "cat-card";
+      const photoHtml = data.photoData
+        ? `<img src="${data.photoData}" alt="">`
+        : `<div class="no-photo">🐱</div>`;
+      card.innerHTML = `
+        ${photoHtml}
+        <div class="name">${escapeHtml(data.name || "")}</div>
+        <div class="qr-wrap" id="qr-${id}"></div>
+      `;
+      grid.appendChild(card);
+
+      new QRCode(document.getElementById(`qr-${id}`), {
+        text: `${baseUrl}profile.html?id=${id}`,
+        width: 130,
+        height: 130,
+        colorDark: "#5a3a1e",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    if (shownCount === 0) {
+      grid.innerHTML = `<div class="empty-note">🐾 表示できる子がいませんでした。(公開が終了している可能性があります)</div>`;
+    } else {
+      document.getElementById("footer-note").style.display = "block";
+    }
+  }
+
+  main();
+</script>
+</body>
+</html>
