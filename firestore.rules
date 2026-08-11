@@ -49,6 +49,19 @@ service cloud.firestore {
     match /config/inviteCodes {
       allow read, write: if isFullAdmin();
     }
+    // 公開ページに表示する「団体の連絡先」の保存済みリスト(過去に入力したものを再利用できるようにする)
+    match /config/contactPresets {
+      allow read, write: if isFullAdmin() || isShelterMember();
+    }
+    // 「名前の由来(全体共通)」の保存済みリスト(兄弟猫など、同じ文章を他の子にも使い回せるようにする)
+    match /config/nameOriginSharedPresets {
+      allow read, write: if isFullAdmin() || isShelterMember();
+    }
+    // ご飯の写真の保存済みリスト(同じご飯を使っている子に写真を使い回せるようにする。
+    // 画像はサイズが大きいため、1件ずつ別ドキュメントとして保存する)
+    match /config/foodPhotoPresets/items/{presetId} {
+      allow read, write: if isFullAdmin() || isShelterMember();
+    }
     // 公開ページ用データ(ログイン不要で誰でも読める。書き込みは犬猫を編集できる人のみ。
     // ここには公開して良い項目だけをアプリ側で選んでミラーしており、
     // 保護場所・預かり担当者名・内部メモなどは含まれていません)

@@ -298,6 +298,147 @@ async function saveContactPresetIfNew(items) {
   }
 }
 
+// ---------- 名前の由来(全体共通)を保存済みの文章から選べるようにする(自分が保存したものだけ表示) ----------
+let nameOriginSharedPresets = []; // 全員分のデータ({text, createdByUid, createdByName})を保持
+let nameOriginSharedPresetsLoaded = false;
+async function loadNameOriginSharedPresets() {
+  if (nameOriginSharedPresetsLoaded) return;
+  try {
+    const snap = await getDoc(doc(db, "config", "nameOriginSharedPresets"));
+    nameOriginSharedPresets = snap.exists() ? (snap.data().list || []) : [];
+  } catch (err) {
+    nameOriginSharedPresets = [];
+  }
+  nameOriginSharedPresetsLoaded = true;
+  populateNameOriginSharedPresetSelect();
+}
+
+function populateNameOriginSharedPresetSelect() {
+  const selectEl = document.getElementById("name-origin-shared-preset");
+  const currentValue = selectEl.value;
+  const myPresets = nameOriginSharedPresets.filter((p) => p.createdByUid === currentUid);
+  selectEl.innerHTML = `
+    <option value="">選択してください(自分が保存した文章から選ぶ)</option>
+    ${myPresets.map((p) => `<option value="${nameOriginSharedPresets.indexOf(p)}">${escapeHtml(p.text.length > 30 ? p.text.slice(0, 30) + "…" : p.text)}</option>`).join("")}
+    <option value="__new__">+ 新しく入力する</option>
+  `;
+  if ([...selectEl.options].some((o) => o.value === currentValue)) {
+    selectEl.value = currentValue;
+  }
+}
+
+document.getElementById("name-origin-shared-preset").addEventListener("change", (e) => {
+  const val = e.target.value;
+  if (val === "__new__" || val === "") return;
+  const preset = nameOriginSharedPresets[parseInt(val, 10)];
+  if (preset !== undefined) document.getElementById("cat-name-origin-shared").value = preset.text;
+});
+
+async function saveNameOriginSharedPresetIfNew(text) {
+  if (!text) return;
+  const myPresets = nameOriginSharedPresets.filter((p) => p.createdByUid === currentUid);
+  if (myPresets.some((p) => p.text === text)) return;
+  const presetEntry = { text, createdByUid: currentUid, createdByName: currentUsername || "" };
+  try {
+    await setDoc(doc(db, "config", "nameOriginSharedPresets"), { list: arrayUnion(presetEntry) }, { merge: true });
+    nameOriginSharedPresets.push(presetEntry);
+  } catch (err) {
+    // 保存に失敗しても、この子自身の由来は保存されているので問題ない
+  }
+}
+
+// ---------- ご飯の写真(保存済みの写真から選ぶ、または新しくアップロード) ----------
+let foodPhotoPresets = []; // {id, photoData, label}
+let foodPhotoPresetsLoaded = false;
+let currentFoodPhotoData = null;
+
+async function loadFoodPhotoPresets() {
+  if (foodPhotoPresetsLoaded) return;
+  try {
+    const snap = await getDocs(collection(db, "config", "foodPhotoPresets", "items"));
+    foodPhotoPresets = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    foodPhotoPresets = [];
+  }
+  foodPhotoPresetsLoaded = true;
+  populateFoodPhotoPresetSelect();
+}
+
+function populateFoodPhotoPresetSelect() {
+  const selectEl = document.getElementById("food-photo-preset");
+  const currentValue = selectEl.value;
+  selectEl.innerHTML = `
+    <option value="">選択してください(保存済みの写真から選ぶ)</option>
+    ${foodPhotoPresets.map((p) => `<option value="${p.id}">${escapeHtml(p.label || "(名前なし)")}</option>`).join("")}
+    <option value="__new__">+ 新しくアップロードする</option>
+  `;
+  if ([...selectEl.options].some((o) => o.value === currentValue)) {
+    selectEl.value = currentValue;
+  }
+}
+
+document.getElementById("food-photo-preset").addEventListener("change", (e) => {
+  const val = e.target.value;
+  const newWrap = document.getElementById("food-photo-new-wrap");
+  const preview = document.getElementById("food-photo-preview");
+  if (val === "__new__" || val === "") {
+    newWrap.classList.toggle("hidden", val !== "__new__");
+    return;
+  }
+  newWrap.classList.add("hidden");
+  const preset = foodPhotoPresets.find((p) => p.id === val);
+  if (preset) {
+    currentFoodPhotoData = preset.photoData;
+    preview.src = preset.photoData;
+    preview.classList.remove("hidden");
+    document.getElementById("food-photo-status").textContent = "";
+  }
+});
+
+document.getElementById("food-photo-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById("food-photo-status");
+  statusEl.textContent = "画像を処理しています...";
+  try {
+    const compressed = await compressImageToDataUrl(file, 700, 0.7);
+    if (compressed.length > 700000) {
+      statusEl.textContent = "画像が大きすぎます。別の写真でお試しください。";
+      return;
+    }
+    currentFoodPhotoData = compressed;
+    const preview = document.getElementById("food-photo-preview");
+    preview.src = compressed;
+    preview.classList.remove("hidden");
+    statusEl.textContent = "設定しました。";
+    // 新しくアップロードした場合は、名前を付けて保存できるようにする
+    document.getElementById("food-photo-preset").value = "__new__";
+    document.getElementById("food-photo-new-wrap").classList.remove("hidden");
+  } catch (err) {
+    statusEl.textContent = "画像の読み込みに失敗しました。別の写真でお試しください。";
+  }
+});
+
+async function saveFoodPhotoPresetIfNew() {
+  const presetSelect = document.getElementById("food-photo-preset");
+  const label = document.getElementById("food-photo-new-label").value.trim();
+  // 既存のプリセットを選んだだけの場合は、何もしない
+  if (presetSelect.value !== "__new__") return;
+  if (!currentFoodPhotoData || !label) return;
+  try {
+    const newDocRef = await addDoc(collection(db, "config", "foodPhotoPresets", "items"), {
+      photoData: currentFoodPhotoData,
+      label,
+      createdByUid: currentUid,
+      createdByName: currentUsername || "",
+      createdAt: serverTimestamp()
+    });
+    foodPhotoPresets.push({ id: newDocRef.id, photoData: currentFoodPhotoData, label });
+  } catch (err) {
+    // 保存に失敗しても、この子自身のご飯の写真は保存されているので問題ない
+  }
+}
+
 // ---------- 画面切り替え ----------
 const viewDashboard = document.getElementById("view-dashboard");
 const viewDetail = document.getElementById("view-detail");
@@ -811,6 +952,7 @@ function applyRoleUI() {
 
   // まとめて排泄記録は、犬猫の記録を書き込める役割の人だけに表示
   document.getElementById("group-toilet-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
+  document.getElementById("group-qr-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
 
   // シェルターメンバーは「個人宅預かり」の登録はできない(施設側で割り当てるため選択肢を消す)
   if (isShelterMember()) {
@@ -1590,6 +1732,8 @@ document.getElementById("fab-btn").addEventListener("click", () => {
     resetCatModalToAddMode();
     fosterNameWrap.classList.add("hidden");
     loadContactPresets();
+    loadNameOriginSharedPresets();
+    loadFoodPhotoPresets();
     modalCat.classList.add("open");
   }
 });
@@ -1653,6 +1797,19 @@ async function openCatEditModal(catId, catData) {
   document.getElementById("food-frequency").value = catData.foodFrequency || "";
   document.getElementById("food-comment").value = catData.foodComment || "";
 
+  document.getElementById("food-photo-preset").value = "";
+  document.getElementById("food-photo-new-wrap").classList.add("hidden");
+  document.getElementById("food-photo-new-label").value = "";
+  document.getElementById("food-photo-status").textContent = "";
+  currentFoodPhotoData = catData.foodPhotoData || null;
+  const foodPhotoPreview = document.getElementById("food-photo-preview");
+  if (currentFoodPhotoData) {
+    foodPhotoPreview.src = currentFoodPhotoData;
+    foodPhotoPreview.classList.remove("hidden");
+  } else {
+    foodPhotoPreview.classList.add("hidden");
+  }
+
   // トイレ環境
   document.querySelectorAll(".litter-box-tag").forEach((cb) => {
     cb.checked = !!(catData.litterBoxTags && catData.litterBoxTags.includes(cb.value));
@@ -1665,6 +1822,7 @@ async function openCatEditModal(catId, catData) {
   document.getElementById("litter-cleaning").value = catData.litterCleaning || "";
   document.getElementById("litter-memo").value = catData.litterMemo || "";
 
+  document.getElementById("name-origin-shared-preset").value = "";
   document.getElementById("cat-name-origin-shared").value = catData.nameOriginShared || "";
   document.getElementById("cat-name-origin").value = catData.nameOrigin || "";
   document.getElementById("cat-video-url").value = catData.videoUrl || "";
@@ -1693,6 +1851,8 @@ async function openCatEditModal(catId, catData) {
   }
 
   await loadContactPresets();
+  await loadNameOriginSharedPresets();
+  await loadFoodPhotoPresets();
   document.getElementById("cat-contact-preset").value = "";
   setContactItemsToForm(catData.contactItems);
 
@@ -1713,10 +1873,18 @@ function resetCatModalToAddMode() {
   document.getElementById("food-input-mode").value = "free";
   foodFreeWrap.classList.remove("hidden");
   foodItemizedWrap.classList.add("hidden");
+  document.getElementById("food-photo-preset").value = "";
+  document.getElementById("food-photo-new-wrap").classList.add("hidden");
+  document.getElementById("food-photo-new-label").value = "";
+  document.getElementById("food-photo-input").value = "";
+  document.getElementById("food-photo-preview").classList.add("hidden");
+  document.getElementById("food-photo-status").textContent = "";
+  currentFoodPhotoData = null;
   document.getElementById("cat-is-published").checked = false;
   document.getElementById("cat-video-coming-soon").checked = false;
   document.getElementById("cat-contact-preset").value = "";
   setContactItemsToForm([]);
+  document.getElementById("name-origin-shared-preset").value = "";
   document.getElementById("cat-modal-title").textContent = "犬猫を登録";
   document.getElementById("cat-submit-btn").textContent = "登録する";
   updateSpeciesTagVisibility();
@@ -1813,6 +1981,7 @@ async function syncPublicProfile(catId, data) {
     foodAmount: data.foodAmount,
     foodFrequency: data.foodFrequency,
     foodComment: data.foodComment,
+    foodPhotoData: data.foodPhotoData,
     litterBoxTags: data.litterBoxTags,
     litterSandTags: data.litterSandTags,
     litterSandOther: data.litterSandOther,
@@ -1886,6 +2055,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     foodAmount: foodMode === "itemized" ? document.getElementById("food-amount").value.trim() : "",
     foodFrequency: foodMode === "itemized" ? document.getElementById("food-frequency").value : "",
     foodComment: document.getElementById("food-comment").value.trim(),
+    foodPhotoData: currentFoodPhotoData || "",
     litterBoxTags: Array.from(document.querySelectorAll(".litter-box-tag:checked")).map((cb) => cb.value),
     litterSandTags: Array.from(document.querySelectorAll(".litter-sand-tag:checked")).map((cb) => cb.value),
     litterSandOther: document.getElementById("litter-sand-other").value.trim(),
@@ -1925,6 +2095,8 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
       await updateDoc(doc(db, "cats", editingCatId), data);
       if (changes.length) await addHistoryEntry(editingCatId, changes.join(" ／ "));
       await saveContactPresetIfNew(data.contactItems);
+      await saveNameOriginSharedPresetIfNew(data.nameOriginShared);
+      await saveFoodPhotoPresetIfNew();
 
       const updatedCatData = { ...before, ...data };
       await syncPublicProfile(editingCatId, updatedCatData);
@@ -1942,6 +2114,8 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
         createdAt: serverTimestamp()
       });
       await saveContactPresetIfNew(data.contactItems);
+      await saveNameOriginSharedPresetIfNew(data.nameOriginShared);
+      await saveFoodPhotoPresetIfNew();
       await syncPublicProfile(newCatRef.id, { ...data, status: "保護中" });
       catFormStatus.textContent = "登録しました。";
       e.target.reset();
@@ -2063,6 +2237,48 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
   updateMedicalTypeUI();
   resetMedicalModalToAddMode();
   modalMedical.classList.remove("open");
+});
+
+// ---------- まとめてQRページ作成 ----------
+const modalGroupQr = document.getElementById("modal-group-qr");
+
+document.getElementById("group-qr-btn").addEventListener("click", () => {
+  document.getElementById("group-qr-status").textContent = "";
+  renderGroupQrCatList();
+  modalGroupQr.classList.add("open");
+});
+
+function renderGroupQrCatList() {
+  const listEl = document.getElementById("group-qr-cat-list");
+  listEl.innerHTML = "";
+  if (!latestCatsSnapshot) return;
+  const publishedCats = latestCatsSnapshot.docs.filter((docSnap) => {
+    const cat = docSnap.data();
+    return cat.isPublished && cat.status !== "譲渡済み";
+  });
+  if (publishedCats.length === 0) {
+    listEl.innerHTML = `<p class="hint-text">公開ページに掲載中の子がいません。まず犬猫の編集画面で「この子を公開ページに掲載する」をオンにしてください。</p>`;
+    return;
+  }
+  publishedCats.forEach((docSnap) => {
+    const cat = docSnap.data();
+    const label = document.createElement("label");
+    label.className = "checkbox-item";
+    label.innerHTML = `<input type="checkbox" value="${docSnap.id}" class="group-qr-cat"> ${escapeHtml(cat.name)}`;
+    listEl.appendChild(label);
+  });
+}
+
+document.getElementById("group-qr-open-btn").addEventListener("click", () => {
+  const statusEl = document.getElementById("group-qr-status");
+  const catIds = Array.from(document.querySelectorAll(".group-qr-cat:checked")).map((cb) => cb.value);
+  if (catIds.length === 0) {
+    statusEl.textContent = "対象の猫を1匹以上選んでください。";
+    return;
+  }
+  const groupUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}group.html?ids=${catIds.join(",")}`;
+  window.open(groupUrl, "_blank");
+  modalGroupQr.classList.remove("open");
 });
 
 // ---------- まとめて排泄記録 ----------
