@@ -48,21 +48,31 @@
     color: #8a7a6d;
     margin-bottom: 16px;
   }
+  .top-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 20px;
+    align-items: stretch;
+  }
   .event-banner {
+    flex: 1 1 220px;
     text-align: center;
     background: #ff6996;
     color: #fff;
     font-size: 20px;
     font-weight: 700;
-    padding: 14px 16px;
+    padding: 16px;
     border-radius: 14px;
-    margin-bottom: 16px;
     line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
   .event-banner-label {
-    font-size: 18px;
+    font-size: 21px;
     font-weight: 700;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
   .event-banner #event-date { font-size: 22px; }
   .location-link {
@@ -103,12 +113,12 @@
     font-family: inherit;
   }
   .page-qr-card {
+    flex: 1 1 220px;
     background: #fff;
     border-radius: 16px;
     padding: 16px;
     text-align: center;
     box-shadow: 0 3px 14px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
   }
   .page-qr-title {
     font-weight: 700;
@@ -195,22 +205,26 @@
 
 <div class="wrap">
   <button type="button" class="back-btn" id="back-btn">← 戻る</button>
-  <div class="event-banner hidden" id="event-banner">
-    <div class="event-banner-label">🐾 譲渡会開催・参加予定</div>
-    <div id="event-date"></div>
-    <div id="event-location"></div>
+
+  <div class="top-row">
+    <div class="event-banner hidden" id="event-banner">
+      <div class="event-banner-label">🐾 譲渡会開催・参加予定</div>
+      <div id="event-date"></div>
+      <div id="event-location"></div>
+    </div>
+
+    <div class="page-qr-card">
+      <div class="page-qr-title">📱 このページ自体のQRコード</div>
+      <p class="page-qr-desc">読み取ると、このまとめページ自体が開きます。</p>
+      <div id="page-qr-box"></div>
+      <button type="button" class="print-btn share-btn" id="page-share-btn">📤 このページを共有する</button>
+      <p class="hint-text" id="page-share-status"></p>
+    </div>
   </div>
+
   <div class="notice-box hidden" id="notice-box">
     <div class="notice-label">📢 お知らせ</div>
     <div id="notice-text"></div>
-  </div>
-
-  <div class="page-qr-card">
-    <div class="page-qr-title">📱 このページ自体のQRコード</div>
-    <p class="page-qr-desc">このQRコードを読み取ると、このまとめページ自体が開きます。</p>
-    <div id="page-qr-box"></div>
-    <button type="button" class="print-btn share-btn" id="page-share-btn">📤 このページを共有する</button>
-    <p class="hint-text" id="page-share-status"></p>
   </div>
 
   <p class="sub">それぞれのQRコードを読み取ると、その子の公開ページが開きます。</p>
@@ -252,8 +266,8 @@
   // このページ自体のQRコードを表示し、共有できるようにする
   new QRCode(document.getElementById("page-qr-box"), {
     text: window.location.href,
-    width: 160,
-    height: 160,
+    width: 130,
+    height: 130,
     colorDark: "#5a3a1e",
     colorLight: "#ffffff",
     correctLevel: QRCode.CorrectLevel.M
