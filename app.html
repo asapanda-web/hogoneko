@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285961">
+<link rel="stylesheet" href="style.css?v=1784285963">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -482,6 +482,10 @@
       <label>名前の由来・この子ならでは(任意・公開ページに表示されます)</label>
       <textarea id="cat-name-origin" placeholder="例: ハワイ語で「希望の光」という意味から"></textarea>
 
+      <label>兄弟姉妹(任意・複数選択可・公開ページにリンクが表示されます)</label>
+      <div id="sibling-select-wrap" class="detail-box" style="max-height:180px; overflow-y:auto;"></div>
+      <p class="hint-text">この子と兄弟姉妹の関係にある子にチェックを入れると、お互いの公開ページに「きょうだいの子」としてリンクが表示されます(両方とも公開ページに掲載中の場合のみ)。</p>
+
       <label>紹介文</label>
       <textarea id="cat-intro" placeholder="性格や、この子の魅力が伝わる紹介文"></textarea>
 
@@ -856,8 +860,17 @@
     <h3>📱 まとめてQRページを作る</h3>
     <p class="hint-text">選んだ子たちをまとめて紹介できる、QRコード付きのページを作ります。<strong>「公開ページに掲載する」がオンになっている子だけ</strong>選べます。譲渡会で複数の兄弟猫を紹介する時などにお使いください。</p>
 
-    <label>イベント情報(任意・大きな見出しで表示されます)</label>
-    <input type="text" id="group-qr-event" placeholder="例: 8月15日(土) 〇〇ショッピングモール">
+    <label>開催日(任意)</label>
+    <input type="date" id="group-qr-date">
+
+    <label>会場(任意)</label>
+    <select id="group-qr-location-preset">
+      <option value="">選択してください(保存済みの会場から選ぶ)</option>
+      <option value="__new__">+ 新しく入力する</option>
+    </select>
+    <input type="text" id="group-qr-location-name" placeholder="例: カインズ浦和美園 2階カルチャー教室" style="margin-top:8px;">
+    <input type="text" id="group-qr-location-address" placeholder="住所(任意・入れると地図が開けます)" style="margin-top:8px;">
+    <p class="hint-text">新しく入力した会場は、次回から選べるように自動で保存されます。</p>
 
     <label>お知らせ(任意)</label>
     <textarea id="group-qr-notice" placeholder="例: ラミのページを更新しました"></textarea>
@@ -981,7 +994,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285961"></script>
+<script type="module" src="app.js?v=1784285963"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

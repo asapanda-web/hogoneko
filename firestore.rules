@@ -62,6 +62,10 @@ service cloud.firestore {
     match /config/foodPhotoPresets/items/{presetId} {
       allow read, write: if isFullAdmin() || isShelterMember();
     }
+    // 譲渡会の会場の保存済みリスト(同じ会場でまた開催する時に選び直せるようにする)
+    match /config/eventLocationPresets {
+      allow read, write: if isFullAdmin() || isShelterMember();
+    }
     // 公開ページ用データ(ログイン不要で誰でも読める。書き込みは犬猫を編集できる人のみ。
     // ここには公開して良い項目だけをアプリ側で選んでミラーしており、
     // 保護場所・預かり担当者名・内部メモなどは含まれていません)

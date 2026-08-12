@@ -59,6 +59,14 @@
     margin-bottom: 16px;
     line-height: 1.5;
   }
+  .event-banner #event-date { font-size: 22px; }
+  .location-link {
+    display: inline-block;
+    margin-top: 4px;
+    color: #fff;
+    font-size: 15px;
+    text-decoration: underline;
+  }
   .notice-box {
     background: #fff8ec;
     border: 1px solid #f0d9a8;
@@ -155,7 +163,10 @@
 <div class="wrap">
   <button type="button" class="back-btn" id="back-btn">← 戻る</button>
   <h1 id="group-title">🐾 まとめて紹介ページ</h1>
-  <div class="event-banner hidden" id="event-banner"></div>
+  <div class="event-banner hidden" id="event-banner">
+    <div id="event-date"></div>
+    <div id="event-location"></div>
+  </div>
   <div class="notice-box hidden" id="notice-box">
     <div class="notice-label">📢 お知らせ</div>
     <div id="notice-text"></div>
@@ -200,11 +211,25 @@
     const ids = (params.get("ids") || "").split(",").map((s) => s.trim()).filter(Boolean);
     const grid = document.getElementById("grid");
 
-    const event = params.get("event");
-    if (event) {
-      const banner = document.getElementById("event-banner");
-      banner.textContent = event;
-      banner.classList.remove("hidden");
+    const eventDate = params.get("date");
+    const locName = params.get("locName");
+    const locAddress = params.get("locAddress");
+
+    if (eventDate || locName) {
+      const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+      if (eventDate) {
+        const d = new Date(eventDate + "T00:00:00");
+        if (!isNaN(d.getTime())) {
+          const dateText = `${d.getMonth() + 1}月${d.getDate()}日(${weekdays[d.getDay()]})`;
+          document.getElementById("event-date").textContent = dateText;
+        }
+      }
+      if (locName) {
+        const mapQuery = encodeURIComponent(locAddress || locName);
+        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+        document.getElementById("event-location").innerHTML = `<a href="${mapUrl}" target="_blank" rel="noopener" class="location-link">📍 ${escapeHtml(locName)}</a>`;
+      }
+      document.getElementById("event-banner").classList.remove("hidden");
     }
     const notice = params.get("notice");
     if (notice) {

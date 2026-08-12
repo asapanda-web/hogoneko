@@ -439,6 +439,26 @@ async function saveFoodPhotoPresetIfNew() {
   }
 }
 
+// ---------- 兄弟姉妹の選択欄 ----------
+function populateSiblingCheckboxes(excludeCatId, selectedIds) {
+  const wrap = document.getElementById("sibling-select-wrap");
+  wrap.innerHTML = "";
+  if (!latestCatsSnapshot) return;
+  const others = latestCatsSnapshot.docs.filter((d) => d.id !== excludeCatId);
+  if (others.length === 0) {
+    wrap.innerHTML = `<p class="hint-text" style="margin:0;">他に登録されている子がいません。</p>`;
+    return;
+  }
+  others.forEach((docSnap) => {
+    const cat = docSnap.data();
+    const label = document.createElement("label");
+    label.className = "checkbox-item";
+    const checked = selectedIds && selectedIds.includes(docSnap.id) ? "checked" : "";
+    label.innerHTML = `<input type="checkbox" value="${docSnap.id}" class="sibling-cb" ${checked}> ${escapeHtml(cat.name)}`;
+    wrap.appendChild(label);
+  });
+}
+
 // ---------- 画面切り替え ----------
 const viewDashboard = document.getElementById("view-dashboard");
 const viewDetail = document.getElementById("view-detail");
@@ -1736,6 +1756,7 @@ document.getElementById("fab-btn").addEventListener("click", () => {
     loadContactPresets();
     loadNameOriginSharedPresets();
     loadFoodPhotoPresets();
+    populateSiblingCheckboxes(null, []);
     modalCat.classList.add("open");
   }
 });
@@ -1857,6 +1878,7 @@ async function openCatEditModal(catId, catData) {
   await loadFoodPhotoPresets();
   document.getElementById("cat-contact-preset").value = "";
   setContactItemsToForm(catData.contactItems);
+  populateSiblingCheckboxes(catId, catData.siblingIds || []);
 
   modalCat.classList.add("open");
 }
@@ -1965,6 +1987,7 @@ async function syncPublicProfile(catId, data) {
     age: data.age,
     nameOriginShared: data.nameOriginShared,
     nameOrigin: data.nameOrigin,
+    siblingIds: data.siblingIds || [],
     intro: data.intro,
     detailMemo: data.detailMemo,
     personalityTags: data.personalityTags,
@@ -2091,6 +2114,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     litterMemo: document.getElementById("litter-memo").value.trim(),
     nameOriginShared: document.getElementById("cat-name-origin-shared").value.trim(),
     nameOrigin: document.getElementById("cat-name-origin").value.trim(),
+    siblingIds: Array.from(document.querySelectorAll(".sibling-cb:checked")).map((cb) => cb.value),
     videoUrl: document.getElementById("cat-video-url").value.trim(),
     videoComingSoon: document.getElementById("cat-video-coming-soon").checked,
     publicPhotoData: currentCatPublicPhotoData || "",
@@ -2267,12 +2291,60 @@ document.getElementById("form-medical").addEventListener("submit", async (e) => 
   modalMedical.classList.remove("open");
 });
 
+// ---------- 譲渡会の会場(保存済みの会場から選ぶ、または新規入力) ----------
+let eventLocationPresets = []; // {name, address}
+let eventLocationPresetsLoaded = false;
+async function loadEventLocationPresets() {
+  if (eventLocationPresetsLoaded) return;
+  try {
+    const snap = await getDoc(doc(db, "config", "eventLocationPresets"));
+    eventLocationPresets = snap.exists() ? (snap.data().list || []) : [];
+  } catch (err) {
+    eventLocationPresets = [];
+  }
+  eventLocationPresetsLoaded = true;
+  populateEventLocationPresetSelect();
+}
+
+function populateEventLocationPresetSelect() {
+  const selectEl = document.getElementById("group-qr-location-preset");
+  selectEl.innerHTML = `
+    <option value="">選択してください(保存済みの会場から選ぶ)</option>
+    ${eventLocationPresets.map((p, i) => `<option value="${i}">${escapeHtml(p.name)}</option>`).join("")}
+    <option value="__new__">+ 新しく入力する</option>
+  `;
+}
+
+document.getElementById("group-qr-location-preset").addEventListener("change", (e) => {
+  const val = e.target.value;
+  if (val === "__new__" || val === "") return;
+  const preset = eventLocationPresets[parseInt(val, 10)];
+  if (preset) {
+    document.getElementById("group-qr-location-name").value = preset.name || "";
+    document.getElementById("group-qr-location-address").value = preset.address || "";
+  }
+});
+
+async function saveEventLocationPresetIfNew(name, address) {
+  if (!name) return;
+  const alreadyExists = eventLocationPresets.some((p) => p.name === name);
+  if (alreadyExists) return;
+  const entry = { name, address: address || "" };
+  try {
+    await setDoc(doc(db, "config", "eventLocationPresets"), { list: arrayUnion(entry) }, { merge: true });
+    eventLocationPresets.push(entry);
+  } catch (err) {
+    // 保存に失敗しても、今回のページ作成自体は問題ない
+  }
+}
+
 // ---------- まとめてQRページ作成 ----------
 const modalGroupQr = document.getElementById("modal-group-qr");
 
 document.getElementById("group-qr-btn").addEventListener("click", () => {
   document.getElementById("group-qr-status").textContent = "";
   renderGroupQrCatList();
+  loadEventLocationPresets();
   modalGroupQr.classList.add("open");
 });
 
@@ -2297,18 +2369,25 @@ function renderGroupQrCatList() {
   });
 }
 
-document.getElementById("group-qr-open-btn").addEventListener("click", () => {
+document.getElementById("group-qr-open-btn").addEventListener("click", async () => {
   const statusEl = document.getElementById("group-qr-status");
   const catIds = Array.from(document.querySelectorAll(".group-qr-cat:checked")).map((cb) => cb.value);
   if (catIds.length === 0) {
     statusEl.textContent = "対象の猫を1匹以上選んでください。";
     return;
   }
-  const event = document.getElementById("group-qr-event").value.trim();
+  const eventDate = document.getElementById("group-qr-date").value;
+  const locName = document.getElementById("group-qr-location-name").value.trim();
+  const locAddress = document.getElementById("group-qr-location-address").value.trim();
   const notice = document.getElementById("group-qr-notice").value.trim();
+
+  if (locName) await saveEventLocationPresetIfNew(locName, locAddress);
+
   const params = new URLSearchParams();
   params.set("ids", catIds.join(","));
-  if (event) params.set("event", event);
+  if (eventDate) params.set("date", eventDate);
+  if (locName) params.set("locName", locName);
+  if (locAddress) params.set("locAddress", locAddress);
   if (notice) params.set("notice", notice);
   const groupUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}group.html?${params.toString()}`;
   window.open(groupUrl, "_blank");
