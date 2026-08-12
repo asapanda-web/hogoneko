@@ -53,6 +53,10 @@ service cloud.firestore {
     match /config/contactPresets {
       allow read, write: if isFullAdmin() || isShelterMember();
     }
+    // 「預かり者のSNS」の保存済みリスト(自分が保存したものだけを選べるようにする、表示側で絞り込む)
+    match /config/fosterContactPresets {
+      allow read, write: if isFullAdmin() || isShelterMember();
+    }
     // 「名前の由来(全体共通)」の保存済みリスト(兄弟猫など、同じ文章を他の子にも使い回せるようにする)
     match /config/nameOriginSharedPresets {
       allow read, write: if isFullAdmin() || isShelterMember();

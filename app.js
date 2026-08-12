@@ -298,6 +298,99 @@ async function saveContactPresetIfNew(items) {
   }
 }
 
+// ---------- 預かり者のSNS(団体の連絡先とは別。自分が保存したものだけプルダウンに出す) ----------
+function renderFosterContactFields(checkedValues) {
+  const wrap = document.getElementById("foster-contact-fields-wrap");
+  const existingValues = {};
+  wrap.querySelectorAll("input[data-contact-value]").forEach((input) => {
+    existingValues[input.dataset.contactValue] = input.value;
+  });
+  wrap.innerHTML = "";
+  document.querySelectorAll(".foster-contact-type-cb:checked").forEach((cb) => {
+    const type = cb.dataset.type;
+    const value = checkedValues && checkedValues[type] !== undefined ? checkedValues[type] : (existingValues[type] || "");
+    const row = document.createElement("div");
+    row.style.marginTop = "6px";
+    row.innerHTML = `
+      <label style="margin:6px 0 4px;">${cb.dataset.icon} ${cb.dataset.label}</label>
+      <input type="text" data-contact-value="${type}" placeholder="例: ${cb.dataset.label}のアカウント名">
+    `;
+    wrap.appendChild(row);
+    row.querySelector("input").value = value;
+  });
+}
+document.querySelectorAll(".foster-contact-type-cb").forEach((cb) => {
+  cb.addEventListener("change", () => renderFosterContactFields());
+});
+
+function getFosterContactItemsFromForm() {
+  const items = [];
+  document.querySelectorAll(".foster-contact-type-cb:checked").forEach((cb) => {
+    const input = document.querySelector(`#foster-contact-fields-wrap input[data-contact-value="${cb.dataset.type}"]`);
+    const value = input ? input.value.trim() : "";
+    if (value) {
+      items.push({ type: cb.dataset.type, icon: cb.dataset.icon, label: cb.dataset.label, value });
+    }
+  });
+  return items;
+}
+
+function setFosterContactItemsToForm(items) {
+  const list = items || [];
+  const valueMap = {};
+  document.querySelectorAll(".foster-contact-type-cb").forEach((cb) => {
+    const match = list.find((it) => it.type === cb.dataset.type);
+    cb.checked = !!match;
+    if (match) valueMap[cb.dataset.type] = match.value;
+  });
+  renderFosterContactFields(valueMap);
+}
+
+let fosterContactPresets = []; // {items} 自分(currentUid)が保存したものだけ
+let fosterContactPresetsLoaded = false;
+async function loadFosterContactPresets() {
+  if (fosterContactPresetsLoaded) return;
+  try {
+    const snap = await getDoc(doc(db, "config", "fosterContactPresets"));
+    fosterContactPresets = snap.exists() ? (snap.data().list || []) : [];
+  } catch (err) {
+    fosterContactPresets = [];
+  }
+  fosterContactPresetsLoaded = true;
+  populateFosterContactPresetSelect();
+}
+
+function populateFosterContactPresetSelect() {
+  const selectEl = document.getElementById("foster-contact-preset");
+  const myPresets = fosterContactPresets.filter((p) => p.createdByUid === currentUid);
+  selectEl.innerHTML = `
+    <option value="">選択してください(自分が保存したものから選ぶ)</option>
+    ${myPresets.map((p) => `<option value="${fosterContactPresets.indexOf(p)}">${escapeHtml((p.items || []).map((it) => it.label).join("・"))}</option>`).join("")}
+    <option value="__new__">+ 新しく入力する</option>
+  `;
+}
+
+document.getElementById("foster-contact-preset").addEventListener("change", (e) => {
+  const val = e.target.value;
+  if (val === "__new__" || val === "") return;
+  const preset = fosterContactPresets[parseInt(val, 10)];
+  if (preset) setFosterContactItemsToForm(preset.items || []);
+});
+
+async function saveFosterContactPresetIfNew(items) {
+  if (!items || items.length === 0) return;
+  const myPresets = fosterContactPresets.filter((p) => p.createdByUid === currentUid);
+  const alreadyExists = myPresets.some((p) => JSON.stringify(p.items) === JSON.stringify(items));
+  if (alreadyExists) return;
+  const presetEntry = { items, createdByUid: currentUid, createdByName: currentUsername || "" };
+  try {
+    await setDoc(doc(db, "config", "fosterContactPresets"), { list: arrayUnion(presetEntry) }, { merge: true });
+    fosterContactPresets.push(presetEntry);
+  } catch (err) {
+    // 保存に失敗しても、この子自身の連絡先は保存されているので問題ない
+  }
+}
+
 // ---------- 名前の由来(全体共通)を保存済みの文章から選べるようにする(自分が保存したものだけ表示) ----------
 let nameOriginSharedPresets = []; // 全員分のデータ({text, createdByUid, createdByName})を保持
 let nameOriginSharedPresetsLoaded = false;
@@ -1756,6 +1849,7 @@ document.getElementById("fab-btn").addEventListener("click", () => {
     loadContactPresets();
     loadNameOriginSharedPresets();
     loadFoodPhotoPresets();
+    loadFosterContactPresets();
     populateSiblingCheckboxes(null, []);
     modalCat.classList.add("open");
   }
@@ -1876,8 +1970,11 @@ async function openCatEditModal(catId, catData) {
   await loadContactPresets();
   await loadNameOriginSharedPresets();
   await loadFoodPhotoPresets();
+  await loadFosterContactPresets();
   document.getElementById("cat-contact-preset").value = "";
   setContactItemsToForm(catData.contactItems);
+  document.getElementById("foster-contact-preset").value = "";
+  setFosterContactItemsToForm(catData.fosterContactItems);
   populateSiblingCheckboxes(catId, catData.siblingIds || []);
 
   modalCat.classList.add("open");
@@ -1908,6 +2005,8 @@ function resetCatModalToAddMode() {
   document.getElementById("cat-video-coming-soon").checked = false;
   document.getElementById("cat-contact-preset").value = "";
   setContactItemsToForm([]);
+  document.getElementById("foster-contact-preset").value = "";
+  setFosterContactItemsToForm([]);
   document.getElementById("name-origin-shared-preset").value = "";
   document.getElementById("cat-modal-title").textContent = "犬猫を登録";
   document.getElementById("cat-submit-btn").textContent = "登録する";
@@ -2016,6 +2115,7 @@ async function syncPublicProfile(catId, data) {
     videoUrl: data.videoUrl,
     videoComingSoon: data.videoComingSoon,
     contactItems: data.contactItems || [],
+    fosterContactItems: data.fosterContactItems || [],
     photoData: data.publicPhotoData || data.photoData || "",
     neuterStatus: hasNeuter ? "済" : "未",
     vaccineStatus: vaccineCount > 0 ? `済(${vaccineCount}回)` : "未",
@@ -2120,6 +2220,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     publicPhotoData: currentCatPublicPhotoData || "",
     isPublished: document.getElementById("cat-is-published").checked,
     contactItems: getContactItemsFromForm(),
+    fosterContactItems: getFosterContactItemsFromForm(),
     detailMemo: document.getElementById("cat-detail-memo").value.trim(),
     photoData: currentCatPhotoData || ""
   };
@@ -2146,6 +2247,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
       await updateDoc(doc(db, "cats", editingCatId), data);
       if (changes.length) await addHistoryEntry(editingCatId, changes.join(" ／ "));
       await saveContactPresetIfNew(data.contactItems);
+      await saveFosterContactPresetIfNew(data.fosterContactItems);
       await saveNameOriginSharedPresetIfNew(data.nameOriginShared);
       await saveFoodPhotoPresetIfNew();
 
@@ -2165,6 +2267,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
         createdAt: serverTimestamp()
       });
       await saveContactPresetIfNew(data.contactItems);
+      await saveFosterContactPresetIfNew(data.fosterContactItems);
       await saveNameOriginSharedPresetIfNew(data.nameOriginShared);
       await saveFoodPhotoPresetIfNew();
       await syncPublicProfile(newCatRef.id, { ...data, status: "保護中" });

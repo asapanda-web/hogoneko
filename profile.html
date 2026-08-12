@@ -185,6 +185,41 @@
     font-weight: 700;
   }
   .free-note { font-size: 13px; color: #6b5c4d; margin-top: 6px; white-space: pre-wrap; }
+  .sibling-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+  .sibling-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 84px;
+    text-decoration: none;
+    color: #6a4a30;
+  }
+  .sibling-link img, .sibling-no-photo {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  .sibling-no-photo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0e8dd;
+    font-size: 26px;
+  }
+  .sibling-link span {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+  }
   .loading, .not-found {
     text-align: center;
     padding: 80px 20px;
@@ -271,6 +306,19 @@
     const matched = CONTACT_ICON_RULES.find((rule) => rule.keywords.some((k) => lower.includes(k)));
     const icon = matched ? matched.icon + " " : "";
     return icon + escapeHtml(line);
+  }
+
+  function contactItemsToLines(items) {
+    return items.map((it) => {
+      const label = `${it.icon} ${escapeHtml(it.label)}: `;
+      if (it.type === "mail") {
+        return `${label}<a href="mailto:${escapeHtml(it.value)}" class="contact-link">${escapeHtml(it.value)}</a>`;
+      }
+      if (it.type === "tel") {
+        return `${label}<a href="tel:${escapeHtml(it.value.replace(/[^0-9+]/g, ""))}" class="contact-link">${escapeHtml(it.value)}</a>`;
+      }
+      return `${label}${escapeHtml(it.value)}`;
+    });
   }
 
   function tagBadges(tags, other, extraClass) {
@@ -397,6 +445,25 @@
           ? `<div class="section-title">🎬 動画・フォト集</div><div class="free-note">動画・フォト集は追加する際は、こちらに表示されます。</div>`
           : "");
 
+    let siblingsHtml = "";
+    if (data.siblingIds && data.siblingIds.length > 0) {
+      const siblingLinks = [];
+      for (const sibId of data.siblingIds) {
+        try {
+          const sibSnap = await getDoc(doc(db, "publicProfiles", sibId));
+          if (sibSnap.exists()) {
+            const sibData = sibSnap.data();
+            siblingLinks.push(`<a class="sibling-link" href="profile.html?id=${sibId}">${sibData.photoData ? `<img src="${sibData.photoData}" alt="">` : `<div class="sibling-no-photo">🐾</div>`}<span>${escapeHtml(sibData.name || "")}</span></a>`);
+          }
+        } catch (err) {
+          // 読み込めない場合はスキップ
+        }
+      }
+      if (siblingLinks.length > 0) {
+        siblingsHtml = `<div class="section-title">🐾 きょうだいの子</div><div class="sibling-list">${siblingLinks.join("")}</div>`;
+      }
+    }
+
     contentEl.innerHTML = `
       <div class="card">
         ${photoHtml}
@@ -417,20 +484,12 @@
         ${litterHtml}
       </div>
       ${detailMemoHtml ? `<div class="card">${detailMemoHtml}</div>` : ""}
+      ${siblingsHtml ? `<div class="card">${siblingsHtml}</div>` : ""}
+      ${(data.fosterContactItems && data.fosterContactItems.length > 0) ? `<div class="card"><div class="section-title">🏠 預かり者のSNS</div><div class="contact-note" style="border-top:none; margin-top:0; padding-top:0;">${contactItemsToLines(data.fosterContactItems).join("<br>")}</div></div>` : ""}
       <div class="footer-note">🐾 ご縁がありますように 🐾</div>
       ${(() => {
         if (data.contactItems && data.contactItems.length > 0) {
-          const lines = data.contactItems.map((it) => {
-            const label = `${it.icon} ${escapeHtml(it.label)}: `;
-            if (it.type === "mail") {
-              return `${label}<a href="mailto:${escapeHtml(it.value)}" class="contact-link">${escapeHtml(it.value)}</a>`;
-            }
-            if (it.type === "tel") {
-              return `${label}<a href="tel:${escapeHtml(it.value.replace(/[^0-9+]/g, ""))}" class="contact-link">${escapeHtml(it.value)}</a>`;
-            }
-            return `${label}${escapeHtml(it.value)}`;
-          });
-          return `<div class="contact-note">${lines.join("<br>")}</div>`;
+          return `<div class="contact-note">${contactItemsToLines(data.contactItems).join("<br>")}</div>`;
         }
         if (ORG_CONTACT) {
           return `<div class="contact-note">${ORG_CONTACT.split("\n").map((line) => contactLineWithIcon(line)).join("<br>")}</div>`;

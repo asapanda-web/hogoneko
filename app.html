@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285963">
+<link rel="stylesheet" href="style.css?v=1784285964">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -526,6 +526,20 @@
       <div id="contact-fields-wrap" style="margin-top:8px;"></div>
       <p class="hint-text">チェックを入れると、その種類の入力欄が出てきます。プルダウンで保存済みの連絡先を選ぶと、まとめて自動で入力されます(空欄のままなら、初期設定の連絡先が使われます)。</p>
 
+      <label>預かり者のSNS(任意・公開ページに表示されます)</label>
+      <select id="foster-contact-preset">
+        <option value="">選択してください(自分が保存したものから選ぶ)</option>
+        <option value="__new__">+ 新しく入力する</option>
+      </select>
+      <div id="foster-contact-type-group" class="checkbox-group" style="margin-top:8px;">
+        <label class="checkbox-item"><input type="checkbox" class="foster-contact-type-cb" data-type="instagram" data-icon="📷" data-label="Instagram"> Instagram</label>
+        <label class="checkbox-item"><input type="checkbox" class="foster-contact-type-cb" data-type="twitter" data-icon="🐦" data-label="X(Twitter)"> X(Twitter)</label>
+        <label class="checkbox-item"><input type="checkbox" class="foster-contact-type-cb" data-type="tiktok" data-icon="🎵" data-label="TikTok"> TikTok</label>
+        <label class="checkbox-item"><input type="checkbox" class="foster-contact-type-cb" data-type="line" data-icon="💬" data-label="LINE"> LINE</label>
+      </div>
+      <div id="foster-contact-fields-wrap" style="margin-top:8px;"></div>
+      <p class="hint-text">この子を預かっている人自身のSNSなどを紹介したい場合に使ってください。空欄のままなら公開ページには何も表示されません。自分が保存したものだけがプルダウンに出てきます。</p>
+
       <label class="checkbox-item" style="margin-top:14px;">
         <input type="checkbox" id="cat-is-published"> この子を公開ページに掲載する
       </label>
@@ -994,7 +1008,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285963"></script>
+<script type="module" src="app.js?v=1784285964"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
