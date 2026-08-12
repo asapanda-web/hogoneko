@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285964">
+<link rel="stylesheet" href="style.css?v=1784285965">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -76,6 +76,7 @@
       </label>
       <button class="btn btn-outline btn-small hidden" id="group-toilet-btn" style="margin-top:10px;">🐾 まとめて排泄を記録</button>
       <button class="btn btn-outline btn-small hidden" id="group-qr-btn" style="margin-top:10px;">📱 まとめてQRページを作る</button>
+      <button class="btn btn-outline btn-small hidden" id="event-history-btn" style="margin-top:10px;">📅 譲渡会の履歴</button>
       <div class="cat-list" id="cat-list"></div>
       <p class="empty-state hidden" id="empty-cats">まだ登録されている猫がいません。右下の+から登録しましょう。</p>
     </section>
@@ -899,6 +900,18 @@
   </div>
 </div>
 
+<!-- 譲渡会の履歴モーダル -->
+<div class="modal-overlay" id="modal-event-history">
+  <div class="modal">
+    <h3>📅 譲渡会の履歴</h3>
+    <p class="hint-text">過去に作った「まとめてQRページ」の一覧です。もう一度開いたり、削除したりできます。</p>
+    <div id="event-history-list" style="margin-top:10px;"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" data-close>閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- 公開ページQRコードモーダル -->
 <div class="modal-overlay" id="modal-public-qr">
   <div class="modal">
@@ -1008,7 +1021,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285964"></script>
+<script type="module" src="app.js?v=1784285965"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

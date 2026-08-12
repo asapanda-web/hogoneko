@@ -1066,6 +1066,7 @@ function applyRoleUI() {
   // まとめて排泄記録は、犬猫の記録を書き込める役割の人だけに表示
   document.getElementById("group-toilet-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
   document.getElementById("group-qr-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
+  document.getElementById("event-history-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
 
   // シェルターメンバーは「個人宅預かり」の登録はできない(施設側で割り当てるため選択肢を消す)
   if (isShelterMember()) {
@@ -2483,6 +2484,9 @@ document.getElementById("group-qr-open-btn").addEventListener("click", async () 
   const locName = document.getElementById("group-qr-location-name").value.trim();
   const locAddress = document.getElementById("group-qr-location-address").value.trim();
   const notice = document.getElementById("group-qr-notice").value.trim();
+  const catNames = Array.from(document.querySelectorAll(".group-qr-cat:checked")).map(
+    (cb) => cb.closest("label").textContent.trim()
+  );
 
   if (locName) await saveEventLocationPresetIfNew(locName, locAddress);
 
@@ -2493,8 +2497,86 @@ document.getElementById("group-qr-open-btn").addEventListener("click", async () 
   if (locAddress) params.set("locAddress", locAddress);
   if (notice) params.set("notice", notice);
   const groupUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}group.html?${params.toString()}`;
+
+  try {
+    await addDoc(collection(db, "eventGroups"), {
+      catIds,
+      catNames,
+      eventDate,
+      locName,
+      locAddress,
+      notice,
+      createdByUid: currentUid,
+      createdByName: currentUsername || "",
+      createdAt: serverTimestamp()
+    });
+  } catch (err) {
+    // 履歴の保存に失敗しても、ページ自体は開けるので問題ない
+  }
+
   window.open(groupUrl, "_blank");
   modalGroupQr.classList.remove("open");
+});
+
+// ---------- 譲渡会の履歴 ----------
+document.getElementById("event-history-btn").addEventListener("click", async () => {
+  const listEl = document.getElementById("event-history-list");
+  listEl.innerHTML = `<p class="hint-text">読み込んでいます...</p>`;
+  document.getElementById("modal-event-history").classList.add("open");
+
+  let snap;
+  try {
+    snap = await getDocs(query(collection(db, "eventGroups"), orderBy("createdAt", "desc")));
+  } catch (err) {
+    listEl.innerHTML = `<p class="hint-text">読み込みに失敗しました。</p>`;
+    return;
+  }
+
+  if (snap.empty) {
+    listEl.innerHTML = `<p class="hint-text">まだ履歴がありません。</p>`;
+    return;
+  }
+
+  listEl.innerHTML = "";
+  snap.forEach((docSnap) => {
+    const ev = docSnap.data();
+    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+    let dateText = "";
+    if (ev.eventDate) {
+      const d = new Date(ev.eventDate + "T00:00:00");
+      if (!isNaN(d.getTime())) dateText = `${d.getMonth() + 1}月${d.getDate()}日(${weekdays[d.getDay()]}) `;
+    }
+    const catNamesText = (ev.catNames || []).join("・");
+
+    const row = document.createElement("div");
+    row.className = "detail-box";
+    row.style.marginTop = "8px";
+    row.innerHTML = `
+      <div style="font-weight:700;">${escapeHtml(dateText)}${escapeHtml(ev.locName || "(会場未設定)")}</div>
+      <div class="hint-text" style="margin-top:2px;">${escapeHtml(catNamesText)}</div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button type="button" class="btn btn-ghost btn-small" style="padding:0;" data-open>開く</button>
+        <button type="button" class="btn btn-ghost btn-small" style="padding:0;" data-delete>削除</button>
+      </div>
+    `;
+    row.querySelector("[data-open]").addEventListener("click", () => {
+      const params = new URLSearchParams();
+      params.set("ids", (ev.catIds || []).join(","));
+      if (ev.eventDate) params.set("date", ev.eventDate);
+      if (ev.locName) params.set("locName", ev.locName);
+      if (ev.locAddress) params.set("locAddress", ev.locAddress);
+      if (ev.notice) params.set("notice", ev.notice);
+      const groupUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}group.html?${params.toString()}`;
+      window.open(groupUrl, "_blank");
+    });
+    row.querySelector("[data-delete]").addEventListener("click", async () => {
+      if (confirm("この履歴を削除しますか？(公開ページ自体には影響ありません)")) {
+        await deleteDoc(doc(db, "eventGroups", docSnap.id));
+        row.remove();
+      }
+    });
+    listEl.appendChild(row);
+  });
 });
 
 // ---------- まとめて排泄記録 ----------

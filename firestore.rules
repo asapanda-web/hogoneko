@@ -70,6 +70,11 @@ service cloud.firestore {
     match /config/eventLocationPresets {
       allow read, write: if isFullAdmin() || isShelterMember();
     }
+    // 「まとめてQRページ」を作った履歴(譲渡会参加情報の一覧として、あとから見返せるようにする。
+    // これはアプリ内のスタッフ向けの一覧なので、公開はしない)
+    match /eventGroups/{eventId} {
+      allow read, create, delete: if isFullAdmin() || isShelterMember();
+    }
     // 公開ページ用データ(ログイン不要で誰でも読める。書き込みは犬猫を編集できる人のみ。
     // ここには公開して良い項目だけをアプリ側で選んでミラーしており、
     // 保護場所・預かり担当者名・内部メモなどは含まれていません)
