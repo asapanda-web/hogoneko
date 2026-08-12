@@ -67,7 +67,13 @@ service cloud.firestore {
     // 保護場所・預かり担当者名・内部メモなどは含まれていません)
     match /publicProfiles/{catId} {
       allow read: if true;
-      allow write: if isFullAdmin() || isShelterMember();
+      // 内容全体の作成・削除・編集は管理者・責任者・シェルターメンバーのみ。
+      // ただし「体重の推移(weightHistory・currentWeight)」だけの更新は、
+      // 日々の記録をつけられる人(預りメンバーなど)なら誰でもできるようにする
+      // (自分が担当している子の体重グラフが、公開ページにもすぐ反映されるようにするため)
+      allow create, delete: if isFullAdmin() || isShelterMember();
+      allow update: if isFullAdmin() || isShelterMember()
+        || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["weightHistory", "currentWeight", "updatedAt"]));
     }
     // ユーザーの役割情報
     match /users/{userId} {

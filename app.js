@@ -1173,7 +1173,9 @@ function renderDailyList() {
       card.querySelector("[data-del]").addEventListener("click", (e) => {
         e.stopPropagation();
         if (confirm("この記録を削除しますか？")) {
-          deleteDoc(doc(db, "cats", currentCatId, "dailyLogs", id));
+          deleteDoc(doc(db, "cats", currentCatId, "dailyLogs", id)).then(() => {
+            syncPublicWeightHistory(currentCatId);
+          });
         }
       });
       listEl.appendChild(card);
@@ -1998,7 +2000,32 @@ async function syncPublicProfile(catId, data) {
     felvResult: latestVirusTest ? (latestVirusTest.felvResult || "未検査") : "未検査",
     dewormStatus: hasDeworm ? "済" : "未",
     updatedAt: serverTimestamp()
-  }, { merge: false });
+  }, { merge: true }); // merge:trueにして、日々の記録から同期される体重推移(weightHistory)を消さないようにする
+
+  await syncPublicWeightHistory(catId);
+}
+
+// ---------- 公開ページ用: 体重の推移を同期する(日々の記録が変わるたびに呼び出す) ----------
+async function syncPublicWeightHistory(catId) {
+  try {
+    const profileSnap = await getDoc(doc(db, "publicProfiles", catId));
+    if (!profileSnap.exists()) return; // 公開されていない子は何もしない
+
+    const logsSnap = await getDocs(collection(db, "cats", catId, "dailyLogs"));
+    const points = logsSnap.docs
+      .map((d) => d.data())
+      .filter((log) => log.weight !== undefined && log.weight !== null && log.weight !== "")
+      .map((log) => ({ date: log.date, weight: parseFloat(log.weight) }))
+      .filter((p) => !isNaN(p.weight))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    await updateDoc(doc(db, "publicProfiles", catId), {
+      weightHistory: points,
+      currentWeight: points.length ? points[points.length - 1].weight : null
+    });
+  } catch (err) {
+    // 公開されていない、権限が無いなどの場合は失敗しても問題ない
+  }
 }
 
 let isCatFormSubmitting = false;
@@ -2188,6 +2215,7 @@ document.getElementById("form-daily").addEventListener("submit", async (e) => {
       createdAt: serverTimestamp()
     });
   }
+  await syncPublicWeightHistory(currentCatId);
   resetDailyModalToAddMode();
   e.target.reset();
   resetDailyFormExtras();
