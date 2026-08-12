@@ -102,6 +102,28 @@
     cursor: pointer;
     font-family: inherit;
   }
+  .page-qr-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+  }
+  .page-qr-title {
+    font-weight: 700;
+    font-size: 15px;
+    color: #6a4a30;
+    margin-bottom: 4px;
+  }
+  .page-qr-desc {
+    font-size: 12px;
+    color: #8a7a6d;
+    margin: 0 0 10px;
+  }
+  #page-qr-box { display: flex; justify-content: center; margin-bottom: 10px; }
+  .share-btn { margin-bottom: 0; }
+  #page-share-status { text-align: center; font-size: 12px; color: #8a7a6d; margin-top: 6px; }
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -132,6 +154,11 @@
     justify-content: center;
     font-size: 40px;
   }
+  .cat-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
   .cat-card .name {
     font-weight: 700;
     font-size: 15px;
@@ -158,6 +185,7 @@
   }
   @media print {
     .back-btn, .print-btn { display: none !important; }
+    .tap-note { display: none !important; }
     body { background: #fff; }
     .cat-card { box-shadow: none; border: 1px solid #eee0d0; break-inside: avoid; }
   }
@@ -176,7 +204,17 @@
     <div class="notice-label">📢 お知らせ</div>
     <div id="notice-text"></div>
   </div>
+
+  <div class="page-qr-card">
+    <div class="page-qr-title">📱 このページ自体のQRコード</div>
+    <p class="page-qr-desc">このQRコードを読み取ると、このまとめページ自体が開きます。</p>
+    <div id="page-qr-box"></div>
+    <button type="button" class="print-btn share-btn" id="page-share-btn">📤 このページを共有する</button>
+    <p class="hint-text" id="page-share-status"></p>
+  </div>
+
   <p class="sub">それぞれのQRコードを読み取ると、その子の公開ページが開きます。</p>
+  <p class="sub tap-note">📱 スマホでこのページを見ている場合は、写真や名前をタップしても、その子の公開ページに移動できます。</p>
   <button type="button" class="print-btn" id="print-btn">🖨️ このページを印刷する</button>
   <div id="grid" class="grid">
     <div class="loading">🐾 読み込んでいます...</div>
@@ -210,6 +248,39 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
   }
+
+  // このページ自体のQRコードを表示し、共有できるようにする
+  new QRCode(document.getElementById("page-qr-box"), {
+    text: window.location.href,
+    width: 160,
+    height: 160,
+    colorDark: "#5a3a1e",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  document.getElementById("page-share-btn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("page-share-status");
+    const shareData = {
+      title: "まとめて紹介ページ",
+      text: "保護犬猫のまとめて紹介ページです。よかったら見てください🐾",
+      url: window.location.href
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // 共有をキャンセルした場合などは何もしない
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        statusEl.textContent = "共有機能が使えない端末のため、リンクをコピーしました。";
+      } catch (err) {
+        statusEl.textContent = "コピーできませんでした。";
+      }
+    }
+  });
 
   async function main() {
     const params = new URLSearchParams(window.location.search);
@@ -267,9 +338,12 @@
       const photoHtml = data.photoData
         ? `<img src="${data.photoData}" alt="">`
         : `<div class="no-photo">🐱</div>`;
+      const profileUrl = `profile.html?id=${id}`;
       card.innerHTML = `
-        ${photoHtml}
-        <div class="name">${escapeHtml(data.name || "")}</div>
+        <a href="${profileUrl}" class="cat-card-link">
+          ${photoHtml}
+          <div class="name">${escapeHtml(data.name || "")}</div>
+        </a>
         <div class="qr-wrap" id="qr-${id}"></div>
       `;
       grid.appendChild(card);
