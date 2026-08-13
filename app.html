@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285968">
+<link rel="stylesheet" href="style.css?v=1784285969">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -892,9 +892,17 @@
 <div class="modal-overlay" id="modal-missing-check">
   <div class="modal">
     <h3>📋 入力もれチェック</h3>
-    <p class="hint-text">選んだ日に、日々の記録が1件も無い子が無いか確認できます(複数の子をまとめて入力している時に便利です)。</p>
+    <p class="hint-text">選んだ日・項目について、まだ入力されていない子が無いか確認できます(「まとめて排泄を記録」だけ使った子は、食事などが未入力のまま検出されます)。</p>
     <label>確認する日</label>
     <input type="date" id="missing-check-date">
+    <label>確認する項目</label>
+    <select id="missing-check-field">
+      <option value="appetite">食事(食欲)</option>
+      <option value="weight">体重</option>
+      <option value="urine">尿</option>
+      <option value="stool">便</option>
+      <option value="any">記録そのものがあるか(項目は問わない)</option>
+    </select>
     <button type="button" class="btn btn-primary" id="missing-check-run-btn" style="width:100%; margin-top:10px;">確認する</button>
     <div id="missing-check-result" style="margin-top:14px;"></div>
     <div class="modal-actions">
@@ -1012,7 +1020,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285968"></script>
+<script type="module" src="app.js?v=1784285969"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

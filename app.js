@@ -2696,6 +2696,9 @@ document.getElementById("missing-check-btn").addEventListener("click", () => {
 document.getElementById("missing-check-run-btn").addEventListener("click", async () => {
   const resultEl = document.getElementById("missing-check-result");
   const targetDate = document.getElementById("missing-check-date").value;
+  const targetField = document.getElementById("missing-check-field").value;
+  const fieldLabels = { appetite: "食事(食欲)", weight: "体重", urine: "尿", stool: "便", any: "記録そのもの" };
+
   if (!targetDate) {
     resultEl.innerHTML = `<p class="hint-text">日付を選んでください。</p>`;
     return;
@@ -2705,6 +2708,20 @@ document.getElementById("missing-check-run-btn").addEventListener("click", async
     return;
   }
   resultEl.innerHTML = `<p class="hint-text">確認しています...</p>`;
+
+  // その記録の中で、選んだ項目が実際に入力されているかを判定する
+  function isFieldFilled(log) {
+    if (targetField === "any") return true; // 記録があること自体がOK
+    if (targetField === "appetite") {
+      const a = log.appetite;
+      const status = typeof a === "object" && a ? a.status : a;
+      return !!status;
+    }
+    if (targetField === "weight") return !!log.weight;
+    if (targetField === "urine") return !!(log.urine && log.urine.status);
+    if (targetField === "stool") return !!(log.stool && log.stool.status);
+    return true;
+  }
 
   // 譲渡済みの子は対象外にする(日々の記録をつける対象ではなくなっているため)
   const targetCats = latestCatsSnapshot.docs.filter((d) => d.data().status !== "譲渡済み");
@@ -2716,7 +2733,7 @@ document.getElementById("missing-check-run-btn").addEventListener("click", async
     try {
       const q = query(collection(db, "cats", docSnap.id, "dailyLogs"), where("date", "==", targetDate));
       const snap = await getDocs(q);
-      hasLog = !snap.empty;
+      hasLog = snap.docs.some((d) => isFieldFilled(d.data()));
     } catch (err) {
       hasLog = null; // 確認できなかった(権限が無いなど)
     }
@@ -2735,14 +2752,14 @@ document.getElementById("missing-check-run-btn").addEventListener("click", async
   let html = "";
   if (missing.length > 0) {
     html += `<div class="detail-box" style="border-color:#e08a8a;">
-      <div style="font-weight:700; color:#c0392b;">❌ 記録が無い子(${missing.length}匹)</div>
+      <div style="font-weight:700; color:#c0392b;">❌ 「${escapeHtml(fieldLabels[targetField])}」が未入力の子(${missing.length}匹)</div>
       <div style="margin-top:4px;">${missing.map((r) => escapeHtml(r.name)).join("・")}</div>
     </div>`;
   } else {
-    html += `<div class="detail-box" style="border-color:#7c9473;"><div style="font-weight:700; color:#4a7a3a;">✅ 全員分、記録がありました!</div></div>`;
+    html += `<div class="detail-box" style="border-color:#7c9473;"><div style="font-weight:700; color:#4a7a3a;">✅ 全員分、「${escapeHtml(fieldLabels[targetField])}」が入力されていました!</div></div>`;
   }
   if (ok.length > 0) {
-    html += `<p class="hint-text" style="margin-top:10px;">記録あり: ${ok.map((r) => escapeHtml(r.name)).join("・")}</p>`;
+    html += `<p class="hint-text" style="margin-top:10px;">入力あり: ${ok.map((r) => escapeHtml(r.name)).join("・")}</p>`;
   }
   if (unknown.length > 0) {
     html += `<p class="hint-text">確認できなかった子: ${unknown.map((r) => escapeHtml(r.name)).join("・")}</p>`;
