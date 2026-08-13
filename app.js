@@ -1655,6 +1655,101 @@ foodInputModeEl.addEventListener("change", () => {
   foodItemizedWrap.classList.toggle("hidden", !isItemized);
 });
 
+// ---------- ご飯の項目(複数追加できる) ----------
+let foodItemRowSeq = 0;
+function createFoodItemRow(item) {
+  foodItemRowSeq++;
+  const rowId = `food-item-${foodItemRowSeq}`;
+  const row = document.createElement("div");
+  row.className = "detail-box food-item-row";
+  row.style.marginTop = "10px";
+  row.dataset.rowId = rowId;
+  row.innerHTML = `
+    <label>フード名(ブランド)</label>
+    <input type="text" class="food-item-brand" placeholder="例: ロイヤルカナン 成長前期">
+    <label>種類</label>
+    <select class="food-item-type">
+      <option value="">選択してください</option>
+      <option value="ドライ(カリカリ)">ドライ(カリカリ)</option>
+      <option value="ウェット(パウチ)">ウェット(パウチ)</option>
+      <option value="半生(セミモイスト)">半生(セミモイスト)</option>
+      <option value="フリーズドライ">フリーズドライ</option>
+      <option value="補助食・スープ">補助食・スープ</option>
+      <option value="おやつ">おやつ</option>
+      <option value="その他">その他</option>
+    </select>
+    <label>与え方(複数選択可)</label>
+    <div class="checkbox-group">
+      <label class="checkbox-item"><input type="checkbox" value="そのまま" class="food-item-feeding"> そのまま</label>
+      <label class="checkbox-item"><input type="checkbox" value="ふやかして" class="food-item-feeding"> ふやかして</label>
+      <label class="checkbox-item"><input type="checkbox" value="他のフードと混ぜて" class="food-item-feeding"> 他のフードと混ぜて</label>
+      <label class="checkbox-item"><input type="checkbox" value="シリンジで給餌" class="food-item-feeding"> シリンジで給餌</label>
+    </div>
+    <label>量(任意)</label>
+    <input type="text" class="food-item-amount" placeholder="例: 1回20g">
+    <label>回数</label>
+    <select class="food-item-frequency">
+      <option value="">選択してください</option>
+      <option value="1日1回">1日1回</option>
+      <option value="1日2回">1日2回</option>
+      <option value="1日3回">1日3回</option>
+      <option value="1日4回">1日4回</option>
+      <option value="1日5回以上">1日5回以上</option>
+      <option value="欲しがる時にあげている">欲しがる時にあげている</option>
+    </select>
+    <button type="button" class="btn btn-ghost btn-small food-item-remove-btn" style="padding:0; margin-top:8px;">🗑 このご飯を削除</button>
+  `;
+  if (item) {
+    row.querySelector(".food-item-brand").value = item.brand || "";
+    row.querySelector(".food-item-type").value = item.type || "";
+    row.querySelectorAll(".food-item-feeding").forEach((cb) => {
+      cb.checked = !!(item.feedingTags && item.feedingTags.includes(cb.value));
+    });
+    row.querySelector(".food-item-amount").value = item.amount || "";
+    row.querySelector(".food-item-frequency").value = item.frequency || "";
+  }
+  row.querySelector(".food-item-remove-btn").addEventListener("click", () => {
+    row.remove();
+    // 全部消えてしまったら、入力しやすいように1つ空欄を戻しておく
+    if (document.getElementById("food-items-list").children.length === 0) {
+      addFoodItemRow();
+    }
+  });
+  return row;
+}
+
+function addFoodItemRow(item) {
+  document.getElementById("food-items-list").appendChild(createFoodItemRow(item));
+}
+
+document.getElementById("food-item-add-btn").addEventListener("click", () => addFoodItemRow());
+
+function getFoodItemsFromForm() {
+  const items = [];
+  document.querySelectorAll("#food-items-list .food-item-row").forEach((row) => {
+    const brand = row.querySelector(".food-item-brand").value.trim();
+    const type = row.querySelector(".food-item-type").value;
+    const feedingTags = Array.from(row.querySelectorAll(".food-item-feeding:checked")).map((cb) => cb.value);
+    const amount = row.querySelector(".food-item-amount").value.trim();
+    const frequency = row.querySelector(".food-item-frequency").value;
+    // 何かしら入力がある行だけ保存する(完全に空の行は無視)
+    if (brand || type || feedingTags.length || amount || frequency) {
+      items.push({ brand, type, feedingTags, amount, frequency });
+    }
+  });
+  return items;
+}
+
+function setFoodItemsToForm(items) {
+  const listEl = document.getElementById("food-items-list");
+  listEl.innerHTML = "";
+  if (items && items.length > 0) {
+    items.forEach((item) => addFoodItemRow(item));
+  } else {
+    addFoodItemRow(); // 最低1行は入力しやすいように出しておく
+  }
+}
+
 // ---------- 猫の登録フォーム: 預かり担当者名の表示切り替え ----------
 const catLocationEl = document.getElementById("cat-location");
 const fosterNameWrap = document.getElementById("foster-name-wrap");
@@ -1925,13 +2020,13 @@ async function openCatEditModal(catId, catData) {
   document.getElementById("food-input-mode").value = foodMode;
   foodFreeWrap.classList.toggle("hidden", foodMode === "itemized");
   foodItemizedWrap.classList.toggle("hidden", foodMode !== "itemized");
-  document.getElementById("food-brand").value = catData.foodBrand || "";
-  document.getElementById("food-type").value = catData.foodType || "";
-  document.querySelectorAll(".food-feeding-tag").forEach((cb) => {
-    cb.checked = !!(catData.foodFeedingTags && catData.foodFeedingTags.includes(cb.value));
-  });
-  document.getElementById("food-amount").value = catData.foodAmount || "";
-  document.getElementById("food-frequency").value = catData.foodFrequency || "";
+  setFoodItemsToForm(catData.foods && catData.foods.length ? catData.foods : (catData.foodBrand || catData.foodType ? [{
+    brand: catData.foodBrand || "",
+    type: catData.foodType || "",
+    feedingTags: catData.foodFeedingTags || [],
+    amount: catData.foodAmount || "",
+    frequency: catData.foodFrequency || ""
+  }] : []));
   document.getElementById("food-comment").value = catData.foodComment || "";
 
   document.getElementById("food-photo-preset").value = "";
@@ -2014,6 +2109,7 @@ function resetCatModalToAddMode() {
   document.getElementById("food-input-mode").value = "free";
   foodFreeWrap.classList.remove("hidden");
   foodItemizedWrap.classList.add("hidden");
+  setFoodItemsToForm([]);
   document.getElementById("food-photo-preset").value = "";
   document.getElementById("food-photo-new-wrap").classList.add("hidden");
   document.getElementById("food-photo-new-label").value = "";
@@ -2119,11 +2215,7 @@ async function syncPublicProfile(catId, data) {
     playOther: data.playOther,
     food: data.food,
     foodMode: data.foodMode,
-    foodBrand: data.foodBrand,
-    foodType: data.foodType,
-    foodFeedingTags: data.foodFeedingTags,
-    foodAmount: data.foodAmount,
-    foodFrequency: data.foodFrequency,
+    foods: data.foods || [],
     foodComment: data.foodComment,
     foodPhotoData: data.foodPhotoData,
     litterBoxTags: data.litterBoxTags,
@@ -2219,11 +2311,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     playOther: document.getElementById("cat-play-other").value.trim(),
     food: document.getElementById("cat-food").value.trim(),
     foodMode,
-    foodBrand: foodMode === "itemized" ? document.getElementById("food-brand").value.trim() : "",
-    foodType: foodMode === "itemized" ? document.getElementById("food-type").value : "",
-    foodFeedingTags: foodMode === "itemized" ? Array.from(document.querySelectorAll(".food-feeding-tag:checked")).map((cb) => cb.value) : [],
-    foodAmount: foodMode === "itemized" ? document.getElementById("food-amount").value.trim() : "",
-    foodFrequency: foodMode === "itemized" ? document.getElementById("food-frequency").value : "",
+    foods: foodMode === "itemized" ? getFoodItemsFromForm() : [],
     foodComment: document.getElementById("food-comment").value.trim(),
     foodPhotoData: currentFoodPhotoData || "",
     litterBoxTags: Array.from(document.querySelectorAll(".litter-box-tag:checked")).map((cb) => cb.value),

@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285967">
+<link rel="stylesheet" href="style.css?v=1784285968">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -388,54 +388,26 @@
         <textarea id="cat-food" placeholder="例: ピュリナワン子猫用(カリカリ)、カルカン子猫用(パウチ)"></textarea>
       </div>
 
-      <div id="food-itemized-wrap" class="hidden detail-box">
-        <label>フード名(ブランド)</label>
-        <input type="text" id="food-brand" placeholder="例: ロイヤルカナン 成長前期">
-        <label>種類</label>
-        <select id="food-type">
-          <option value="">選択してください</option>
-          <option value="ドライ(カリカリ)">ドライ(カリカリ)</option>
-          <option value="ウェット(パウチ)">ウェット(パウチ)</option>
-          <option value="半生(セミモイスト)">半生(セミモイスト)</option>
-          <option value="フリーズドライ">フリーズドライ</option>
-          <option value="補助食・スープ">補助食・スープ</option>
-          <option value="おやつ">おやつ</option>
-          <option value="その他">その他</option>
-        </select>
-        <label>与え方(複数選択可)</label>
-        <div class="checkbox-group">
-          <label class="checkbox-item"><input type="checkbox" value="そのまま" class="food-feeding-tag"> そのまま</label>
-          <label class="checkbox-item"><input type="checkbox" value="ふやかして" class="food-feeding-tag"> ふやかして</label>
-          <label class="checkbox-item"><input type="checkbox" value="他のフードと混ぜて" class="food-feeding-tag"> 他のフードと混ぜて</label>
-          <label class="checkbox-item"><input type="checkbox" value="シリンジで給餌" class="food-feeding-tag"> シリンジで給餌</label>
-        </div>
-        <label>量(任意)</label>
-        <input type="text" id="food-amount" placeholder="例: 1回20g">
-        <label>回数</label>
-        <select id="food-frequency">
-          <option value="">選択してください</option>
-          <option value="1日1回">1日1回</option>
-          <option value="1日2回">1日2回</option>
-          <option value="1日3回">1日3回</option>
-          <option value="1日4回">1日4回</option>
-          <option value="1日5回以上">1日5回以上</option>
-          <option value="欲しがる時にあげている">欲しがる時にあげている</option>
-        </select>
+      <div id="food-itemized-wrap" class="hidden">
+        <div id="food-items-list"></div>
+        <button type="button" class="btn btn-outline btn-small" id="food-item-add-btn" style="width:100%; margin-top:4px;">+ ご飯を追加する</button>
 
-        <label>ご飯の写真(任意・公開ページに表示されます)</label>
-        <select id="food-photo-preset">
-          <option value="">選択してください(保存済みの写真から選ぶ)</option>
-          <option value="__new__">+ 新しくアップロードする</option>
-        </select>
-        <div id="food-photo-new-wrap" class="hidden" style="margin-top:8px;">
-          <input type="text" id="food-photo-new-label" placeholder="この写真の名前(選ぶ時の目印、例: ピュリナワン子猫用カリカリ)">
+        <div class="detail-box" style="margin-top:14px;">
+          <label>ご飯の写真(任意・公開ページに表示されます)</label>
+          <select id="food-photo-preset">
+            <option value="">選択してください(保存済みの写真から選ぶ)</option>
+            <option value="__new__">+ 新しくアップロードする</option>
+          </select>
+          <div id="food-photo-new-wrap" class="hidden" style="margin-top:8px;">
+            <input type="text" id="food-photo-new-label" placeholder="この写真の名前(選ぶ時の目印、例: ピュリナワン子猫用カリカリ)">
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
+            <img id="food-photo-preview" class="hidden" style="width:70px;height:70px;object-fit:cover;border-radius:10px;border:2px solid var(--border);">
+            <input type="file" id="food-photo-input" accept="image/*">
+          </div>
+          <p class="hint-text" id="food-photo-status"></p>
+          <p class="hint-text">同じご飯を使っている子が多い場合、一度アップロードした写真を他の子でも選んで使い回せます。</p>
         </div>
-        <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
-          <img id="food-photo-preview" class="hidden" style="width:70px;height:70px;object-fit:cover;border-radius:10px;border:2px solid var(--border);">
-          <input type="file" id="food-photo-input" accept="image/*">
-        </div>
-        <p class="hint-text" id="food-photo-status"></p>
-        <p class="hint-text">同じご飯を使っている子が多い場合、一度アップロードした写真を他の子でも選んで使い回せます。</p>
       </div>
       <input type="text" id="food-comment" placeholder="ご飯についての自由コメント(任意・項目に当てはまらない注意点など)">
 
@@ -1040,7 +1012,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285967"></script>
+<script type="module" src="app.js?v=1784285968"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
