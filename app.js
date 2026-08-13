@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection, addDoc, deleteDoc, doc, getDoc, getDocs, onSnapshot,
-  query, where, orderBy, serverTimestamp, updateDoc, writeBatch, setDoc, arrayUnion
+  query, where, orderBy, serverTimestamp, updateDoc, writeBatch, setDoc, arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ORG_NAME, APP_TITLE, FACILITY_LABEL, FOSTER_LABEL } from "./site-config.js?v=1784218044";
 
@@ -439,6 +439,25 @@ async function saveNameOriginSharedPresetIfNew(text) {
     // 保存に失敗しても、この子自身の由来は保存されているので問題ない
   }
 }
+
+document.getElementById("name-origin-shared-delete-btn").addEventListener("click", async () => {
+  const selectEl = document.getElementById("name-origin-shared-preset");
+  const val = selectEl.value;
+  if (val === "" || val === "__new__") {
+    alert("削除したい文章を、まずプルダウンから選んでください。");
+    return;
+  }
+  const preset = nameOriginSharedPresets[parseInt(val, 10)];
+  if (!preset) return;
+  if (!confirm("この保存済みの文章を削除しますか？(すでにこの文章を使っている子の内容は変わりません)")) return;
+  try {
+    await updateDoc(doc(db, "config", "nameOriginSharedPresets"), { list: arrayRemove(preset) });
+    nameOriginSharedPresets = nameOriginSharedPresets.filter((p) => p !== preset);
+    populateNameOriginSharedPresetSelect();
+  } catch (err) {
+    alert("削除に失敗しました。もう一度お試しください。");
+  }
+});
 
 // ---------- ご飯の写真(保存済みの写真から選ぶ、または新しくアップロード) ----------
 let foodPhotoPresets = []; // {id, photoData, label}
@@ -2577,6 +2596,70 @@ document.getElementById("event-history-btn").addEventListener("click", async () 
     });
     listEl.appendChild(row);
   });
+});
+
+// ---------- 入力もれチェック ----------
+document.getElementById("missing-check-btn").addEventListener("click", () => {
+  document.getElementById("missing-check-date").valueAsDate = new Date();
+  document.getElementById("missing-check-result").innerHTML = "";
+  document.getElementById("modal-missing-check").classList.add("open");
+});
+
+document.getElementById("missing-check-run-btn").addEventListener("click", async () => {
+  const resultEl = document.getElementById("missing-check-result");
+  const targetDate = document.getElementById("missing-check-date").value;
+  if (!targetDate) {
+    resultEl.innerHTML = `<p class="hint-text">日付を選んでください。</p>`;
+    return;
+  }
+  if (!latestCatsSnapshot) {
+    resultEl.innerHTML = `<p class="hint-text">猫の一覧を読み込み中です。もう一度お試しください。</p>`;
+    return;
+  }
+  resultEl.innerHTML = `<p class="hint-text">確認しています...</p>`;
+
+  // 譲渡済みの子は対象外にする(日々の記録をつける対象ではなくなっているため)
+  const targetCats = latestCatsSnapshot.docs.filter((d) => d.data().status !== "譲渡済み");
+
+  const results = [];
+  for (const docSnap of targetCats) {
+    const catData = docSnap.data();
+    let hasLog = false;
+    try {
+      const q = query(collection(db, "cats", docSnap.id, "dailyLogs"), where("date", "==", targetDate));
+      const snap = await getDocs(q);
+      hasLog = !snap.empty;
+    } catch (err) {
+      hasLog = null; // 確認できなかった(権限が無いなど)
+    }
+    results.push({ name: catData.name, hasLog });
+  }
+
+  if (results.length === 0) {
+    resultEl.innerHTML = `<p class="hint-text">確認できる子がいません。</p>`;
+    return;
+  }
+
+  const missing = results.filter((r) => r.hasLog === false);
+  const ok = results.filter((r) => r.hasLog === true);
+  const unknown = results.filter((r) => r.hasLog === null);
+
+  let html = "";
+  if (missing.length > 0) {
+    html += `<div class="detail-box" style="border-color:#e08a8a;">
+      <div style="font-weight:700; color:#c0392b;">❌ 記録が無い子(${missing.length}匹)</div>
+      <div style="margin-top:4px;">${missing.map((r) => escapeHtml(r.name)).join("・")}</div>
+    </div>`;
+  } else {
+    html += `<div class="detail-box" style="border-color:#7c9473;"><div style="font-weight:700; color:#4a7a3a;">✅ 全員分、記録がありました!</div></div>`;
+  }
+  if (ok.length > 0) {
+    html += `<p class="hint-text" style="margin-top:10px;">記録あり: ${ok.map((r) => escapeHtml(r.name)).join("・")}</p>`;
+  }
+  if (unknown.length > 0) {
+    html += `<p class="hint-text">確認できなかった子: ${unknown.map((r) => escapeHtml(r.name)).join("・")}</p>`;
+  }
+  resultEl.innerHTML = html;
 });
 
 // ---------- まとめて排泄記録 ----------

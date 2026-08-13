@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285965">
+<link rel="stylesheet" href="style.css?v=1784285967">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -77,6 +77,7 @@
       <button class="btn btn-outline btn-small hidden" id="group-toilet-btn" style="margin-top:10px;">🐾 まとめて排泄を記録</button>
       <button class="btn btn-outline btn-small hidden" id="group-qr-btn" style="margin-top:10px;">📱 まとめてQRページを作る</button>
       <button class="btn btn-outline btn-small hidden" id="event-history-btn" style="margin-top:10px;">📅 譲渡会の履歴</button>
+      <button class="btn btn-outline btn-small" id="missing-check-btn" style="margin-top:10px;">📋 入力もれチェック</button>
       <div class="cat-list" id="cat-list"></div>
       <p class="empty-state hidden" id="empty-cats">まだ登録されている猫がいません。右下の+から登録しましょう。</p>
     </section>
@@ -473,12 +474,15 @@
       </div>
 
       <label>名前の由来・全体共通(任意・公開ページに表示されます)</label>
-      <select id="name-origin-shared-preset">
-        <option value="">選択してください(自分が保存した文章から選ぶ)</option>
-        <option value="__new__">+ 新しく入力する</option>
-      </select>
-      <textarea id="cat-name-origin-shared" placeholder="例: 兄弟がいる場合の共通のエピソードや、保護された経緯など" style="margin-top:8px;"></textarea>
-      <p class="hint-text">自分が担当している兄弟猫など、同じ文章を使いまわしたい場合はプルダウンから選べます(自分が保存した文章だけが表示されます)。新しく入力すると、次回から選べるように自動で保存されます。</p>
+      <div style="display:flex; gap:8px; align-items:flex-start;">
+        <select id="name-origin-shared-preset" style="flex:1;">
+          <option value="">選択してください(自分が保存した文章から選ぶ)</option>
+          <option value="__new__">+ 新しく入力する</option>
+        </select>
+        <button type="button" class="btn btn-outline btn-small" id="name-origin-shared-delete-btn" style="flex-shrink:0;">🗑 削除</button>
+      </div>
+      <textarea id="cat-name-origin-shared" placeholder="例: 兄弟がいる場合の共通のエピソードや、保護された経緯など" style="margin-top:8px; min-height:120px;"></textarea>
+      <p class="hint-text">自分が担当している兄弟猫など、同じ文章を使いまわしたい場合はプルダウンから選べます(自分が保存した文章だけが表示されます)。新しく入力すると、次回から選べるように自動で保存されます。プルダウンで選んだ状態で「🗑 削除」を押すと、保存済みの文章を削除できます。</p>
 
       <label>名前の由来・この子ならでは(任意・公開ページに表示されます)</label>
       <textarea id="cat-name-origin" placeholder="例: ハワイ語で「希望の光」という意味から"></textarea>
@@ -912,6 +916,21 @@
   </div>
 </div>
 
+<!-- 入力もれチェックモーダル -->
+<div class="modal-overlay" id="modal-missing-check">
+  <div class="modal">
+    <h3>📋 入力もれチェック</h3>
+    <p class="hint-text">選んだ日に、日々の記録が1件も無い子が無いか確認できます(複数の子をまとめて入力している時に便利です)。</p>
+    <label>確認する日</label>
+    <input type="date" id="missing-check-date">
+    <button type="button" class="btn btn-primary" id="missing-check-run-btn" style="width:100%; margin-top:10px;">確認する</button>
+    <div id="missing-check-result" style="margin-top:14px;"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" data-close>閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- 公開ページQRコードモーダル -->
 <div class="modal-overlay" id="modal-public-qr">
   <div class="modal">
@@ -1021,7 +1040,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285965"></script>
+<script type="module" src="app.js?v=1784285967"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
