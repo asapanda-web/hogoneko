@@ -515,7 +515,10 @@
       new Chart(canvasEl.getContext("2d"), {
         type: "line",
         data: {
-          labels: data.weightHistory.map((p) => (p.date || "").slice(5)),
+          labels: data.weightHistory.map((p) => {
+            const parts = (p.date || "").split("-"); // [年, 月, 日]
+            return parts.length === 3 ? `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}` : (p.date || "");
+          }),
           datasets: [{
             label: "体重(kg)",
             data: data.weightHistory.map((p) => p.weight),
@@ -531,6 +534,14 @@
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
+            x: {
+              ticks: {
+                autoSkip: false,
+                maxRotation: 60,
+                minRotation: 60,
+                font: { size: 9 }
+              }
+            },
             y: { title: { display: true, text: "kg" } }
           }
         }
