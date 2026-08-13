@@ -571,6 +571,33 @@ function populateSiblingCheckboxes(excludeCatId, selectedIds) {
   });
 }
 
+// ---------- 1日分のトータル食事量 ----------
+let editingDailyTotalDate = null;
+function openDailyTotalModal(date, currentNote) {
+  editingDailyTotalDate = date;
+  document.getElementById("daily-total-date-label").textContent = `${date}分`;
+  document.getElementById("daily-total-input").value = currentNote || "";
+  document.getElementById("daily-total-status").textContent = "";
+  document.getElementById("modal-daily-total").classList.add("open");
+}
+
+document.getElementById("daily-total-save-btn").addEventListener("click", async () => {
+  if (!editingDailyTotalDate || !currentCatId) return;
+  const statusEl = document.getElementById("daily-total-status");
+  const note = document.getElementById("daily-total-input").value.trim();
+  statusEl.textContent = "保存しています...";
+  try {
+    await setDoc(doc(db, "cats", currentCatId, "dailyTotals", editingDailyTotalDate), {
+      foodTotalNote: note,
+      updatedBy: currentUsername,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    document.getElementById("modal-daily-total").classList.remove("open");
+  } catch (err) {
+    statusEl.textContent = "保存に失敗しました。もう一度お試しください。";
+  }
+});
+
 // ---------- 画面切り替え ----------
 const viewDashboard = document.getElementById("view-dashboard");
 const viewDetail = document.getElementById("view-detail");
@@ -1229,13 +1256,20 @@ function renderCatList() {
 
 // ---------- 日々の記録 ----------
 let dailyDisplayDayLimit = 7; // 最初に表示する日数(「もっと見る」で増える)
+let latestDailyTotalsSnapshot = null;
+let unsubDailyTotals = null;
 
 function listenDailyLogs(catId) {
   if (unsubDaily) unsubDaily();
+  if (unsubDailyTotals) unsubDailyTotals();
   dailyDisplayDayLimit = 7; // 猫を開き直すたびに表示件数をリセット
   const q = query(collection(db, "cats", catId, "dailyLogs"), orderBy("date", "desc"));
   unsubDaily = onSnapshot(q, (snap) => {
     latestDailySnapshot = snap;
+    renderDailyList();
+  });
+  unsubDailyTotals = onSnapshot(collection(db, "cats", catId, "dailyTotals"), (snap) => {
+    latestDailyTotalsSnapshot = snap;
     renderDailyList();
   });
 }
@@ -1279,6 +1313,18 @@ function renderDailyList() {
     dateHeader.className = "daily-date-header";
     dateHeader.textContent = group.date;
     listEl.appendChild(dateHeader);
+
+    const totalDoc = latestDailyTotalsSnapshot
+      ? latestDailyTotalsSnapshot.docs.find((d) => d.id === group.date)
+      : null;
+    const totalNote = totalDoc ? (totalDoc.data().foodTotalNote || "") : "";
+    const totalRow = document.createElement("div");
+    totalRow.className = "daily-total-row";
+    totalRow.innerHTML = totalNote
+      ? `<span>🍽 その日のトータル食事量: ${escapeHtml(totalNote)}</span><button type="button" class="btn btn-ghost btn-small" style="padding:0;" data-edit-total>編集</button>`
+      : `<button type="button" class="btn btn-ghost btn-small" style="padding:0;" data-edit-total>🍽 その日のトータル食事量を入力する</button>`;
+    totalRow.querySelector("[data-edit-total]").addEventListener("click", () => openDailyTotalModal(group.date, totalNote));
+    listEl.appendChild(totalRow);
 
     group.items.forEach(({ id, log }) => {
       const card = document.createElement("div");

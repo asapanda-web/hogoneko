@@ -505,6 +505,19 @@ input:focus, select:focus, textarea:focus {
   margin: 16px 0 8px;
   display: inline-block;
 }
+.daily-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--ink);
+}
 
 .log-card {
   background: var(--surface);
@@ -598,11 +611,11 @@ input:focus, select:focus, textarea:focus {
 /* ---------- 印刷用スタイル ---------- */
 @media print {
   @page {
-    size: 128mm 182mm; /* 母子手帳と同じB6サイズ(A4用紙にこのサイズのまま印刷され、内容が多いと2ページ以上になります) */
-    margin: 8mm;
+    size: A4;
+    margin: 10mm;
   }
 
-  body { font-size: 11px !important; }
+  body { font-size: 12px !important; line-height: 1.5 !important; }
 
   .topbar, .fab, .back-link, .detail-actions, #print-cat-btn, #print-profile-btn,
   #print-buttons-wrap, #print-hint-text,
@@ -611,6 +624,43 @@ input:focus, select:focus, textarea:focus {
     display: none !important;
   }
   body { background: #fff !important; }
+  .container { max-width: 100% !important; }
+
+  /* 個人情報保護のため、預かり担当者名は印刷時には表示しない(「個人宅預かり」の表示自体は残します) */
+  #detail-foster-name {
+    display: none !important;
+  }
+
+  /* QRコードだけを印刷するモード(公開ページ用QRコードの「印刷する」ボタンから) */
+  body.print-mode-qr .cat-header,
+  body.print-mode-qr #public-page-wrap,
+  body.print-mode-qr #print-daily-page,
+  body.print-mode-qr #tab-daily,
+  body.print-mode-qr #tab-medical,
+  body.print-mode-qr #tab-history,
+  body.print-mode-qr #profile-sheet,
+  body.print-mode-qr #wallpaper-img {
+    display: none !important;
+  }
+  #print-qr-page { display: none; }
+  body.print-mode-qr #print-qr-page {
+    display: block !important;
+    text-align: center;
+    margin-top: 80px;
+  }
+  #print-qr-name {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: var(--accent-ink);
+    margin-bottom: 20px;
+  }
+  #print-qr-canvas-wrap {
+    display: inline-block;
+    padding: 16px;
+    border: 2px double var(--accent);
+    border-radius: 12px;
+  }
 
   /* 「譲渡プロフィールを印刷」を押した時は、プロフィールシートだけ表示する */
   body.print-mode-profile .cat-header,
@@ -625,14 +675,17 @@ input:focus, select:focus, textarea:focus {
   #profile-sheet { display: none; }
   body.print-mode-profile #profile-sheet { display: block !important; }
 
+  /* ---------- 譲渡プロフィール印刷(今まで通り、可愛らしいレイアウトのまま) ---------- */
   .profile-sheet-inner {
+    max-width: 480px;
+    margin: 0 auto;
     border: 3px double var(--accent);
     border-radius: 16px;
-    padding: 16px;
+    padding: 20px;
     text-align: center;
   }
   .profile-photo-wrap { margin-bottom: 10px; }
-  #profile-photo { max-width: 100%; max-height: 160mm; border-radius: 12px; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+  #profile-photo { max-width: 100%; max-height: 200mm; border-radius: 12px; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
   .profile-name { font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700; font-size: 22px; color: var(--accent-ink); margin-top: 6px; }
   .profile-meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
   .profile-tags { margin-top: 8px; text-align: left; }
@@ -670,6 +723,8 @@ input:focus, select:focus, textarea:focus {
   body.print-mode-profile.print-sex-female .profile-name,
   body.print-mode-profile.print-sex-female .profile-footer { color: #c15a80; }
 
+  /* ---------- 記録の印刷(可愛い装飾枠は残しつつ、記録の中身はまとめてシンプルに) ---------- */
+
   /* 性別で背景色を分ける(オス=水色系、メス=ピンク系) */
   body.print-sex-male { background: #eaf4fb !important; }
   body.print-sex-female { background: #fdeef2 !important; }
@@ -678,13 +733,13 @@ input:focus, select:focus, textarea:focus {
   body.print-sex-male .cat-header::before { color: #3d7ea6; }
   body.print-sex-female .cat-header::before { color: #c15a80; }
 
-  /* 壁紙写真は隠さず、記念写真として配置(B6サイズに収まるよう小さめ) */
+  /* 壁紙写真は隠さず、記念写真として配置 */
   #wallpaper-img {
     position: static !important;
     display: block !important;
-    margin: 10px auto !important;
-    max-width: 160px !important;
-    max-height: 160px !important;
+    margin: 8px auto !important;
+    max-width: 140px !important;
+    max-height: 140px !important;
     width: auto !important;
     height: auto !important;
     opacity: 1 !important;
@@ -699,6 +754,7 @@ input:focus, select:focus, textarea:focus {
     padding: 10px 12px;
     position: relative;
     margin-top: 14px !important;
+    margin-bottom: 14px !important;
   }
   .cat-header::before {
     content: "🐾 ご縁がありますように 🐾";
@@ -717,27 +773,103 @@ input:focus, select:focus, textarea:focus {
   }
   .cat-avatar { border: 2px solid var(--accent) !important; background: #fff9f0 !important; width: 36px !important; height: 36px !important; font-size: 18px !important; }
   .cat-header .name { font-size: 16px !important; }
-  .cat-header .meta { font-size: 10px !important; }
+  .cat-header .meta { font-size: 10.5px !important; }
 
-  #tab-daily, #tab-medical, #tab-history {
-    display: block !important;
-    margin-top: 14px;
+  /* 日々の記録タブ本体(1件ずつの詳細)は印刷では使わず、まとめページに差し替える */
+  body:not(.print-mode-profile) #tab-daily {
+    display: none !important;
   }
-  #tab-daily::before { content: "🐾 日々の記録"; font-weight: 700; font-size: 12px; display: block; margin-bottom: 6px; color: var(--accent-ink); }
-  #tab-medical::before { content: "🐾 医療記録"; font-weight: 700; font-size: 12px; display: block; margin: 14px 0 6px; color: var(--accent-ink); }
-  #tab-history::before { content: "🐾 変更履歴"; font-weight: 700; font-size: 12px; display: block; margin: 14px 0 6px; color: var(--accent-ink); }
-  .log-card { break-inside: avoid; border: 1px solid #e8dfd0; border-radius: 6px; padding: 8px 10px; font-size: 10px; }
-  .daily-date-header { font-size: 11px; padding: 3px 8px; margin: 10px 0 5px; }
+  body:not(.print-mode-profile) #print-daily-page {
+    display: block !important;
+  }
 
-  .container::after {
-    content: "これまでの記録です。これからも元気に、幸せに過ごせますように。🐾";
-    display: block;
-    margin-top: 18px;
-    padding-top: 10px;
-    border-top: 1.5px dashed var(--border);
-    text-align: center;
+  #print-daily-page {
+    display: flex;
+    gap: 8mm;
+    margin-top: 14px;
+    align-items: flex-start;
+  }
+  .print-card {
+    width: 92mm;
+    flex-shrink: 0;
+  }
+  .print-card:first-child {
+    border-right: 1px dashed var(--border);
+    padding-right: 8mm;
+  }
+  .print-card-title {
     font-family: 'Zen Maru Gothic', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
     color: var(--accent-ink);
-    font-size: 10px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+  }
+
+  #print-weight-chart-wrap { margin-bottom: 10px; }
+  #print-weight-chart-wrap canvas { width: 100% !important; height: auto !important; }
+  .print-summary-empty { font-size: 10px; color: var(--ink-soft); }
+  .print-summary-day {
+    break-inside: avoid;
+    border: 1px solid #e8dfd0;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 9px;
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+  .print-summary-date { font-weight: 700; font-size: 10px; color: var(--ink); margin-bottom: 2px; }
+  .print-summary-memo { color: var(--ink-soft); }
+
+  .print-blank-note { font-size: 9px; color: var(--ink-soft); margin-bottom: 6px; }
+  .print-blank-day {
+    break-inside: avoid;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    font-size: 8.5px;
+  }
+  .print-blank-date { font-weight: 700; font-size: 9.5px; margin-bottom: 3px; }
+  .print-blank-mini { width: 100%; border-collapse: collapse; font-size: 8.5px; }
+  .print-blank-mini td { border: 1px solid #e8dfd0; padding: 3px 4px; }
+  .print-blank-mini td:nth-child(odd) { color: var(--ink-soft); width: 8%; text-align: center; }
+  .print-blank-mini td:nth-child(even) { width: 17%; }
+  .print-blank-line { margin-top: 3px; }
+
+  /* 医療記録・変更履歴は、日々の記録とは別のページから始める */
+  body:not(.print-mode-profile) #tab-medical {
+    break-before: page;
+  }
+
+  #tab-medical, #tab-history {
+    display: block !important;
+    margin-top: 16px;
+    column-width: 92mm;
+    column-gap: 6mm;
+    column-rule: 1px dashed var(--border);
+  }
+
+  #tab-medical::before { content: "🐾 医療記録"; font-weight: 700; font-size: 13px; display: block; margin-bottom: 8px; color: var(--accent-ink); column-span: all; }
+  #tab-history::before { content: "🐾 変更履歴"; font-weight: 700; font-size: 13px; display: block; margin: 16px 0 8px; color: var(--accent-ink); column-span: all; }
+
+  .log-card {
+    break-inside: avoid;
+    border: 1px solid #e8dfd0;
+    border-radius: 6px;
+    padding: 7px 9px;
+    font-size: 9.5px;
+    line-height: 1.45;
+    margin-bottom: 8px;
+  }
+  .log-card .row1 { margin-bottom: 2px; flex-wrap: wrap; }
+  .log-card .date, .log-card .weight { font-size: 10px; }
+  .log-card .detail { margin-top: 3px; }
+  .daily-date-header {
+    font-size: 10.5px;
+    padding: 2px 8px;
+    margin: 10px 0 5px;
+    break-after: avoid;
+    break-inside: avoid;
   }
 }

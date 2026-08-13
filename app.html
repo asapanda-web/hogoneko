@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285969">
+<link rel="stylesheet" href="style.css?v=1784285970">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -928,6 +928,20 @@
   </div>
 </div>
 
+<!-- 1日分のトータル食事量 編集モーダル -->
+<div class="modal-overlay" id="modal-daily-total">
+  <div class="modal">
+    <h3>🍽 その日のトータル食事量</h3>
+    <p class="hint-text" id="daily-total-date-label"></p>
+    <textarea id="daily-total-input" placeholder="例: 全体的によく食べていた。夕方だけ少なめ。"></textarea>
+    <p class="hint-text" id="daily-total-status"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" data-close>キャンセル</button>
+      <button type="button" class="btn btn-primary" id="daily-total-save-btn">保存する</button>
+    </div>
+  </div>
+</div>
+
 <!-- 体重グラフモーダル -->
 <div class="modal-overlay" id="modal-weight-chart">
   <div class="modal">
@@ -1020,7 +1034,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285969"></script>
+<script type="module" src="app.js?v=1784285970"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
