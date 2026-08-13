@@ -407,19 +407,16 @@
         if (f.feedingTags && f.feedingTags.length) rows.push(["与え方", escapeHtml(f.feedingTags.join("・"))]);
         if (f.amount) rows.push(["量", escapeHtml(f.amount)]);
         if (f.frequency) rows.push(["回数", escapeHtml(f.frequency)]);
-        if (rows.length === 0) return "";
-        return `<table class="info-table" style="margin-top:8px;">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}</table>`;
-      }).join("");
+        const itemPhotoHtml = f.photoData ? `<img src="${f.photoData}" alt="" class="detail-photo" style="max-width:180px; max-height:140px; margin-top:8px;">` : "";
+        if (rows.length === 0 && !itemPhotoHtml) return "";
+        return `${itemPhotoHtml}${rows.length ? `<table class="info-table" style="margin-top:8px;">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}</table>` : ""}`;
+      }).join("<div style=\"height:12px;\"></div>");
     } else if (data.food) {
       foodTablesHtml = `<table class="info-table"><tr><td>ご飯</td><td>${escapeHtml(data.food)}</td></tr></table>`;
     }
-    const foodPhotoHtml = data.foodPhotoData
-      ? `<img src="${data.foodPhotoData}" alt="" class="detail-photo">`
-      : "";
-    const foodHtml = (foodTablesHtml || data.foodComment || foodPhotoHtml)
+    const foodHtml = (foodTablesHtml || data.foodComment)
       ? `<div class="section-title toggle-title" data-target="detail-food">🍽 今食べているご飯 <span class="toggle-arrow">▶</span></div>
          <div class="toggle-content hidden" id="detail-food">
-           ${foodPhotoHtml}
            ${foodTablesHtml}
            ${data.foodComment ? `<div class="free-note">${escapeHtml(data.foodComment)}</div>` : ""}
          </div>`

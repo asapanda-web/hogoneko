@@ -462,7 +462,6 @@ document.getElementById("name-origin-shared-delete-btn").addEventListener("click
 // ---------- ご飯の写真(保存済みの写真から選ぶ、または新しくアップロード) ----------
 let foodPhotoPresets = []; // {id, photoData, label}
 let foodPhotoPresetsLoaded = false;
-let currentFoodPhotoData = null;
 
 async function loadFoodPhotoPresets() {
   if (foodPhotoPresetsLoaded) return;
@@ -473,11 +472,11 @@ async function loadFoodPhotoPresets() {
     foodPhotoPresets = [];
   }
   foodPhotoPresetsLoaded = true;
-  populateFoodPhotoPresetSelect();
+  // すでに画面に出ている行のプルダウンも更新する
+  document.querySelectorAll(".food-item-photo-preset").forEach((selectEl) => populateFoodPhotoPresetSelect(selectEl));
 }
 
-function populateFoodPhotoPresetSelect() {
-  const selectEl = document.getElementById("food-photo-preset");
+function populateFoodPhotoPresetSelect(selectEl) {
   const currentValue = selectEl.value;
   selectEl.innerHTML = `
     <option value="">選択してください(保存済みの写真から選ぶ)</option>
@@ -489,63 +488,70 @@ function populateFoodPhotoPresetSelect() {
   }
 }
 
-document.getElementById("food-photo-preset").addEventListener("change", (e) => {
-  const val = e.target.value;
-  const newWrap = document.getElementById("food-photo-new-wrap");
-  const preview = document.getElementById("food-photo-preview");
-  if (val === "__new__" || val === "") {
-    newWrap.classList.toggle("hidden", val !== "__new__");
-    return;
-  }
-  newWrap.classList.add("hidden");
-  const preset = foodPhotoPresets.find((p) => p.id === val);
-  if (preset) {
-    currentFoodPhotoData = preset.photoData;
-    preview.src = preset.photoData;
-    preview.classList.remove("hidden");
-    document.getElementById("food-photo-status").textContent = "";
-  }
-});
+// 1つのご飯ブロック(row)に対して、写真欄のイベントを設定する
+function setupFoodItemPhotoEvents(row) {
+  const presetSelect = row.querySelector(".food-item-photo-preset");
+  const newWrap = row.querySelector(".food-item-photo-new-wrap");
+  const preview = row.querySelector(".food-item-photo-preview");
+  const fileInput = row.querySelector(".food-item-photo-input");
+  const statusEl = row.querySelector(".food-item-photo-status");
 
-document.getElementById("food-photo-input").addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const statusEl = document.getElementById("food-photo-status");
-  statusEl.textContent = "画像を処理しています...";
-  try {
-    const compressed = await compressImageToDataUrl(file, 700, 0.7);
-    if (compressed.length > 700000) {
-      statusEl.textContent = "画像が大きすぎます。別の写真でお試しください。";
+  populateFoodPhotoPresetSelect(presetSelect);
+
+  presetSelect.addEventListener("change", () => {
+    const val = presetSelect.value;
+    if (val === "__new__" || val === "") {
+      newWrap.classList.toggle("hidden", val !== "__new__");
       return;
     }
-    currentFoodPhotoData = compressed;
-    const preview = document.getElementById("food-photo-preview");
-    preview.src = compressed;
-    preview.classList.remove("hidden");
-    statusEl.textContent = "設定しました。";
-    // 新しくアップロードした場合は、名前を付けて保存できるようにする
-    document.getElementById("food-photo-preset").value = "__new__";
-    document.getElementById("food-photo-new-wrap").classList.remove("hidden");
-  } catch (err) {
-    statusEl.textContent = "画像の読み込みに失敗しました。別の写真でお試しください。";
-  }
-});
+    newWrap.classList.add("hidden");
+    const preset = foodPhotoPresets.find((p) => p.id === val);
+    if (preset) {
+      preview.src = preset.photoData;
+      preview.classList.remove("hidden");
+      statusEl.textContent = "";
+    }
+  });
 
-async function saveFoodPhotoPresetIfNew() {
-  const presetSelect = document.getElementById("food-photo-preset");
-  const label = document.getElementById("food-photo-new-label").value.trim();
-  // 既存のプリセットを選んだだけの場合は、何もしない
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    statusEl.textContent = "画像を処理しています...";
+    try {
+      const compressed = await compressImageToDataUrl(file, 700, 0.7);
+      if (compressed.length > 700000) {
+        statusEl.textContent = "画像が大きすぎます。別の写真でお試しください。";
+        return;
+      }
+      preview.src = compressed;
+      preview.classList.remove("hidden");
+      statusEl.textContent = "設定しました。";
+      // 新しくアップロードした場合は、名前を付けて保存できるようにする
+      presetSelect.value = "__new__";
+      newWrap.classList.remove("hidden");
+    } catch (err) {
+      statusEl.textContent = "画像の読み込みに失敗しました。別の写真でお試しください。";
+    }
+  });
+}
+
+// このご飯ブロックが「新しくアップロード」+名前入力されていれば、次回から選べるように保存する
+async function saveFoodPhotoPresetIfNewForRow(row) {
+  const presetSelect = row.querySelector(".food-item-photo-preset");
+  const label = row.querySelector(".food-item-photo-new-label").value.trim();
+  const preview = row.querySelector(".food-item-photo-preview");
   if (presetSelect.value !== "__new__") return;
-  if (!currentFoodPhotoData || !label) return;
+  if (preview.classList.contains("hidden") || !label) return;
+  const photoData = preview.src;
   try {
     const newDocRef = await addDoc(collection(db, "config", "foodPhotoPresets", "items"), {
-      photoData: currentFoodPhotoData,
+      photoData,
       label,
       createdByUid: currentUid,
       createdByName: currentUsername || "",
       createdAt: serverTimestamp()
     });
-    foodPhotoPresets.push({ id: newDocRef.id, photoData: currentFoodPhotoData, label });
+    foodPhotoPresets.push({ id: newDocRef.id, photoData, label });
   } catch (err) {
     // 保存に失敗しても、この子自身のご飯の写真は保存されているので問題ない
   }
@@ -1743,6 +1749,19 @@ function createFoodItemRow(item) {
       <option value="1日5回以上">1日5回以上</option>
       <option value="欲しがる時にあげている">欲しがる時にあげている</option>
     </select>
+    <label>写真(任意・公開ページに表示されます)</label>
+    <select class="food-item-photo-preset">
+      <option value="">選択してください(保存済みの写真から選ぶ)</option>
+      <option value="__new__">+ 新しくアップロードする</option>
+    </select>
+    <div class="food-item-photo-new-wrap hidden" style="margin-top:8px;">
+      <input type="text" class="food-item-photo-new-label" placeholder="この写真の名前(選ぶ時の目印、例: ピュリナワン子猫用カリカリ)">
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
+      <img class="food-item-photo-preview hidden" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid var(--border);">
+      <input type="file" class="food-item-photo-input" accept="image/*">
+    </div>
+    <p class="hint-text food-item-photo-status"></p>
     <button type="button" class="btn btn-ghost btn-small food-item-remove-btn" style="padding:0; margin-top:8px;">🗑 このご飯を削除</button>
   `;
   if (item) {
@@ -1753,7 +1772,13 @@ function createFoodItemRow(item) {
     });
     row.querySelector(".food-item-amount").value = item.amount || "";
     row.querySelector(".food-item-frequency").value = item.frequency || "";
+    if (item.photoData) {
+      const preview = row.querySelector(".food-item-photo-preview");
+      preview.src = item.photoData;
+      preview.classList.remove("hidden");
+    }
   }
+  setupFoodItemPhotoEvents(row);
   row.querySelector(".food-item-remove-btn").addEventListener("click", () => {
     row.remove();
     // 全部消えてしまったら、入力しやすいように1つ空欄を戻しておく
@@ -1778,9 +1803,11 @@ function getFoodItemsFromForm() {
     const feedingTags = Array.from(row.querySelectorAll(".food-item-feeding:checked")).map((cb) => cb.value);
     const amount = row.querySelector(".food-item-amount").value.trim();
     const frequency = row.querySelector(".food-item-frequency").value;
+    const photoPreview = row.querySelector(".food-item-photo-preview");
+    const photoData = photoPreview.classList.contains("hidden") ? "" : photoPreview.src;
     // 何かしら入力がある行だけ保存する(完全に空の行は無視)
-    if (brand || type || feedingTags.length || amount || frequency) {
-      items.push({ brand, type, feedingTags, amount, frequency });
+    if (brand || type || feedingTags.length || amount || frequency || photoData) {
+      items.push({ brand, type, feedingTags, amount, frequency, photoData });
     }
   });
   return items;
@@ -2071,22 +2098,10 @@ async function openCatEditModal(catId, catData) {
     type: catData.foodType || "",
     feedingTags: catData.foodFeedingTags || [],
     amount: catData.foodAmount || "",
-    frequency: catData.foodFrequency || ""
+    frequency: catData.foodFrequency || "",
+    photoData: catData.foodPhotoData || ""
   }] : []));
   document.getElementById("food-comment").value = catData.foodComment || "";
-
-  document.getElementById("food-photo-preset").value = "";
-  document.getElementById("food-photo-new-wrap").classList.add("hidden");
-  document.getElementById("food-photo-new-label").value = "";
-  document.getElementById("food-photo-status").textContent = "";
-  currentFoodPhotoData = catData.foodPhotoData || null;
-  const foodPhotoPreview = document.getElementById("food-photo-preview");
-  if (currentFoodPhotoData) {
-    foodPhotoPreview.src = currentFoodPhotoData;
-    foodPhotoPreview.classList.remove("hidden");
-  } else {
-    foodPhotoPreview.classList.add("hidden");
-  }
 
   // トイレ環境
   document.querySelectorAll(".litter-box-tag").forEach((cb) => {
@@ -2156,13 +2171,6 @@ function resetCatModalToAddMode() {
   foodFreeWrap.classList.remove("hidden");
   foodItemizedWrap.classList.add("hidden");
   setFoodItemsToForm([]);
-  document.getElementById("food-photo-preset").value = "";
-  document.getElementById("food-photo-new-wrap").classList.add("hidden");
-  document.getElementById("food-photo-new-label").value = "";
-  document.getElementById("food-photo-input").value = "";
-  document.getElementById("food-photo-preview").classList.add("hidden");
-  document.getElementById("food-photo-status").textContent = "";
-  currentFoodPhotoData = null;
   document.getElementById("cat-is-published").checked = false;
   document.getElementById("cat-video-coming-soon").checked = false;
   document.getElementById("cat-contact-preset").value = "";
@@ -2263,7 +2271,6 @@ async function syncPublicProfile(catId, data) {
     foodMode: data.foodMode,
     foods: data.foods || [],
     foodComment: data.foodComment,
-    foodPhotoData: data.foodPhotoData,
     litterBoxTags: data.litterBoxTags,
     litterSandTags: data.litterSandTags,
     litterSandOther: data.litterSandOther,
@@ -2359,7 +2366,6 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     foodMode,
     foods: foodMode === "itemized" ? getFoodItemsFromForm() : [],
     foodComment: document.getElementById("food-comment").value.trim(),
-    foodPhotoData: currentFoodPhotoData || "",
     litterBoxTags: Array.from(document.querySelectorAll(".litter-box-tag:checked")).map((cb) => cb.value),
     litterSandTags: Array.from(document.querySelectorAll(".litter-sand-tag:checked")).map((cb) => cb.value),
     litterSandOther: document.getElementById("litter-sand-other").value.trim(),
@@ -2403,7 +2409,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
       await saveContactPresetIfNew(data.contactItems);
       await saveFosterContactPresetIfNew(data.fosterContactItems);
       await saveNameOriginSharedPresetIfNew(data.nameOriginShared);
-      await saveFoodPhotoPresetIfNew();
+      for (const row of document.querySelectorAll("#food-items-list .food-item-row")) { await saveFoodPhotoPresetIfNewForRow(row); }
 
       const updatedCatData = { ...before, ...data };
       await syncPublicProfile(editingCatId, updatedCatData);
@@ -2423,7 +2429,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
       await saveContactPresetIfNew(data.contactItems);
       await saveFosterContactPresetIfNew(data.fosterContactItems);
       await saveNameOriginSharedPresetIfNew(data.nameOriginShared);
-      await saveFoodPhotoPresetIfNew();
+      for (const row of document.querySelectorAll("#food-items-list .food-item-row")) { await saveFoodPhotoPresetIfNewForRow(row); }
       await syncPublicProfile(newCatRef.id, { ...data, status: "保護中" });
       catFormStatus.textContent = "登録しました。";
       e.target.reset();
