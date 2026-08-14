@@ -1762,6 +1762,12 @@ function createFoodItemRow(item) {
       <input type="file" class="food-item-photo-input" accept="image/*">
     </div>
     <p class="hint-text food-item-photo-status"></p>
+    <label>給餌量の目安表(任意・袋に書かれている表などの写真)</label>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <img class="food-item-guide-preview hidden" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid var(--border);">
+      <input type="file" class="food-item-guide-input" accept="image/*">
+    </div>
+    <p class="hint-text food-item-guide-status"></p>
     <button type="button" class="btn btn-ghost btn-small food-item-remove-btn" style="padding:0; margin-top:8px;">🗑 このご飯を削除</button>
   `;
   if (item) {
@@ -1777,8 +1783,35 @@ function createFoodItemRow(item) {
       preview.src = item.photoData;
       preview.classList.remove("hidden");
     }
+    if (item.guidePhotoData) {
+      const guidePreview = row.querySelector(".food-item-guide-preview");
+      guidePreview.src = item.guidePhotoData;
+      guidePreview.classList.remove("hidden");
+    }
   }
   setupFoodItemPhotoEvents(row);
+
+  // 給餌量の目安表の写真(こちらは使い回しプリセットは無く、シンプルなアップロードのみ)
+  row.querySelector(".food-item-guide-input").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const guideStatusEl = row.querySelector(".food-item-guide-status");
+    const guidePreview = row.querySelector(".food-item-guide-preview");
+    guideStatusEl.textContent = "画像を処理しています...";
+    try {
+      const compressed = await compressImageToDataUrl(file, 700, 0.7);
+      if (compressed.length > 700000) {
+        guideStatusEl.textContent = "画像が大きすぎます。別の写真でお試しください。";
+        return;
+      }
+      guidePreview.src = compressed;
+      guidePreview.classList.remove("hidden");
+      guideStatusEl.textContent = "設定しました。";
+    } catch (err) {
+      guideStatusEl.textContent = "画像の読み込みに失敗しました。別の写真でお試しください。";
+    }
+  });
+
   row.querySelector(".food-item-remove-btn").addEventListener("click", () => {
     row.remove();
     // 全部消えてしまったら、入力しやすいように1つ空欄を戻しておく
@@ -1805,9 +1838,11 @@ function getFoodItemsFromForm() {
     const frequency = row.querySelector(".food-item-frequency").value;
     const photoPreview = row.querySelector(".food-item-photo-preview");
     const photoData = photoPreview.classList.contains("hidden") ? "" : photoPreview.src;
+    const guidePreview = row.querySelector(".food-item-guide-preview");
+    const guidePhotoData = guidePreview.classList.contains("hidden") ? "" : guidePreview.src;
     // 何かしら入力がある行だけ保存する(完全に空の行は無視)
-    if (brand || type || feedingTags.length || amount || frequency || photoData) {
-      items.push({ brand, type, feedingTags, amount, frequency, photoData });
+    if (brand || type || feedingTags.length || amount || frequency || photoData || guidePhotoData) {
+      items.push({ brand, type, feedingTags, amount, frequency, photoData, guidePhotoData });
     }
   });
   return items;

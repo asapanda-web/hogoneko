@@ -408,8 +408,11 @@
         if (f.amount) rows.push(["量", escapeHtml(f.amount)]);
         if (f.frequency) rows.push(["回数", escapeHtml(f.frequency)]);
         const itemPhotoHtml = f.photoData ? `<img src="${f.photoData}" alt="" class="detail-photo" style="max-width:180px; max-height:140px; margin-top:8px;">` : "";
-        if (rows.length === 0 && !itemPhotoHtml) return "";
-        return `${itemPhotoHtml}${rows.length ? `<table class="info-table" style="margin-top:8px;">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}</table>` : ""}`;
+        const guideHtml = f.guidePhotoData
+          ? `<div class="free-note" style="margin-top:6px;">給餌量の目安</div><img src="${f.guidePhotoData}" alt="" class="detail-photo" style="max-width:220px; max-height:180px; margin-top:4px;">`
+          : "";
+        if (rows.length === 0 && !itemPhotoHtml && !guideHtml) return "";
+        return `${itemPhotoHtml}${rows.length ? `<table class="info-table" style="margin-top:8px;">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}</table>` : ""}${guideHtml}`;
       }).join("<div style=\"height:12px;\"></div>");
     } else if (data.food) {
       foodTablesHtml = `<table class="info-table"><tr><td>ご飯</td><td>${escapeHtml(data.food)}</td></tr></table>`;
