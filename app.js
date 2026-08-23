@@ -604,6 +604,79 @@ document.getElementById("daily-total-save-btn").addEventListener("click", async 
   }
 });
 
+// ---------- トータル食事量をまとめて入力 ----------
+document.getElementById("daily-total-bulk-btn").addEventListener("click", () => {
+  const listEl = document.getElementById("daily-total-bulk-list");
+  const statusEl = document.getElementById("daily-total-bulk-status");
+  statusEl.textContent = "";
+  listEl.innerHTML = "";
+
+  if (!latestDailySnapshot || latestDailySnapshot.empty) {
+    listEl.innerHTML = `<p class="hint-text">まだ日々の記録がありません。</p>`;
+    document.getElementById("modal-daily-total-bulk").classList.add("open");
+    return;
+  }
+
+  // よく使う言い回し(タップするだけで入力できるようにする)
+  const quickPhrases = ["よく食べていた", "普段通り", "少し食欲が無かった", "あまり食べなかった", "完食していた", "ムラがあった"];
+
+  // latestDailySnapshotから、記録がある日付を新しい順に重複なく取り出す
+  const dates = [...new Set(latestDailySnapshot.docs.map((d) => d.data().date))].sort((a, b) => b.localeCompare(a));
+
+  dates.forEach((date) => {
+    const totalDoc = latestDailyTotalsSnapshot
+      ? latestDailyTotalsSnapshot.docs.find((d) => d.id === date)
+      : null;
+    const currentNote = totalDoc ? (totalDoc.data().foodTotalNote || "") : "";
+
+    const row = document.createElement("div");
+    row.className = "detail-box";
+    row.style.marginTop = "8px";
+    row.innerHTML = `
+      <label style="margin-top:0;">${escapeHtml(date)}</label>
+      <div class="checkbox-group" style="margin-bottom:6px;">
+        ${quickPhrases.map((p) => `<button type="button" class="btn btn-outline btn-small daily-total-quick-btn" data-phrase="${escapeHtml(p)}" style="padding:4px 10px; font-size:12px;">${escapeHtml(p)}</button>`).join("")}
+      </div>
+      <textarea class="daily-total-bulk-input" data-date="${date}" placeholder="例: 全体的によく食べていた。夕方だけ少なめ。"></textarea>
+    `;
+    const textareaEl = row.querySelector(".daily-total-bulk-input");
+    textareaEl.value = currentNote;
+    row.querySelectorAll(".daily-total-quick-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        // すでに文字が入っていれば「・」で区切って追加、空欄ならそのまま入れる
+        textareaEl.value = textareaEl.value ? `${textareaEl.value}・${btn.dataset.phrase}` : btn.dataset.phrase;
+      });
+    });
+    listEl.appendChild(row);
+  });
+
+  document.getElementById("modal-daily-total-bulk").classList.add("open");
+});
+
+document.getElementById("daily-total-bulk-save-btn").addEventListener("click", async () => {
+  if (!currentCatId) return;
+  const statusEl = document.getElementById("daily-total-bulk-status");
+  const inputs = document.querySelectorAll(".daily-total-bulk-input");
+  if (inputs.length === 0) return;
+
+  statusEl.textContent = "保存しています...";
+  try {
+    for (const input of inputs) {
+      const date = input.dataset.date;
+      const note = input.value.trim();
+      await setDoc(doc(db, "cats", currentCatId, "dailyTotals", date), {
+        foodTotalNote: note,
+        updatedBy: currentUsername,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    }
+    statusEl.textContent = "";
+    document.getElementById("modal-daily-total-bulk").classList.remove("open");
+  } catch (err) {
+    statusEl.textContent = "保存に失敗しました。もう一度お試しください。";
+  }
+});
+
 // ---------- 画面切り替え ----------
 const viewDashboard = document.getElementById("view-dashboard");
 const viewDetail = document.getElementById("view-detail");
@@ -1117,6 +1190,7 @@ function applyRoleUI() {
 
   // まとめて排泄記録は、犬猫の記録を書き込める役割の人だけに表示
   document.getElementById("group-toilet-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
+  document.getElementById("group-medical-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
   document.getElementById("group-qr-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
   document.getElementById("event-history-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
 
@@ -2920,6 +2994,102 @@ document.getElementById("form-group-toilet").addEventListener("submit", async (e
     ));
     statusEl.textContent = "";
     modalGroupToilet.classList.remove("open");
+  } catch (err) {
+    statusEl.textContent = `保存に失敗しました(${err.code || err.message || "不明なエラー"})。`;
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+// ---------- まとめて医療記録 ----------
+const modalGroupMedical = document.getElementById("modal-group-medical");
+
+document.getElementById("group-medical-btn").addEventListener("click", () => {
+  document.getElementById("form-group-medical").reset();
+  document.getElementById("group-medical-date").valueAsDate = new Date();
+  document.getElementById("group-medical-status").textContent = "";
+  updateGroupMedicalTypeUI();
+  updateGroupVaccineTitle();
+  renderGroupMedicalCatList();
+  modalGroupMedical.classList.add("open");
+});
+
+function updateGroupMedicalTypeUI() {
+  const isVaccine = document.getElementById("group-medical-type").value === "ワクチン";
+  document.getElementById("group-vaccine-select-wrap").classList.toggle("hidden", !isVaccine);
+}
+document.getElementById("group-medical-type").addEventListener("change", updateGroupMedicalTypeUI);
+
+function updateGroupVaccineTitle() {
+  const isVaccine = document.getElementById("group-medical-type").value === "ワクチン";
+  if (!isVaccine) return;
+  const kind = document.getElementById("group-vaccine-kind-select").value;
+  const count = document.getElementById("group-vaccine-count-select").value;
+  if (kind !== "その他") {
+    document.getElementById("group-medical-title").value = `${kind}${count}`;
+  }
+}
+document.getElementById("group-vaccine-kind-select").addEventListener("change", updateGroupVaccineTitle);
+document.getElementById("group-vaccine-count-select").addEventListener("change", updateGroupVaccineTitle);
+
+function renderGroupMedicalCatList() {
+  const listEl = document.getElementById("group-medical-cat-list");
+  listEl.innerHTML = "";
+  if (!latestCatsSnapshot) return;
+  latestCatsSnapshot.docs.forEach((docSnap) => {
+    const cat = docSnap.data();
+    if (cat.status === "譲渡済み") return; // 譲渡済みの子は対象から外す
+    const label = document.createElement("label");
+    label.className = "checkbox-item";
+    label.innerHTML = `<input type="checkbox" value="${docSnap.id}" class="group-medical-cat"> ${escapeHtml(cat.name)}`;
+    listEl.appendChild(label);
+  });
+}
+
+document.getElementById("form-group-medical").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const statusEl = document.getElementById("group-medical-status");
+  const submitBtn = document.getElementById("group-medical-submit-btn");
+
+  const catIds = Array.from(document.querySelectorAll(".group-medical-cat:checked")).map((cb) => cb.value);
+  if (catIds.length === 0) {
+    statusEl.textContent = "対象の猫を1匹以上選んでください。";
+    return;
+  }
+
+  const type = document.getElementById("group-medical-type").value;
+  const date = document.getElementById("group-medical-date").value;
+  const title = document.getElementById("group-medical-title").value.trim();
+  const detail = document.getElementById("group-medical-detail").value.trim();
+  const next = document.getElementById("group-medical-next").value;
+
+  submitBtn.disabled = true;
+  statusEl.textContent = "記録しています...";
+  try {
+    await Promise.all(catIds.map((catId) =>
+      addDoc(collection(db, "cats", catId, "medicalRecords"), {
+        type,
+        date,
+        title,
+        detail,
+        next,
+        medicationTiming: [],
+        medicationMethod: "",
+        dosage: "",
+        endDate: "",
+        singleDose: false,
+        singleDoseTime: "",
+        flexibleTiming: false,
+        dailyLimit: null,
+        fivResult: "",
+        felvResult: "",
+        photoData: "",
+        recordedBy: currentUsername,
+        createdAt: serverTimestamp()
+      })
+    ));
+    statusEl.textContent = "";
+    modalGroupMedical.classList.remove("open");
   } catch (err) {
     statusEl.textContent = `保存に失敗しました(${err.code || err.message || "不明なエラー"})。`;
   } finally {

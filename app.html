@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285972">
+<link rel="stylesheet" href="style.css?v=1784285975">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -75,6 +75,7 @@
         <input type="checkbox" id="show-adopted-toggle"> 譲渡済みの子も表示する
       </label>
       <button class="btn btn-outline btn-small hidden" id="group-toilet-btn" style="margin-top:10px;">🐾 まとめて排泄を記録</button>
+      <button class="btn btn-outline btn-small hidden" id="group-medical-btn" style="margin-top:10px;">💉 まとめて医療記録を記録</button>
       <button class="btn btn-outline btn-small hidden" id="group-qr-btn" style="margin-top:10px;">📱 まとめてQRページを作る</button>
       <button class="btn btn-outline btn-small hidden" id="event-history-btn" style="margin-top:10px;">📅 譲渡会の履歴</button>
       <button class="btn btn-outline btn-small" id="missing-check-btn" style="margin-top:10px;">📋 入力もれチェック</button>
@@ -243,6 +244,7 @@
 
       <div id="tab-daily">
         <button class="btn btn-outline btn-small" id="weight-chart-btn" style="margin-bottom:12px;">📈 体重グラフを見る</button>
+        <button class="btn btn-outline btn-small" id="daily-total-bulk-btn" style="margin-bottom:12px; margin-left:8px;">📝 トータル食事量をまとめて入力</button>
         <div id="daily-list"></div>
         <p class="empty-state hidden" id="empty-daily">まだ記録がありません。</p>
         <div id="daily-load-more-wrap" class="hidden" style="text-align:center; margin-top:12px;">
@@ -829,6 +831,62 @@
   </div>
 </div>
 
+<!-- まとめて医療記録モーダル -->
+<div class="modal-overlay" id="modal-group-medical">
+  <div class="modal">
+    <h3>💉 まとめて医療記録を記録</h3>
+    <p class="hint-text">ワクチンなど、複数の子をまとめて連れて行った時に、同じ内容の医療記録をまとめて登録できます。あとで個別に編集することもできます。</p>
+    <form id="form-group-medical">
+      <label>種類</label>
+      <select id="group-medical-type">
+        <option value="ワクチン">ワクチン</option>
+        <option value="通院">通院</option>
+        <option value="駆虫">駆虫</option>
+        <option value="避妊去勢">避妊去勢</option>
+        <option value="その他">その他</option>
+      </select>
+      <label>日付</label>
+      <input type="date" id="group-medical-date" required>
+
+      <div id="group-vaccine-select-wrap" class="detail-box">
+        <label>ワクチンの種類</label>
+        <select id="group-vaccine-kind-select">
+          <option value="混合ワクチン">混合ワクチン</option>
+          <option value="狂犬病ワクチン">狂犬病ワクチン</option>
+          <option value="猫白血病ワクチン">猫白血病ワクチン</option>
+          <option value="その他">その他(下の件名欄に直接入力)</option>
+        </select>
+        <label>回数</label>
+        <select id="group-vaccine-count-select">
+          <option value="1回目">1回目</option>
+          <option value="2回目">2回目</option>
+          <option value="3回目">3回目</option>
+          <option value="4回目">4回目</option>
+          <option value="5回目">5回目</option>
+        </select>
+      </div>
+
+      <label>件名</label>
+      <input type="text" id="group-medical-title" placeholder="例: 混合ワクチン1回目" required>
+
+      <label>詳細メモ(任意・全員分に入ります)</label>
+      <textarea id="group-medical-detail" placeholder="病院名、様子など"></textarea>
+
+      <label>次回予定日(任意・全員分に入ります)</label>
+      <input type="date" id="group-medical-next">
+
+      <label style="margin-top:14px; display:block;">対象の猫(複数選択可)</label>
+      <div id="group-medical-cat-list" class="checkbox-group"></div>
+      <p class="hint-text" id="group-medical-status"></p>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-close>キャンセル</button>
+        <button type="submit" class="btn btn-primary" id="group-medical-submit-btn">記録する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- まとめてQRページ作成モーダル -->
 <div class="modal-overlay" id="modal-group-qr">
   <div class="modal">
@@ -926,6 +984,20 @@
   </div>
 </div>
 
+<!-- トータル食事量まとめて入力モーダル -->
+<div class="modal-overlay" id="modal-daily-total-bulk">
+  <div class="modal">
+    <h3>📝 トータル食事量をまとめて入力</h3>
+    <p class="hint-text">記録がある日の分だけ並べています。空欄のままでも大丈夫です(その日は未入力のまま残ります)。</p>
+    <div id="daily-total-bulk-list" style="margin-top:10px;"></div>
+    <p class="hint-text" id="daily-total-bulk-status"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" data-close>閉じる</button>
+      <button type="button" class="btn btn-primary" id="daily-total-bulk-save-btn">まとめて保存する</button>
+    </div>
+  </div>
+</div>
+
 <!-- 体重グラフモーダル -->
 <div class="modal-overlay" id="modal-weight-chart">
   <div class="modal">
@@ -1018,7 +1090,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285972"></script>
+<script type="module" src="app.js?v=1784285975"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
