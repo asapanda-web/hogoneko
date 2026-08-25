@@ -158,6 +158,12 @@
     position: relative;
     height: 200px;
   }
+  .chart-note {
+    text-align: center;
+    font-size: 11px;
+    color: #a3968a;
+    margin-top: 8px;
+  }
   .intro-text { font-size: 14px; white-space: pre-wrap; }
   .tag-badges { display: flex; flex-wrap: wrap; gap: 6px; }
   .tag-badge {
@@ -364,7 +370,8 @@
     const weightHtml = (data.weightHistory && data.weightHistory.length > 0)
       ? `<div class="section-title">⚖️ 体重</div>
          ${data.currentWeight !== null && data.currentWeight !== undefined ? `<div class="current-weight">現在: <strong>${escapeHtml(String(data.currentWeight))}kg</strong></div>` : ""}
-         <div class="weight-chart-wrap"><canvas id="weight-chart" width="500" height="220"></canvas></div>`
+         <div class="weight-chart-wrap"><canvas id="weight-chart" width="500" height="220"></canvas></div>
+         <p class="chart-note">グラフをタップすると、その日の日付と体重が見られます。</p>`
       : "";
 
     const nameOriginParts = [];
@@ -537,14 +544,27 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          interaction: { mode: "nearest", intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => data.weightHistory[items[0].dataIndex].date,
+                label: (item) => `${item.formattedValue} kg`
+              }
+            }
+          },
           scales: {
             x: {
               ticks: {
                 autoSkip: false,
-                maxRotation: 60,
-                minRotation: 60,
-                font: { size: 9 }
+                maxRotation: 0,
+                minRotation: 0,
+                font: { size: 11 },
+                // 最初と最新の日付だけ表示して、間はタップした時にだけ見えるようにする
+                callback: function (value, index, ticks) {
+                  return (index === 0 || index === ticks.length - 1) ? this.getLabelForValue(value) : "";
+                }
               }
             },
             y: { title: { display: true, text: "kg" } }
