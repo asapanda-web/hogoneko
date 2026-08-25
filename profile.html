@@ -372,7 +372,7 @@
       nameOriginParts.push(`${escapeHtml(data.nameOriginShared)}`);
     }
     if (data.nameOrigin) {
-      nameOriginParts.push(`<div class="name-origin-label">名前の由来</div>${escapeHtml(data.nameOrigin)}`);
+      nameOriginParts.push(`<div class="name-origin-label">仮名前の意味</div>${escapeHtml(data.nameOrigin)}`);
     }
     const nameOriginHtml = nameOriginParts.length
       ? `<div class="name-origin">${nameOriginParts.join('<div style="height:10px;"></div>')}</div>`
