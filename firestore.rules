@@ -146,6 +146,11 @@ service cloud.firestore {
         allow read, create, update, delete: if isSignedIn()
           && catAllowsRead(get(/databases/$(database)/documents/cats/$(catId)).data);
       }
+      // トライアルまでの様子(前日・当日など、日付ごとのメモ)
+      match /trialNotes/{dateId} {
+        allow read, create, update, delete: if isSignedIn()
+          && catAllowsRead(get(/databases/$(database)/documents/cats/$(catId)).data);
+      }
       // 医療記録
       match /medicalRecords/{recordId} {
         allow read, create, update, delete: if isSignedIn()
