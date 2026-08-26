@@ -276,6 +276,16 @@
     border-radius: 12px;
     margin-bottom: 12px;
   }
+  .trial-note-entry {
+    padding: 8px 0;
+    border-bottom: 1px dashed #e0d3c2;
+  }
+  .trial-note-entry:last-child { border-bottom: none; }
+  .trial-note-date {
+    font-weight: 700;
+    font-size: 12.5px;
+    color: #a97a45;
+  }
   .contact-note {
     text-align: center;
     font-size: 13px;
@@ -414,7 +424,14 @@
       return;
     }
 
-    renderProfile(data);
+    // パスワードを設定していないトライアル中の場合は、そのまま中身を見せつつ案内だけ出す
+    renderProfile(data, data.trialActive ? "open" : null);
+  }
+
+  function normalizePasscodeInput(str) {
+    return (str || "")
+      .replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+      .trim();
   }
 
   function showPasscodeForm(catId, catName) {
@@ -422,8 +439,8 @@
     contentEl.innerHTML = `
       <div class="card" style="text-align:center;">
         <div style="font-size:15px; font-weight:700; color:#6a4a30; margin-bottom:10px;">🏠 ${escapeHtml(catName || "この子")}は現在トライアル中です</div>
-        <p style="font-size:13px; color:#8a7a6d; margin-bottom:14px;">このページを見るにはパスワードが必要です。担当者からお伝えしているパスワードを入力してください。</p>
-        <input type="text" id="trial-passcode-form-input" placeholder="パスワード" style="text-align:center; font-size:16px; letter-spacing:2px;">
+        <p style="font-size:13px; color:#8a7a6d; margin-bottom:14px;">このページは通常どなたでも見られますが、現在はパスワードが必要です。担当者からお伝えしているパスワードを入力してください。</p>
+        <input type="text" id="trial-passcode-form-input" placeholder="パスワード" inputmode="numeric" style="text-align:center; font-size:16px; letter-spacing:2px;">
         <button type="button" class="video-link" id="trial-passcode-submit-btn" style="border:none; cursor:pointer; margin-top:10px;">見る</button>
         <p id="trial-passcode-error" style="color:#c0392b; font-size:12px; margin-top:10px;"></p>
       </div>
@@ -431,7 +448,7 @@
 
     async function trySubmitPasscode() {
       const errorEl = document.getElementById("trial-passcode-error");
-      const passcode = document.getElementById("trial-passcode-form-input").value.trim();
+      const passcode = normalizePasscodeInput(document.getElementById("trial-passcode-form-input").value);
       if (!passcode) {
         errorEl.textContent = "パスワードを入力してください。";
         return;
@@ -443,7 +460,7 @@
           errorEl.textContent = "パスワードが違うようです。もう一度確認してください。";
           return;
         }
-        renderProfile(trialSnap.data(), true);
+        renderProfile(trialSnap.data(), "gated");
       } catch (err) {
         errorEl.textContent = "確認に失敗しました。時間をおいてもう一度お試しください。";
       }
@@ -455,7 +472,7 @@
     });
   }
 
-  async function renderProfile(data, isTrialView) {
+  async function renderProfile(data, trialViewMode) {
     const contentEl = document.getElementById("content");
     document.body.classList.add(data.sex === "オス" ? "sex-male" : "sex-female");
     document.getElementById("page-title").textContent = `${data.name || ""} | ${titleText}`;
@@ -464,12 +481,19 @@
       ? `<div class="photo-wrap"><img src="${data.photoData}" alt=""></div>`
       : "";
 
-    const trialNoticeHtml = isTrialView
-      ? `<div class="trial-notice">🔒 このページは通常どなたでも見られますが、トライアル中の際はパスワードを知っている方だけの限定ページになります。<br>正式に譲渡が決まると、このページはどなたも見られなくなります。</div>`
-      : "";
+    let trialNoticeHtml = "";
+    if (trialViewMode === "gated") {
+      trialNoticeHtml = `<div class="trial-notice">🔒 このページは通常どなたでも見られますが、トライアル中の際はパスワードを知っている方だけの限定ページになります。<br>正式に譲渡が決まると、このページはどなたも見られなくなります。</div>`;
+    } else if (trialViewMode === "open") {
+      trialNoticeHtml = `<div class="trial-notice">🏠 現在トライアル中です。<br>正式に譲渡が決まり、しばらく時間が経つと、このページは見られなくなります。</div>`;
+    }
 
     const trialBannerHtml = data.trialEndDate
       ? `<div class="trial-banner">🏠 トライアル終了予定日: ${escapeHtml(data.trialEndDate)}</div>`
+      : "";
+
+    const trialNotesHtml = (data.trialNotes && data.trialNotes.length > 0)
+      ? `<div class="card"><div class="section-title">📝 トライアルの様子</div>${data.trialNotes.map((n) => `<div class="trial-note-entry"><div class="trial-note-date">${escapeHtml(n.date)}</div><div class="free-note" style="margin-top:2px;">${escapeHtml(n.note)}</div></div>`).join("")}</div>`
       : "";
 
     const metaText = data.species || "";
@@ -588,6 +612,7 @@
     contentEl.innerHTML = `
       ${trialNoticeHtml}
       ${trialBannerHtml}
+      ${trialNotesHtml}
       <div class="card">
         ${photoHtml}
         <div class="name">${escapeHtml(data.name || "")}</div>

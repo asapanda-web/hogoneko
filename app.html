@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285982">
+<link rel="stylesheet" href="style.css?v=1784285983">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -104,6 +104,7 @@
       </div>
       <div id="trial-info-wrap" class="hidden" style="margin-bottom:12px;">
         <span class="location-badge" style="background:#fbece7; color:#c0733a;">🏠 トライアル中<span id="trial-end-date-label"></span></span>
+        <button class="btn btn-outline btn-small" id="trial-notes-btn" style="margin-left:8px;">📝 トライアルの様子を記録</button>
       </div>
       <div id="public-page-wrap" class="hidden" style="margin-bottom:12px;">
         <a href="#" target="_blank" class="btn btn-outline btn-small" id="public-page-link">🌐 公開ページを見る</a>
@@ -983,10 +984,17 @@
 <div class="modal-overlay" id="modal-start-trial">
   <div class="modal">
     <h3>🏠 トライアルを開始する</h3>
-    <p class="hint-text">公開ページが「パスワードを知っている人だけ見られる」状態に切り替わります。パスワードは、里親さん・預かり者などトライアルに関わる人に別途お伝えください。</p>
-    <label>パスワード</label>
-    <input type="text" id="trial-passcode-input">
-    <p class="hint-text">自動で作ったパスワードが入っています。分かりやすいものに変更しても構いません。</p>
+    <label class="checkbox-item">
+      <input type="checkbox" id="trial-use-passcode-checkbox" checked> パスワードを設定する
+    </label>
+    <p class="hint-text">チェックを入れると、公開ページが「パスワードを知っている人だけ見られる」状態になります。外すと、公開ページは今まで通り誰でも見られますが、「現在トライアル中です」という案内が表示されます。</p>
+
+    <div id="trial-passcode-wrap">
+      <label>パスワード(数字のみ)</label>
+      <input type="text" id="trial-passcode-input" inputmode="numeric">
+      <p class="hint-text">自動で作った数字が入っています。分かりやすい数字に変更しても構いません。全角で入力してしまっても、自動で半角に直して判定するので大丈夫です。パスワードは、里親さん・預かり者などトライアルに関わる人に別途お伝えください。</p>
+    </div>
+
     <label>トライアル終了予定日(任意)</label>
     <input type="date" id="trial-end-date-input">
     <p class="hint-text">未入力でも大丈夫です(「トライアル中」とだけ表示されます)。</p>
@@ -994,6 +1002,23 @@
     <div class="modal-actions">
       <button type="button" class="btn btn-outline" data-close>キャンセル</button>
       <button type="button" class="btn btn-primary" id="start-trial-save-btn">開始する</button>
+    </div>
+  </div>
+</div>
+
+<!-- トライアルの様子メモ モーダル -->
+<div class="modal-overlay" id="modal-trial-notes">
+  <div class="modal">
+    <h3>📝 トライアルの様子を記録</h3>
+    <p class="hint-text">前日の準備の様子や、当日の引き渡しの様子などを、日付ごとに書き留められます。この内容は、トライアル中の公開ページにも表示されます。</p>
+    <label>日付</label>
+    <input type="date" id="trial-note-date-input">
+    <textarea id="trial-note-text-input" placeholder="例: 前日、キャリーバッグの練習をしました。当日は落ち着いて車に乗ってくれました。"></textarea>
+    <button type="button" class="btn btn-primary" id="trial-note-save-btn" style="width:100%; margin-top:8px;">保存する</button>
+    <p class="hint-text" id="trial-note-status"></p>
+    <div id="trial-notes-list" style="margin-top:14px;"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" data-close>閉じる</button>
     </div>
   </div>
 </div>
@@ -1118,7 +1143,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285982"></script>
+<script type="module" src="app.js?v=1784285983"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

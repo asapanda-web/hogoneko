@@ -743,6 +743,7 @@ function showDetail(catId, catData) {
   if (catData.status === "トライアル中") {
     trialInfoWrap.classList.remove("hidden");
     document.getElementById("trial-end-date-label").textContent = catData.trialEndDate ? `(終了予定: ${catData.trialEndDate})` : "";
+    document.getElementById("trial-notes-btn").onclick = () => openTrialNotesModal(catId);
   } else {
     trialInfoWrap.classList.add("hidden");
   }
@@ -767,6 +768,8 @@ function showDetail(catId, catData) {
 
     startTrialBtn.onclick = () => {
       document.getElementById("trial-passcode-input").value = generateRandomPasscode();
+      document.getElementById("trial-use-passcode-checkbox").checked = true;
+      document.getElementById("trial-passcode-wrap").classList.remove("hidden");
       document.getElementById("trial-end-date-input").value = "";
       document.getElementById("start-trial-status").textContent = "";
       document.getElementById("modal-start-trial").classList.add("open");
@@ -787,12 +790,14 @@ function showDetail(catId, catData) {
 
     cancelTrialBtn.onclick = async () => {
       if (confirm("トライアルを中止して「保護中」に戻しますか？(パスワードは使われなくなります)")) {
+        const oldPasscode = catData.trialPasscode;
         const newStatus = "保護中";
         await updateDoc(doc(db, "cats", catId), { status: newStatus, trialPasscode: "", trialEndDate: "" });
         await addHistoryEntry(catId, `ステータス: トライアル中 → ${newStatus}(トライアル中止)`);
         catData.status = newStatus;
         catData.trialPasscode = "";
         catData.trialEndDate = "";
+        catData.previousTrialPasscode = oldPasscode; // 古いパスワードのデータを消すために渡す
         await syncPublicProfile(catId, catData);
         showDetail(catId, catData);
       }
@@ -2424,6 +2429,20 @@ async function syncPublicProfile(catId, data) {
     .filter((r) => r.type === "ウイルス検査")
     .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
 
+  // トライアルの様子メモも一緒に持っていく(公開ページ側で表示するため)
+  let trialNotes = [];
+  if (data.status === "トライアル中") {
+    try {
+      const notesSnap = await getDocs(collection(db, "cats", catId, "trialNotes"));
+      trialNotes = notesSnap.docs
+        .map((d) => ({ date: d.id, note: d.data().note || "" }))
+        .filter((n) => n.note)
+        .sort((a, b) => a.date.localeCompare(b.date));
+    } catch (err) {
+      trialNotes = [];
+    }
+  }
+
   const fullProfileData = {
     trialMode: false, // トライアル解除後、古い「トライアル中」フラグがpublicProfilesに残らないようにするため明示的にfalseを入れる
     name: data.name,
@@ -2465,6 +2484,8 @@ async function syncPublicProfile(catId, data) {
     felvResult: latestVirusTest ? (latestVirusTest.felvResult || "未検査") : "未検査",
     dewormStatus: hasDeworm ? "済" : "未",
     trialEndDate: data.status === "トライアル中" ? (data.trialEndDate || "") : "",
+    trialActive: data.status === "トライアル中",
+    trialNotes,
     updatedAt: serverTimestamp()
   };
 
@@ -2487,7 +2508,19 @@ async function syncPublicProfile(catId, data) {
       }
     }
   } else {
+    // トライアル中でもパスワードを設定していない場合は、今まで通りpublicProfilesに直接置く
+    // (trialActive:trueが付いているので、公開ページ側は「案内だけ表示して中身は隠す」ではなく
+    // 「案内を出しつつ普通に中身も見せる」形になる)
     await setDoc(doc(db, "publicProfiles", catId), fullProfileData, { merge: true }); // merge:trueにして、日々の記録から同期される体重推移(weightHistory)を消さないようにする
+
+    // 元々パスワード付きトライアルだったのを解除した場合、trialProfiles側の古いデータも消しておく
+    if (data.previousTrialPasscode) {
+      try {
+        await deleteDoc(doc(db, "trialProfiles", `${catId}-${data.previousTrialPasscode}`));
+      } catch (err) {
+        // 元々存在しない場合は何もしなくてよい
+      }
+    }
   }
 
   await syncPublicWeightHistory(catId);
@@ -3353,23 +3386,114 @@ document.getElementById("account-delete-btn").addEventListener("click", async ()
 });
 
 // ---------- ユーティリティ ----------
+// ---------- トライアルの様子メモ ----------
+async function openTrialNotesModal(catId) {
+  document.getElementById("trial-note-date-input").valueAsDate = new Date();
+  document.getElementById("trial-note-text-input").value = "";
+  document.getElementById("trial-note-status").textContent = "";
+  document.getElementById("trial-note-save-btn").dataset.catId = catId;
+  document.getElementById("modal-trial-notes").classList.add("open");
+  await renderTrialNotesList(catId);
+}
+
+async function renderTrialNotesList(catId) {
+  const listEl = document.getElementById("trial-notes-list");
+  listEl.innerHTML = `<p class="hint-text">読み込んでいます...</p>`;
+  try {
+    const snap = await getDocs(collection(db, "cats", catId, "trialNotes"));
+    const notes = snap.docs.map((d) => ({ date: d.id, ...d.data() })).sort((a, b) => b.date.localeCompare(a.date));
+    if (notes.length === 0) {
+      listEl.innerHTML = `<p class="hint-text">まだ記録がありません。</p>`;
+      return;
+    }
+    listEl.innerHTML = "";
+    notes.forEach((n) => {
+      const row = document.createElement("div");
+      row.className = "detail-box";
+      row.style.marginTop = "8px";
+      row.innerHTML = `<div style="font-weight:700;">${escapeHtml(n.date)}</div><div style="margin-top:4px; white-space:pre-wrap;">${escapeHtml(n.note || "")}</div>`;
+      listEl.appendChild(row);
+    });
+  } catch (err) {
+    listEl.innerHTML = `<p class="hint-text">読み込みに失敗しました。</p>`;
+  }
+}
+
+document.getElementById("trial-note-save-btn").addEventListener("click", async () => {
+  const catId = document.getElementById("trial-note-save-btn").dataset.catId;
+  const date = document.getElementById("trial-note-date-input").value;
+  const note = document.getElementById("trial-note-text-input").value.trim();
+  const statusEl = document.getElementById("trial-note-status");
+  if (!catId || !date) {
+    statusEl.textContent = "日付を選んでください。";
+    return;
+  }
+  statusEl.textContent = "保存しています...";
+  try {
+    await setDoc(doc(db, "cats", catId, "trialNotes", date), {
+      note,
+      updatedBy: currentUsername,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    document.getElementById("trial-note-text-input").value = "";
+    statusEl.textContent = "保存しました。";
+    await renderTrialNotesList(catId);
+    await syncTrialNotesToPublic(catId);
+  } catch (err) {
+    statusEl.textContent = "保存に失敗しました。もう一度お試しください。";
+  }
+});
+
+// 公開ページ(トライアル中の子)に、トライアルの様子メモを同期する
+async function syncTrialNotesToPublic(catId) {
+  try {
+    const catSnap = await getDoc(doc(db, "cats", catId));
+    const catData = catSnap.data();
+    if (!catData || catData.status !== "トライアル中" || !catData.isPublished) return;
+
+    const notesSnap = await getDocs(collection(db, "cats", catId, "trialNotes"));
+    const trialNotes = notesSnap.docs
+      .map((d) => ({ date: d.id, note: d.data().note || "" }))
+      .filter((n) => n.note)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const targetPath = catData.trialPasscode
+      ? doc(db, "trialProfiles", `${catId}-${catData.trialPasscode}`)
+      : doc(db, "publicProfiles", catId);
+    await updateDoc(targetPath, { trialNotes });
+  } catch (err) {
+    // 公開されていない場合などは失敗しても問題ない
+  }
+}
+
 // ---------- トライアル開始 ----------
 function generateRandomPasscode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 紛らわしい文字(0/O, 1/I など)を除いた文字だけ使う
   let code = "";
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < 6; i++) code += Math.floor(Math.random() * 10);
   return code;
 }
+
+// 全角の数字を半角に直す(パスワードの打ち間違い・入力間違いを防ぐため)
+function normalizePasscode(str) {
+  return (str || "")
+    .replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+    .trim();
+}
+
+document.getElementById("trial-use-passcode-checkbox").addEventListener("change", (e) => {
+  document.getElementById("trial-passcode-wrap").classList.toggle("hidden", !e.target.checked);
+});
 
 document.getElementById("start-trial-save-btn").addEventListener("click", async () => {
   const statusEl = document.getElementById("start-trial-status");
   const catId = document.getElementById("start-trial-save-btn").dataset.catId;
-  const passcode = document.getElementById("trial-passcode-input").value.trim();
+  const usePasscode = document.getElementById("trial-use-passcode-checkbox").checked;
+  const passcode = usePasscode ? normalizePasscode(document.getElementById("trial-passcode-input").value) : "";
   const trialEndDate = document.getElementById("trial-end-date-input").value;
 
   if (!catId) return;
-  if (!passcode) {
-    statusEl.textContent = "パスワードを入力してください。";
+  if (usePasscode && !passcode) {
+    statusEl.textContent = "パスワードを入力するか、「パスワードを設定する」のチェックを外してください。";
     return;
   }
 
@@ -3385,7 +3509,7 @@ document.getElementById("start-trial-save-btn").addEventListener("click", async 
     });
     await addHistoryEntry(catId, `ステータス: ${catData.status || "保護中"} → トライアル中`);
 
-    const updatedCatData = { ...catData, status: "トライアル中", trialPasscode: passcode, trialEndDate };
+    const updatedCatData = { ...catData, status: "トライアル中", trialPasscode: passcode, trialEndDate, previousTrialPasscode: catData.trialPasscode || "" };
     await syncPublicProfile(catId, updatedCatData);
 
     document.getElementById("modal-start-trial").classList.remove("open");
