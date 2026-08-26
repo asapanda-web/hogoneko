@@ -1868,7 +1868,7 @@ function createFoodItemRow(item) {
       <label class="checkbox-item"><input type="checkbox" value="シリンジで給餌" class="food-item-feeding"> シリンジで給餌</label>
     </div>
     <label>量(任意)</label>
-    <input type="text" class="food-item-amount" placeholder="例: 1回20g">
+    <textarea class="food-item-amount" placeholder="例: 1回20g。全給餌時は0.3缶。他のご飯半分食べた際は0.15缶。" style="min-height:70px;"></textarea>
     <label>回数</label>
     <select class="food-item-frequency">
       <option value="">選択してください</option>
@@ -2316,6 +2316,7 @@ async function openCatEditModal(catId, catData) {
   setContactItemsToForm(catData.contactItems);
   document.getElementById("foster-contact-preset").value = "";
   setFosterContactItemsToForm(catData.fosterContactItems);
+  document.getElementById("foster-contact-coming-soon").checked = !!catData.fosterContactComingSoon;
   populateSiblingCheckboxes(catId, catData.siblingIds || []);
 
   modalCat.classList.add("open");
@@ -2342,6 +2343,7 @@ function resetCatModalToAddMode() {
   setContactItemsToForm([]);
   document.getElementById("foster-contact-preset").value = "";
   setFosterContactItemsToForm([]);
+  document.getElementById("foster-contact-coming-soon").checked = false;
   document.getElementById("name-origin-shared-preset").value = "";
   document.getElementById("cat-modal-title").textContent = "犬猫を登録";
   document.getElementById("cat-submit-btn").textContent = "登録する";
@@ -2454,6 +2456,7 @@ async function syncPublicProfile(catId, data) {
     videoComingSoon: data.videoComingSoon,
     contactItems: data.contactItems || [],
     fosterContactItems: data.fosterContactItems || [],
+    fosterContactComingSoon: data.fosterContactComingSoon,
     photoData: data.publicPhotoData || data.photoData || "",
     neuterStatus: hasNeuter ? "済" : "未",
     vaccineStatus: vaccineCount > 0 ? `済(${vaccineCount}回)` : "未",
@@ -2577,6 +2580,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     isPublished: document.getElementById("cat-is-published").checked,
     contactItems: getContactItemsFromForm(),
     fosterContactItems: getFosterContactItemsFromForm(),
+    fosterContactComingSoon: document.getElementById("foster-contact-coming-soon").checked,
     detailMemo: document.getElementById("cat-detail-memo").value.trim(),
     photoData: currentCatPhotoData || ""
   };

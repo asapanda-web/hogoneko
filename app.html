@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285979">
+<link rel="stylesheet" href="style.css?v=1784285980">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -507,7 +507,10 @@
         <label class="checkbox-item"><input type="checkbox" class="foster-contact-type-cb" data-type="line" data-icon="💬" data-label="LINE"> LINE</label>
       </div>
       <div id="foster-contact-fields-wrap" style="margin-top:8px;"></div>
-      <p class="hint-text">この子を預かっている人自身のSNSなどを紹介したい場合に使ってください。空欄のままなら公開ページには何も表示されません。自分が保存したものだけがプルダウンに出てきます。</p>
+      <label class="checkbox-item" style="margin-top:8px;">
+        <input type="checkbox" id="foster-contact-coming-soon"> SNSは準備中(近日公開ページに掲載予定です)
+      </label>
+      <p class="hint-text">この子を預かっている人自身のSNSなどを紹介したい場合に使ってください。空欄のままなら公開ページには何も表示されません(上のチェックを入れると「準備中」と表示されます)。自分が保存したものだけがプルダウンに出てきます。</p>
 
       <label class="checkbox-item" style="margin-top:14px;">
         <input type="checkbox" id="cat-is-published"> この子を公開ページに掲載する
@@ -1115,7 +1118,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285979"></script>
+<script type="module" src="app.js?v=1784285980"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

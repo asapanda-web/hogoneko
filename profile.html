@@ -264,6 +264,18 @@
     border-radius: 999px;
     margin-bottom: 12px;
   }
+  .trial-notice {
+    text-align: center;
+    background: #fff3e6;
+    border: 1px solid #ffcb96;
+    color: #9a5a1e;
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.7;
+    padding: 10px 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
   .contact-note {
     text-align: center;
     font-size: 13px;
@@ -418,7 +430,7 @@
           errorEl.textContent = "合言葉が違うようです。もう一度確認してください。";
           return;
         }
-        renderProfile(trialSnap.data());
+        renderProfile(trialSnap.data(), true);
       } catch (err) {
         errorEl.textContent = "確認に失敗しました。時間をおいてもう一度お試しください。";
       }
@@ -430,13 +442,17 @@
     });
   }
 
-  async function renderProfile(data) {
+  async function renderProfile(data, isTrialView) {
     const contentEl = document.getElementById("content");
     document.body.classList.add(data.sex === "オス" ? "sex-male" : "sex-female");
     document.getElementById("page-title").textContent = `${data.name || ""} | ${titleText}`;
 
     const photoHtml = data.photoData
       ? `<div class="photo-wrap"><img src="${data.photoData}" alt=""></div>`
+      : "";
+
+    const trialNoticeHtml = isTrialView
+      ? `<div class="trial-notice">🔒 現在トライアル中のため、合言葉を知っている方だけがこのページを見られます。<br>正式に譲渡が決まると、このページはどなたも見られなくなります。</div>`
       : "";
 
     const trialBannerHtml = data.trialEndDate
@@ -557,6 +573,7 @@
     }
 
     contentEl.innerHTML = `
+      ${trialNoticeHtml}
       ${trialBannerHtml}
       <div class="card">
         ${photoHtml}
@@ -578,7 +595,15 @@
       </div>
       ${detailMemoHtml ? `<div class="card">${detailMemoHtml}</div>` : ""}
       ${siblingsHtml ? `<div class="card">${siblingsHtml}</div>` : ""}
-      ${(data.fosterContactItems && data.fosterContactItems.length > 0) ? `<div class="card"><div class="section-title">🏠 預かり者のSNS</div><div class="contact-note" style="border-top:none; margin-top:0; padding-top:0;">${contactItemsToLines(data.fosterContactItems).join("<br>")}</div></div>` : ""}
+      ${(() => {
+        if (data.fosterContactItems && data.fosterContactItems.length > 0) {
+          return `<div class="card"><div class="section-title">🏠 預かり者のSNS</div><div class="contact-note" style="border-top:none; margin-top:0; padding-top:0;">${contactItemsToLines(data.fosterContactItems).join("<br>")}</div></div>`;
+        }
+        if (data.fosterContactComingSoon) {
+          return `<div class="card"><div class="section-title">🏠 預かり者のSNS</div><div class="free-note">近日公開ページに掲載予定です。もうしばらくお待ちください。</div></div>`;
+        }
+        return "";
+      })()}
       <div class="footer-note">🐾 ご縁がありますように 🐾</div>
       ${(() => {
         if (data.contactItems && data.contactItems.length > 0) {
