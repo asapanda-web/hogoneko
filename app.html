@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285984">
+<link rel="stylesheet" href="style.css?v=1784285985">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -104,7 +104,7 @@
       </div>
       <div id="trial-info-wrap" class="hidden" style="margin-bottom:12px;">
         <span class="location-badge" style="background:#fbece7; color:#c0733a;">🏠 トライアル中<span id="trial-end-date-label"></span></span>
-        <button class="btn btn-outline btn-small" id="trial-notes-btn" style="margin-left:8px;">📝 トライアルの様子を記録</button>
+        <button class="btn btn-outline btn-small" id="trial-notes-btn" style="margin-left:8px;">📝 トライアルまでの様子を記録</button>
       </div>
       <div id="public-page-wrap" class="hidden" style="margin-bottom:12px;">
         <a href="#" target="_blank" class="btn btn-outline btn-small" id="public-page-link">🌐 公開ページを見る</a>
@@ -1006,10 +1006,10 @@
   </div>
 </div>
 
-<!-- トライアルの様子メモ モーダル -->
+<!-- トライアルまでの様子メモ モーダル -->
 <div class="modal-overlay" id="modal-trial-notes">
   <div class="modal">
-    <h3>📝 トライアルの様子を記録</h3>
+    <h3>📝 トライアルまでの様子を記録</h3>
     <p class="hint-text">前日の準備の様子や、当日の引き渡しの様子などを、日付ごとに書き留められます。この内容は、トライアル中の公開ページにも表示されます。</p>
     <label>日付</label>
     <input type="date" id="trial-note-date-input">
@@ -1143,7 +1143,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285984"></script>
+<script type="module" src="app.js?v=1784285985"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

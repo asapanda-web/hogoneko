@@ -493,7 +493,7 @@
       : "";
 
     const trialNotesHtml = (data.trialNotes && data.trialNotes.length > 0)
-      ? `<div class="card"><div class="section-title">📝 トライアルの様子</div>${data.trialNotes.map((n) => `<div class="trial-note-entry"><div class="trial-note-date">${escapeHtml(n.date)}</div><div class="free-note" style="margin-top:2px;">${escapeHtml(n.note)}</div></div>`).join("")}</div>`
+      ? `<div class="card"><div class="section-title">📝 トライアルまでの様子</div>${data.trialNotes.map((n) => `<div class="trial-note-entry"><div class="trial-note-date">${escapeHtml(n.date)}</div><div class="free-note" style="margin-top:2px;">${escapeHtml(n.note)}</div></div>`).join("")}</div>`
       : "";
 
     const metaText = data.species || "";
