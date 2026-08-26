@@ -239,6 +239,16 @@
     color: #a97a45;
     margin-top: 24px;
   }
+  .trial-banner {
+    text-align: center;
+    background: #ff9a56;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
   .contact-note {
     text-align: center;
     font-size: 13px;
@@ -358,11 +368,64 @@
     }
 
     const data = snap.data();
+
+    if (data.trialMode) {
+      showPasscodeForm(catId, data.name);
+      return;
+    }
+
+    renderProfile(data);
+  }
+
+  function showPasscodeForm(catId, catName) {
+    const contentEl = document.getElementById("content");
+    contentEl.innerHTML = `
+      <div class="card" style="text-align:center;">
+        <div style="font-size:15px; font-weight:700; color:#6a4a30; margin-bottom:10px;">🏠 ${escapeHtml(catName || "この子")}は現在トライアル中です</div>
+        <p style="font-size:13px; color:#8a7a6d; margin-bottom:14px;">このページを見るには合言葉が必要です。担当者からお伝えしている合言葉を入力してください。</p>
+        <input type="text" id="trial-passcode-form-input" placeholder="合言葉" style="text-align:center; font-size:16px; letter-spacing:2px;">
+        <button type="button" class="video-link" id="trial-passcode-submit-btn" style="border:none; cursor:pointer; margin-top:10px;">見る</button>
+        <p id="trial-passcode-error" style="color:#c0392b; font-size:12px; margin-top:10px;"></p>
+      </div>
+    `;
+
+    async function trySubmitPasscode() {
+      const errorEl = document.getElementById("trial-passcode-error");
+      const passcode = document.getElementById("trial-passcode-form-input").value.trim();
+      if (!passcode) {
+        errorEl.textContent = "合言葉を入力してください。";
+        return;
+      }
+      errorEl.textContent = "確認しています...";
+      try {
+        const trialSnap = await getDoc(doc(db, "trialProfiles", `${catId}-${passcode}`));
+        if (!trialSnap.exists()) {
+          errorEl.textContent = "合言葉が違うようです。もう一度確認してください。";
+          return;
+        }
+        renderProfile(trialSnap.data());
+      } catch (err) {
+        errorEl.textContent = "確認に失敗しました。時間をおいてもう一度お試しください。";
+      }
+    }
+
+    document.getElementById("trial-passcode-submit-btn").addEventListener("click", trySubmitPasscode);
+    document.getElementById("trial-passcode-form-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") trySubmitPasscode();
+    });
+  }
+
+  async function renderProfile(data) {
+    const contentEl = document.getElementById("content");
     document.body.classList.add(data.sex === "オス" ? "sex-male" : "sex-female");
     document.getElementById("page-title").textContent = `${data.name || ""} | ${titleText}`;
 
     const photoHtml = data.photoData
       ? `<div class="photo-wrap"><img src="${data.photoData}" alt=""></div>`
+      : "";
+
+    const trialBannerHtml = data.trialEndDate
+      ? `<div class="trial-banner">🏠 トライアル終了予定日: ${escapeHtml(data.trialEndDate)}</div>`
       : "";
 
     const metaText = data.species || "";
@@ -477,6 +540,7 @@
     }
 
     contentEl.innerHTML = `
+      ${trialBannerHtml}
       <div class="card">
         ${photoHtml}
         <div class="name">${escapeHtml(data.name || "")}</div>

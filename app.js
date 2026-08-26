@@ -733,7 +733,19 @@ function showDetail(catId, catData) {
   const canEditCat = isFullAdmin() || (isShelterMember() && catData.location === "施設");
   const actionsWrap = document.getElementById("detail-actions");
   const toggleStatusBtn = document.getElementById("toggle-status-btn");
+  const startTrialBtn = document.getElementById("start-trial-btn");
+  const endTrialBtn = document.getElementById("end-trial-btn");
+  const cancelTrialBtn = document.getElementById("cancel-trial-btn");
   const deleteCatBtn = document.getElementById("delete-cat-btn");
+
+  // トライアル中バッジの表示
+  const trialInfoWrap = document.getElementById("trial-info-wrap");
+  if (catData.status === "トライアル中") {
+    trialInfoWrap.classList.remove("hidden");
+    document.getElementById("trial-end-date-label").textContent = catData.trialEndDate ? `(終了予定: ${catData.trialEndDate})` : "";
+  } else {
+    trialInfoWrap.classList.add("hidden");
+  }
 
   actionsWrap.classList.toggle("hidden", !canEditCat);
   const editCatBtn = document.getElementById("edit-cat-btn");
@@ -741,7 +753,51 @@ function showDetail(catId, catData) {
   if (canEditCat) {
     editCatBtn.onclick = () => openCatEditModal(catId, catData);
 
-    toggleStatusBtn.textContent = catData.status === "譲渡済み" ? "保護中に戻す" : "譲渡済みにする";
+    const isTrial = catData.status === "トライアル中";
+    const isAdopted = catData.status === "譲渡済み";
+
+    // 保護中: 「トライアル開始」+「譲渡済みにする(直接)」
+    // トライアル中: 「トライアル終了(譲渡済みにする)」+「保護中に戻す(中止)」
+    // 譲渡済み: 「保護中に戻す」
+    startTrialBtn.classList.toggle("hidden", isTrial || isAdopted);
+    endTrialBtn.classList.toggle("hidden", !isTrial);
+    cancelTrialBtn.classList.toggle("hidden", !isTrial);
+    toggleStatusBtn.classList.toggle("hidden", isTrial);
+    toggleStatusBtn.textContent = isAdopted ? "保護中に戻す" : "譲渡済みにする";
+
+    startTrialBtn.onclick = () => {
+      document.getElementById("trial-passcode-input").value = generateRandomPasscode();
+      document.getElementById("trial-end-date-input").value = "";
+      document.getElementById("start-trial-status").textContent = "";
+      document.getElementById("modal-start-trial").classList.add("open");
+      // 保存ボタンにこの猫のIDを紐付けておく
+      document.getElementById("start-trial-save-btn").dataset.catId = catId;
+    };
+
+    endTrialBtn.onclick = async () => {
+      if (confirm("トライアルを終了して「譲渡済み」にしますか？")) {
+        const newStatus = "譲渡済み";
+        await updateDoc(doc(db, "cats", catId), { status: newStatus });
+        await addHistoryEntry(catId, `ステータス: トライアル中 → ${newStatus}`);
+        catData.status = newStatus;
+        await syncPublicProfile(catId, catData);
+        showDetail(catId, catData);
+      }
+    };
+
+    cancelTrialBtn.onclick = async () => {
+      if (confirm("トライアルを中止して「保護中」に戻しますか？(合言葉は使われなくなります)")) {
+        const newStatus = "保護中";
+        await updateDoc(doc(db, "cats", catId), { status: newStatus, trialPasscode: "", trialEndDate: "" });
+        await addHistoryEntry(catId, `ステータス: トライアル中 → ${newStatus}(トライアル中止)`);
+        catData.status = newStatus;
+        catData.trialPasscode = "";
+        catData.trialEndDate = "";
+        await syncPublicProfile(catId, catData);
+        showDetail(catId, catData);
+      }
+    };
+
     toggleStatusBtn.onclick = async () => {
       const newStatus = catData.status === "譲渡済み" ? "保護中" : "譲渡済み";
       if (confirm(`ステータスを「${newStatus}」に変更しますか？`)) {
@@ -2347,6 +2403,14 @@ async function syncPublicProfile(catId, data) {
     } catch (err) {
       // 元々存在しない場合は何もしなくてよい
     }
+    // トライアル中だった場合のデータも消しておく(古いパスコードを分かっていても読めないようにする)
+    if (data.trialPasscode) {
+      try {
+        await deleteDoc(doc(db, "trialProfiles", `${catId}-${data.trialPasscode}`));
+      } catch (err) {
+        // 元々存在しない場合は何もしなくてよい
+      }
+    }
     return;
   }
 
@@ -2358,7 +2422,7 @@ async function syncPublicProfile(catId, data) {
     .filter((r) => r.type === "ウイルス検査")
     .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
 
-  await setDoc(doc(db, "publicProfiles", catId), {
+  const fullProfileData = {
     name: data.name,
     species: data.species,
     sex: data.sex,
@@ -2396,8 +2460,31 @@ async function syncPublicProfile(catId, data) {
     fivResult: latestVirusTest ? (latestVirusTest.fivResult || "未検査") : "未検査",
     felvResult: latestVirusTest ? (latestVirusTest.felvResult || "未検査") : "未検査",
     dewormStatus: hasDeworm ? "済" : "未",
+    trialEndDate: data.status === "トライアル中" ? (data.trialEndDate || "") : "",
     updatedAt: serverTimestamp()
-  }, { merge: true }); // merge:trueにして、日々の記録から同期される体重推移(weightHistory)を消さないようにする
+  };
+
+  if (data.status === "トライアル中" && data.trialPasscode) {
+    // publicProfilesには「トライアル中です」という案内だけを置き、詳しい内容は
+    // trialProfiles/{猫のID}-{合言葉} という、合言葉を知らないとたどり着けない場所に置く
+    await setDoc(doc(db, "publicProfiles", catId), {
+      trialMode: true,
+      name: data.name,
+      updatedAt: serverTimestamp()
+    }, { merge: false });
+    await setDoc(doc(db, "trialProfiles", `${catId}-${data.trialPasscode}`), fullProfileData, { merge: true });
+
+    // 合言葉を変更・再設定した場合、古い合言葉のデータは読めないように消しておく
+    if (data.previousTrialPasscode && data.previousTrialPasscode !== data.trialPasscode) {
+      try {
+        await deleteDoc(doc(db, "trialProfiles", `${catId}-${data.previousTrialPasscode}`));
+      } catch (err) {
+        // 元々存在しない場合は何もしなくてよい
+      }
+    }
+  } else {
+    await setDoc(doc(db, "publicProfiles", catId), fullProfileData, { merge: true }); // merge:trueにして、日々の記録から同期される体重推移(weightHistory)を消さないようにする
+  }
 
   await syncPublicWeightHistory(catId);
 }
@@ -3261,6 +3348,48 @@ document.getElementById("account-delete-btn").addEventListener("click", async ()
 });
 
 // ---------- ユーティリティ ----------
+// ---------- トライアル開始 ----------
+function generateRandomPasscode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 紛らわしい文字(0/O, 1/I など)を除いた文字だけ使う
+  let code = "";
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+document.getElementById("start-trial-save-btn").addEventListener("click", async () => {
+  const statusEl = document.getElementById("start-trial-status");
+  const catId = document.getElementById("start-trial-save-btn").dataset.catId;
+  const passcode = document.getElementById("trial-passcode-input").value.trim();
+  const trialEndDate = document.getElementById("trial-end-date-input").value;
+
+  if (!catId) return;
+  if (!passcode) {
+    statusEl.textContent = "合言葉を入力してください。";
+    return;
+  }
+
+  statusEl.textContent = "設定しています...";
+  try {
+    const catSnap = await getDoc(doc(db, "cats", catId));
+    const catData = catSnap.data();
+
+    await updateDoc(doc(db, "cats", catId), {
+      status: "トライアル中",
+      trialPasscode: passcode,
+      trialEndDate
+    });
+    await addHistoryEntry(catId, `ステータス: ${catData.status || "保護中"} → トライアル中`);
+
+    const updatedCatData = { ...catData, status: "トライアル中", trialPasscode: passcode, trialEndDate };
+    await syncPublicProfile(catId, updatedCatData);
+
+    document.getElementById("modal-start-trial").classList.remove("open");
+    showDetail(catId, updatedCatData);
+  } catch (err) {
+    statusEl.textContent = "設定に失敗しました。もう一度お試しください。";
+  }
+});
+
 function escapeHtml(str) {
   if (!str) return "";
   return String(str)

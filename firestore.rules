@@ -88,6 +88,14 @@ service cloud.firestore {
       allow update: if isFullAdmin() || isShelterMember()
         || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["weightHistory", "currentWeight", "updatedAt"]));
     }
+    // トライアル中の子の詳しいプロフィール。ドキュメントIDに「猫のID-パスコード」を使うことで、
+    // パスコードを知っている人だけが実質的にたどり着けるようにしている
+    // (公開ページ側は publicProfiles に「トライアル中です」という案内だけを置き、
+    // パスコードが合っていればこちらの詳しいデータを読みに来る、という2段構成)
+    match /trialProfiles/{docId} {
+      allow read: if true;
+      allow write: if isFullAdmin() || isShelterMember();
+    }
     // ユーザーの役割情報
     match /users/{userId} {
       // 自分の情報と、管理者・責任者はみんなの情報を読める
