@@ -2425,6 +2425,7 @@ async function syncPublicProfile(catId, data) {
     .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
 
   const fullProfileData = {
+    trialMode: false, // トライアル解除後、古い「トライアル中」フラグがpublicProfilesに残らないようにするため明示的にfalseを入れる
     name: data.name,
     species: data.species,
     sex: data.sex,
