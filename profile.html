@@ -135,14 +135,29 @@
   }
   .detail-photo {
     display: block;
-    width: 100%;
-    max-width: 260px;
-    max-height: 200px;
-    object-fit: cover;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 260px;
+    object-fit: contain;
     border-radius: 12px;
     margin: 4px auto 10px;
     border: 3px solid #fff;
+    background: #fff;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  .food-item-block {
+    border: 1.5px solid #f0d9a8;
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 10px;
+  }
+  .food-item-block:first-child { margin-top: 4px; }
+  .food-item-label {
+    font-weight: 700;
+    font-size: 13px;
+    color: #b8860b;
+    margin-bottom: 4px;
   }
   .current-weight {
     text-align: center;
@@ -470,20 +485,22 @@
 
     let foodTablesHtml = "";
     if (data.foodMode === "itemized" && data.foods && data.foods.length > 0) {
-      foodTablesHtml = data.foods.map((f) => {
+      const multipleFood = data.foods.length > 1;
+      foodTablesHtml = data.foods.map((f, i) => {
         const rows = [];
         if (f.brand) rows.push(["フード名", escapeHtml(f.brand)]);
         if (f.type) rows.push(["種類", escapeHtml(f.type)]);
         if (f.feedingTags && f.feedingTags.length) rows.push(["与え方", escapeHtml(f.feedingTags.join("・"))]);
-        if (f.amount) rows.push(["量", escapeHtml(f.amount)]);
+        if (f.amount) rows.push(["量", escapeHtml(f.amount).replace(/\n/g, "<br>")]);
         if (f.frequency) rows.push(["回数", escapeHtml(f.frequency)]);
         const itemPhotoHtml = f.photoData ? `<img src="${f.photoData}" alt="" class="detail-photo" style="max-width:180px; max-height:140px; margin-top:8px;">` : "";
         const guideHtml = f.guidePhotoData
           ? `<div class="free-note" style="margin-top:6px;">給餌量の目安</div><img src="${f.guidePhotoData}" alt="" class="detail-photo" style="max-width:220px; max-height:180px; margin-top:4px;">`
           : "";
         if (rows.length === 0 && !itemPhotoHtml && !guideHtml) return "";
-        return `${itemPhotoHtml}${rows.length ? `<table class="info-table" style="margin-top:8px;">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}</table>` : ""}${guideHtml}`;
-      }).join("<div style=\"height:12px;\"></div>");
+        const labelHtml = multipleFood ? `<div class="food-item-label">🍽 ご飯${i + 1}</div>` : "";
+        return `<div class="food-item-block">${labelHtml}${itemPhotoHtml}${rows.length ? `<table class="info-table" style="margin-top:8px;">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}</table>` : ""}${guideHtml}</div>`;
+      }).join("");
     } else if (data.food) {
       foodTablesHtml = `<table class="info-table"><tr><td>ご飯</td><td>${escapeHtml(data.food)}</td></tr></table>`;
     }
