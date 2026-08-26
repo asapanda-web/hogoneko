@@ -3411,7 +3411,19 @@ async function renderTrialNotesList(catId) {
       const row = document.createElement("div");
       row.className = "detail-box";
       row.style.marginTop = "8px";
-      row.innerHTML = `<div style="font-weight:700;">${escapeHtml(n.date)}</div><div style="margin-top:4px; white-space:pre-wrap;">${escapeHtml(n.note || "")}</div>`;
+      row.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-weight:700;">${escapeHtml(n.date)}</div>
+          <button type="button" class="btn btn-ghost btn-small" style="padding:0;" data-edit-note>編集</button>
+        </div>
+        <div style="margin-top:4px; white-space:pre-wrap;">${escapeHtml(n.note || "")}</div>
+      `;
+      row.querySelector("[data-edit-note]").addEventListener("click", () => {
+        document.getElementById("trial-note-date-input").value = n.date;
+        document.getElementById("trial-note-text-input").value = n.note || "";
+        document.getElementById("trial-note-status").textContent = "";
+        document.getElementById("trial-note-text-input").scrollIntoView({ behavior: "smooth", block: "center" });
+      });
       listEl.appendChild(row);
     });
   } catch (err) {
