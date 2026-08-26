@@ -296,6 +296,11 @@
     color: #a3968a;
     margin-top: 8px;
   }
+  @media print {
+    .back-btn, .paw-bg { display: none !important; }
+    body { background: #fff !important; }
+    .card { box-shadow: none !important; border: 1px solid #eee0d0; break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
@@ -304,6 +309,7 @@
 
 <div class="wrap">
   <button type="button" class="back-btn" id="back-btn">← 戻る</button>
+  <button type="button" class="back-btn" id="print-page-btn" style="margin-left:8px;">🖨️ 印刷する</button>
   <div class="brand-line" id="brand-line">🐾 読み込んでいます...</div>
   <div id="content"></div>
 </div>
@@ -321,6 +327,7 @@
     // QRコードなどから直接開いた場合(戻り先が無い場合)は、戻るボタン自体を表示しない
     backBtn.style.display = "none";
   }
+  document.getElementById("print-page-btn").addEventListener("click", () => window.print());
   const titleText = ORG_NAME ? `${APP_TITLE}(${ORG_NAME})` : APP_TITLE;
   document.getElementById("brand-line").textContent = `🐾 ${titleText}`;
 
@@ -409,8 +416,8 @@
     contentEl.innerHTML = `
       <div class="card" style="text-align:center;">
         <div style="font-size:15px; font-weight:700; color:#6a4a30; margin-bottom:10px;">🏠 ${escapeHtml(catName || "この子")}は現在トライアル中です</div>
-        <p style="font-size:13px; color:#8a7a6d; margin-bottom:14px;">このページを見るには合言葉が必要です。担当者からお伝えしている合言葉を入力してください。</p>
-        <input type="text" id="trial-passcode-form-input" placeholder="合言葉" style="text-align:center; font-size:16px; letter-spacing:2px;">
+        <p style="font-size:13px; color:#8a7a6d; margin-bottom:14px;">このページを見るにはパスワードが必要です。担当者からお伝えしているパスワードを入力してください。</p>
+        <input type="text" id="trial-passcode-form-input" placeholder="パスワード" style="text-align:center; font-size:16px; letter-spacing:2px;">
         <button type="button" class="video-link" id="trial-passcode-submit-btn" style="border:none; cursor:pointer; margin-top:10px;">見る</button>
         <p id="trial-passcode-error" style="color:#c0392b; font-size:12px; margin-top:10px;"></p>
       </div>
@@ -420,14 +427,14 @@
       const errorEl = document.getElementById("trial-passcode-error");
       const passcode = document.getElementById("trial-passcode-form-input").value.trim();
       if (!passcode) {
-        errorEl.textContent = "合言葉を入力してください。";
+        errorEl.textContent = "パスワードを入力してください。";
         return;
       }
       errorEl.textContent = "確認しています...";
       try {
         const trialSnap = await getDoc(doc(db, "trialProfiles", `${catId}-${passcode}`));
         if (!trialSnap.exists()) {
-          errorEl.textContent = "合言葉が違うようです。もう一度確認してください。";
+          errorEl.textContent = "パスワードが違うようです。もう一度確認してください。";
           return;
         }
         renderProfile(trialSnap.data(), true);
@@ -452,7 +459,7 @@
       : "";
 
     const trialNoticeHtml = isTrialView
-      ? `<div class="trial-notice">🔒 現在トライアル中のため、合言葉を知っている方だけがこのページを見られます。<br>正式に譲渡が決まると、このページはどなたも見られなくなります。</div>`
+      ? `<div class="trial-notice">🔒 このページは通常どなたでも見られますが、トライアル中の際はパスワードを知っている方だけの限定ページになります。<br>正式に譲渡が決まると、このページはどなたも見られなくなります。</div>`
       : "";
 
     const trialBannerHtml = data.trialEndDate

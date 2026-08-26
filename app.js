@@ -786,7 +786,7 @@ function showDetail(catId, catData) {
     };
 
     cancelTrialBtn.onclick = async () => {
-      if (confirm("トライアルを中止して「保護中」に戻しますか？(合言葉は使われなくなります)")) {
+      if (confirm("トライアルを中止して「保護中」に戻しますか？(パスワードは使われなくなります)")) {
         const newStatus = "保護中";
         await updateDoc(doc(db, "cats", catId), { status: newStatus, trialPasscode: "", trialEndDate: "" });
         await addHistoryEntry(catId, `ステータス: トライアル中 → ${newStatus}(トライアル中止)`);
@@ -2469,7 +2469,7 @@ async function syncPublicProfile(catId, data) {
 
   if (data.status === "トライアル中" && data.trialPasscode) {
     // publicProfilesには「トライアル中です」という案内だけを置き、詳しい内容は
-    // trialProfiles/{猫のID}-{合言葉} という、合言葉を知らないとたどり着けない場所に置く
+    // trialProfiles/{猫のID}-{パスワード} という、パスワードを知らないとたどり着けない場所に置く
     await setDoc(doc(db, "publicProfiles", catId), {
       trialMode: true,
       name: data.name,
@@ -2477,7 +2477,7 @@ async function syncPublicProfile(catId, data) {
     }, { merge: false });
     await setDoc(doc(db, "trialProfiles", `${catId}-${data.trialPasscode}`), fullProfileData, { merge: true });
 
-    // 合言葉を変更・再設定した場合、古い合言葉のデータは読めないように消しておく
+    // パスワードを変更・再設定した場合、古いパスワードのデータは読めないように消しておく
     if (data.previousTrialPasscode && data.previousTrialPasscode !== data.trialPasscode) {
       try {
         await deleteDoc(doc(db, "trialProfiles", `${catId}-${data.previousTrialPasscode}`));
@@ -3368,7 +3368,7 @@ document.getElementById("start-trial-save-btn").addEventListener("click", async 
 
   if (!catId) return;
   if (!passcode) {
-    statusEl.textContent = "合言葉を入力してください。";
+    statusEl.textContent = "パスワードを入力してください。";
     return;
   }
 
