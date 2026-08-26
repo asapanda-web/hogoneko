@@ -285,6 +285,12 @@
     border-top: 1px dashed #e0d3c2;
     line-height: 1.8;
   }
+  .contact-org-label {
+    font-weight: 700;
+    font-size: 13px;
+    color: #a97a45;
+    margin-bottom: 4px;
+  }
   .contact-link {
     color: #ff6996;
     font-weight: 700;
@@ -613,13 +619,12 @@
       })()}
       <div class="footer-note">🐾 ご縁がありますように 🐾</div>
       ${(() => {
-        if (data.contactItems && data.contactItems.length > 0) {
-          return `<div class="contact-note">${contactItemsToLines(data.contactItems).join("<br>")}</div>`;
-        }
-        if (ORG_CONTACT) {
-          return `<div class="contact-note">${ORG_CONTACT.split("\n").map((line) => contactLineWithIcon(line)).join("<br>")}</div>`;
-        }
-        return "";
+        const lines = (data.contactItems && data.contactItems.length > 0)
+          ? contactItemsToLines(data.contactItems)
+          : (ORG_CONTACT ? ORG_CONTACT.split("\n").map((line) => contactLineWithIcon(line)) : []);
+        if (lines.length === 0) return "";
+        const orgLabel = ORG_NAME ? `<div class="contact-org-label">${escapeHtml(ORG_NAME)}の連絡先</div>` : "";
+        return `<div class="contact-note">${orgLabel}${lines.join("<br>")}</div>`;
       })()}
       <div class="update-note">掲載内容・項目は随時更新・変更されることがあります。</div>
     `;
