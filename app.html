@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1784285977">
+<link rel="stylesheet" href="style.css?v=1784285979">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -401,7 +401,7 @@
         <button type="button" class="btn btn-outline btn-small" id="food-item-add-btn" style="width:100%; margin-top:4px;">+ ご飯を追加する</button>
         <p class="hint-text">同じご飯を使っている子が多い場合、一度アップロードした写真を他の子でも選んで使い回せます。</p>
       </div>
-      <input type="text" id="food-comment" placeholder="ご飯についての自由コメント(任意・項目に当てはまらない注意点など)">
+      <textarea id="food-comment" placeholder="ご飯についての自由コメント(任意・項目に当てはまらない注意点など)" style="min-height:70px;"></textarea>
 
       <div id="litter-section-wrap">
         <label>🚽 トイレ環境(猫のみ・任意)</label>
@@ -433,7 +433,7 @@
           <label>掃除(任意)</label>
           <input type="text" id="litter-cleaning" placeholder="例: 1日2回 / 都度">
           <label>メモ(任意)</label>
-          <textarea id="litter-memo" placeholder="例: 砂の種類を変えると使わないことがある、子猫のため浅型を使用、など"></textarea>
+          <textarea id="litter-memo" placeholder="例: 砂の種類を変えると使わないことがある、子猫のため浅型を使用、など" style="min-height:70px;"></textarea>
         </div>
       </div>
 
@@ -1115,7 +1115,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1784285977"></script>
+<script type="module" src="app.js?v=1784285979"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
