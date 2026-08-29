@@ -744,6 +744,58 @@ function showDetail(catId, catData) {
     trialInfoWrap.classList.remove("hidden");
     document.getElementById("trial-end-date-label").textContent = catData.trialEndDate ? `(終了予定: ${catData.trialEndDate})` : "";
     document.getElementById("trial-notes-btn").onclick = () => openTrialNotesModal(catId);
+
+    const trialDetailQrBtn = document.getElementById("trial-detail-qr-btn");
+    trialDetailQrBtn.classList.toggle("hidden", !catData.trialPasscode);
+    trialDetailQrBtn.onclick = () => {
+      const trialUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}profile.html?id=${catId}&pass=${encodeURIComponent(catData.trialPasscode)}`;
+      const qrBox = document.getElementById("trial-qr-box");
+      qrBox.innerHTML = "";
+      new QRCode(qrBox, {
+        text: trialUrl,
+        width: 200,
+        height: 200,
+        colorDark: "#5a3a1e",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      document.getElementById("trial-qr-name").textContent = catData.name || "";
+      document.getElementById("trial-qr-share-status").textContent = "";
+      document.getElementById("modal-trial-qr").classList.add("open");
+
+      document.getElementById("trial-qr-copy-btn").onclick = async () => {
+        const shareStatusEl = document.getElementById("trial-qr-share-status");
+        try {
+          await navigator.clipboard.writeText(trialUrl);
+          shareStatusEl.textContent = "リンクをコピーしました。";
+        } catch (err) {
+          shareStatusEl.textContent = "コピーできませんでした。";
+        }
+      };
+
+      document.getElementById("trial-qr-share-btn").onclick = async () => {
+        const shareStatusEl = document.getElementById("trial-qr-share-status");
+        const shareData = {
+          title: `${catData.name || ""}の詳しいページ(里親さん用)`,
+          text: `${catData.name || "この子"}の詳しいページです。トライアル中の様子や餌・トイレの情報が見られます🐾`,
+          url: trialUrl
+        };
+        if (navigator.share) {
+          try {
+            await navigator.share(shareData);
+          } catch (err) {
+            // 共有をキャンセルした場合などは何もしない
+          }
+        } else {
+          try {
+            await navigator.clipboard.writeText(trialUrl);
+            shareStatusEl.textContent = "共有機能が使えない端末のため、リンクをコピーしました。";
+          } catch (err) {
+            shareStatusEl.textContent = "コピーできませんでした。上のリンクを長押しして手動でコピーしてください。";
+          }
+        }
+      };
+    };
   } else {
     trialInfoWrap.classList.add("hidden");
   }
@@ -768,8 +820,6 @@ function showDetail(catId, catData) {
 
     startTrialBtn.onclick = () => {
       document.getElementById("trial-passcode-input").value = generateRandomPasscode();
-      document.getElementById("trial-use-passcode-checkbox").checked = true;
-      document.getElementById("trial-passcode-wrap").classList.remove("hidden");
       document.getElementById("trial-end-date-input").value = "";
       document.getElementById("start-trial-status").textContent = "";
       document.getElementById("modal-start-trial").classList.add("open");
@@ -2443,6 +2493,7 @@ async function syncPublicProfile(catId, data) {
     }
   }
 
+  // trialProfiles(里親さん用の詳しいQRコード)に置く、全項目入りのデータ
   const fullProfileData = {
     trialMode: false, // トライアル解除後、古い「トライアル中」フラグがpublicProfilesに残らないようにするため明示的にfalseを入れる
     name: data.name,
@@ -2489,9 +2540,41 @@ async function syncPublicProfile(catId, data) {
     updatedAt: serverTimestamp()
   };
 
+  // publicProfiles(通常の公開QRコード)に置く、簡単な項目だけのデータ。
+  // 餌・トイレの詳細・詳しい様子・預かり者のSNSなどは含めない(里親さん用の詳しいQRコードでのみ見せる)
+  const simpleProfileData = {
+    trialMode: false,
+    name: data.name,
+    species: data.species,
+    sex: data.sex,
+    age: data.age,
+    nameOriginShared: data.nameOriginShared,
+    nameOrigin: data.nameOrigin,
+    siblingIds: data.siblingIds || [],
+    intro: data.intro,
+    personalityTags: data.personalityTags,
+    personalityOther: data.personalityOther,
+    canDoTags: data.canDoTags,
+    canDoOther: data.canDoOther,
+    canDislikeTags: data.canDislikeTags,
+    canDislikeOther: data.canDislikeOther,
+    playTags: data.playTags,
+    playOther: data.playOther,
+    videoUrl: data.videoUrl,
+    videoComingSoon: data.videoComingSoon,
+    contactItems: data.contactItems || [],
+    photoData: data.publicPhotoData || data.photoData || "",
+    neuterStatus: hasNeuter ? "済" : "未",
+    vaccineStatus: vaccineCount > 0 ? `済(${vaccineCount}回)` : "未",
+    fivResult: latestVirusTest ? (latestVirusTest.fivResult || "未検査") : "未検査",
+    felvResult: latestVirusTest ? (latestVirusTest.felvResult || "未検査") : "未検査",
+    dewormStatus: hasDeworm ? "済" : "未",
+    updatedAt: serverTimestamp()
+  };
+
   if (data.status === "トライアル中" && data.trialPasscode) {
     // publicProfilesには「トライアル中です」という案内だけを置き、詳しい内容は
-    // trialProfiles/{猫のID}-{パスワード} という、パスワードを知らないとたどり着けない場所に置く
+    // trialProfiles/{猫のID}-{合言葉} という、URLを知らないとたどり着けない場所に置く
     await setDoc(doc(db, "publicProfiles", catId), {
       trialMode: true,
       name: data.name,
@@ -2499,7 +2582,7 @@ async function syncPublicProfile(catId, data) {
     }, { merge: false });
     await setDoc(doc(db, "trialProfiles", `${catId}-${data.trialPasscode}`), fullProfileData, { merge: true });
 
-    // パスワードを変更・再設定した場合、古いパスワードのデータは読めないように消しておく
+    // 合言葉を変更・再設定した場合、古い合言葉のデータは読めないように消しておく
     if (data.previousTrialPasscode && data.previousTrialPasscode !== data.trialPasscode) {
       try {
         await deleteDoc(doc(db, "trialProfiles", `${catId}-${data.previousTrialPasscode}`));
@@ -2508,12 +2591,12 @@ async function syncPublicProfile(catId, data) {
       }
     }
   } else {
-    // トライアル中でもパスワードを設定していない場合は、今まで通りpublicProfilesに直接置く
-    // (trialActive:trueが付いているので、公開ページ側は「案内だけ表示して中身は隠す」ではなく
-    // 「案内を出しつつ普通に中身も見せる」形になる)
-    await setDoc(doc(db, "publicProfiles", catId), fullProfileData, { merge: true }); // merge:trueにして、日々の記録から同期される体重推移(weightHistory)を消さないようにする
+    // トライアル中でない場合は、簡単なプロフィールだけをpublicProfilesに置く
+    // (merge:falseで、以前保存されていた餌・トイレなどの詳細項目が残らないようにする。
+    //  体重の推移(weightHistory)は直後のsyncPublicWeightHistoryで改めて設定される)
+    await setDoc(doc(db, "publicProfiles", catId), simpleProfileData, { merge: false });
 
-    // 元々パスワード付きトライアルだったのを解除した場合、trialProfiles側の古いデータも消しておく
+    // 元々トライアル中だったのを解除した場合、trialProfiles側の古いデータも消しておく
     if (data.previousTrialPasscode) {
       try {
         await deleteDoc(doc(db, "trialProfiles", `${catId}-${data.previousTrialPasscode}`));
@@ -3492,20 +3575,15 @@ function normalizePasscode(str) {
     .trim();
 }
 
-document.getElementById("trial-use-passcode-checkbox").addEventListener("change", (e) => {
-  document.getElementById("trial-passcode-wrap").classList.toggle("hidden", !e.target.checked);
-});
-
 document.getElementById("start-trial-save-btn").addEventListener("click", async () => {
   const statusEl = document.getElementById("start-trial-status");
   const catId = document.getElementById("start-trial-save-btn").dataset.catId;
-  const usePasscode = document.getElementById("trial-use-passcode-checkbox").checked;
-  const passcode = usePasscode ? normalizePasscode(document.getElementById("trial-passcode-input").value) : "";
+  const passcode = normalizePasscode(document.getElementById("trial-passcode-input").value);
   const trialEndDate = document.getElementById("trial-end-date-input").value;
 
   if (!catId) return;
-  if (usePasscode && !passcode) {
-    statusEl.textContent = "パスワードを入力するか、「パスワードを設定する」のチェックを外してください。";
+  if (!passcode) {
+    statusEl.textContent = "合言葉(数字)を入力してください。";
     return;
   }
 

@@ -420,56 +420,40 @@
     const data = snap.data();
 
     if (data.trialMode) {
-      showPasscodeForm(catId, data.name);
+      // URLに合言葉(pass)が付いている場合だけ、詳しいページ(trialProfiles)を自動で読みに行く。
+      // 入力フォームは使わない(QRコード自体が合言葉を含んでいるため)
+      const pass = params.get("pass");
+      if (!pass) {
+        showTrialNotice(data.name);
+        return;
+      }
+
+      let trialSnap;
+      try {
+        trialSnap = await getDoc(doc(db, "trialProfiles", `${catId}-${pass}`));
+      } catch (err) {
+        contentEl.innerHTML = `<div class="not-found">読み込みに失敗しました。時間をおいて再度お試しください。</div>`;
+        return;
+      }
+      if (!trialSnap.exists()) {
+        contentEl.innerHTML = `<div class="not-found">🐾 このリンクは現在ご利用いただけません。<br>お手数ですが担当者にご確認ください。</div>`;
+        return;
+      }
+      renderProfile(trialSnap.data(), "gated");
       return;
     }
 
-    // パスワードを設定していないトライアル中の場合は、そのまま中身を見せつつ案内だけ出す
-    renderProfile(data, data.trialActive ? "open" : null);
+    renderProfile(data, null);
   }
 
-  function normalizePasscodeInput(str) {
-    return (str || "")
-      .replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
-      .trim();
-  }
-
-  function showPasscodeForm(catId, catName) {
+  function showTrialNotice(catName) {
     const contentEl = document.getElementById("content");
     contentEl.innerHTML = `
       <div class="card" style="text-align:center;">
         <div style="font-size:15px; font-weight:700; color:#6a4a30; margin-bottom:10px;">🏠 ${escapeHtml(catName || "この子")}は現在トライアル中です</div>
-        <p style="font-size:13px; color:#8a7a6d; margin-bottom:14px;">このページは通常どなたでも見られますが、現在はパスワードが必要です。担当者からお伝えしているパスワードを入力してください。</p>
-        <input type="text" id="trial-passcode-form-input" placeholder="パスワード" inputmode="numeric" style="text-align:center; font-size:16px; letter-spacing:2px;">
-        <button type="button" class="video-link" id="trial-passcode-submit-btn" style="border:none; cursor:pointer; margin-top:10px;">見る</button>
-        <p id="trial-passcode-error" style="color:#c0392b; font-size:12px; margin-top:10px;"></p>
+        <p style="font-size:13px; color:#8a7a6d;">正式に譲渡が決まるまでの間、詳しいページは里親さん・預かり者専用のリンクからのみご覧いただけます。</p>
       </div>
     `;
-
-    async function trySubmitPasscode() {
-      const errorEl = document.getElementById("trial-passcode-error");
-      const passcode = normalizePasscodeInput(document.getElementById("trial-passcode-form-input").value);
-      if (!passcode) {
-        errorEl.textContent = "パスワードを入力してください。";
-        return;
-      }
-      errorEl.textContent = "確認しています...";
-      try {
-        const trialSnap = await getDoc(doc(db, "trialProfiles", `${catId}-${passcode}`));
-        if (!trialSnap.exists()) {
-          errorEl.textContent = "パスワードが違うようです。もう一度確認してください。";
-          return;
-        }
-        renderProfile(trialSnap.data(), "gated");
-      } catch (err) {
-        errorEl.textContent = "確認に失敗しました。時間をおいてもう一度お試しください。";
-      }
-    }
-
-    document.getElementById("trial-passcode-submit-btn").addEventListener("click", trySubmitPasscode);
-    document.getElementById("trial-passcode-form-input").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") trySubmitPasscode();
-    });
   }
 
   async function renderProfile(data, trialViewMode) {
@@ -483,9 +467,7 @@
 
     let trialNoticeHtml = "";
     if (trialViewMode === "gated") {
-      trialNoticeHtml = `<div class="trial-notice">🔒 このページは通常どなたでも見られますが、トライアル中の際はパスワードを知っている方だけの限定ページになります。<br>正式に譲渡が決まると、このページはどなたも見られなくなります。</div>`;
-    } else if (trialViewMode === "open") {
-      trialNoticeHtml = `<div class="trial-notice">🏠 現在トライアル中です。<br>正式に譲渡が決まり、しばらく時間が経つと、このページは見られなくなります。</div>`;
+      trialNoticeHtml = `<div class="trial-notice">🔒 このページは、トライアル中の里親さん・預かり者専用の詳しいページです。<br>正式に譲渡が決まると、このページはどなたも見られなくなります。</div>`;
     }
 
     const trialBannerHtml = data.trialEndDate

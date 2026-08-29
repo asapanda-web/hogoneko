@@ -105,6 +105,8 @@
       <div id="trial-info-wrap" class="hidden" style="margin-bottom:12px;">
         <span class="location-badge" style="background:#fbece7; color:#c0733a;">🏠 トライアル中<span id="trial-end-date-label"></span></span>
         <button class="btn btn-outline btn-small" id="trial-notes-btn" style="margin-left:8px;">📝 トライアルまでの様子を記録</button>
+        <button class="btn btn-outline btn-small" id="trial-detail-qr-btn" style="margin-left:8px;">🔑 里親さん用の詳しいQRコード</button>
+        <p class="hint-text" style="margin-top:6px;">通常の公開QRコードからは「トライアル中です」とだけ表示されます。餌・トイレなど詳しい内容は、この「里親さん用QRコード」を読み取ってもらうことで見られます。</p>
       </div>
       <div id="public-page-wrap" class="hidden" style="margin-bottom:12px;">
         <a href="#" target="_blank" class="btn btn-outline btn-small" id="public-page-link">🌐 公開ページを見る</a>
@@ -980,19 +982,32 @@
   </div>
 </div>
 
+<!-- トライアル中の詳しいページQRコードモーダル -->
+<div class="modal-overlay" id="modal-trial-qr">
+  <div class="modal">
+    <h3>🔑 里親さん用の詳しいQRコード</h3>
+    <p class="hint-text">このQRコードを里親さん・預かり者にだけお渡しください。読み取ると、パスワードの入力なしで、餌・トイレなど詳しい情報を含むページがそのまま見られます。トライアルが終了すると、このQRコードは使えなくなります。</p>
+    <div id="trial-qr-name" style="text-align:center; font-weight:700; font-size:16px; color:var(--accent-ink); margin-top:6px;"></div>
+    <div id="trial-qr-box" style="text-align:center; margin-top:10px;"></div>
+    <button type="button" class="btn btn-outline" id="trial-qr-copy-btn" style="width:100%; margin-top:10px;">🔗 リンクをコピー</button>
+    <button type="button" class="btn btn-primary" id="trial-qr-share-btn" style="width:100%; margin-top:8px;">📤 共有する</button>
+    <p class="hint-text" id="trial-qr-share-status"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" data-close>閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- トライアル開始モーダル -->
 <div class="modal-overlay" id="modal-start-trial">
   <div class="modal">
     <h3>🏠 トライアルを開始する</h3>
-    <label class="checkbox-item">
-      <input type="checkbox" id="trial-use-passcode-checkbox" checked> パスワードを設定する
-    </label>
-    <p class="hint-text">チェックを入れると、公開ページが「パスワードを知っている人だけ見られる」状態になります。外すと、公開ページは今まで通り誰でも見られますが、「現在トライアル中です」という案内が表示されます。</p>
+    <p class="hint-text">トライアル中は、通常の公開QRコードからは「現在トライアル中です」という案内だけが表示されます。餌・トイレなど詳しい内容は、この後アプリ内で発行できる「トライアル専用QRコード」を里親さんに読み取ってもらうことで見られます(パスワードの入力は不要です)。</p>
 
     <div id="trial-passcode-wrap">
-      <label>パスワード(数字のみ)</label>
+      <label>合言葉(数字のみ・QRコードに埋め込まれます)</label>
       <input type="text" id="trial-passcode-input" inputmode="numeric">
-      <p class="hint-text">自動で作った数字が入っています。分かりやすい数字に変更しても構いません。全角で入力してしまっても、自動で半角に直して判定するので大丈夫です。パスワードは、里親さん・預かり者などトライアルに関わる人に別途お伝えください。</p>
+      <p class="hint-text">自動で作った数字が入っています。分かりやすい数字に変更しても構いません。この数字はQRコードのURLの一部として使われるだけで、里親さんが入力する必要はありません。</p>
     </div>
 
     <label>トライアル終了予定日(任意)</label>
