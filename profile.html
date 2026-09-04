@@ -241,6 +241,19 @@
     font-weight: 700;
     text-align: center;
   }
+  .sibling-link-disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+  .sibling-status {
+    margin-top: 2px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #c0733a;
+    background: #fbece7;
+    border-radius: 8px;
+    padding: 1px 6px;
+  }
   .loading, .not-found {
     text-align: center;
     padding: 80px 20px;
@@ -419,6 +432,16 @@
 
     const data = snap.data();
 
+    if (data.adopted) {
+      showAdoptedNotice(data.name);
+      return;
+    }
+
+    if (data.draft) {
+      showDraftNotice();
+      return;
+    }
+
     if (data.trialMode) {
       // URLに合言葉(pass)が付いている場合だけ、詳しいページ(trialProfiles)を自動で読みに行く。
       // 入力フォームは使わない(QRコード自体が合言葉を含んでいるため)
@@ -444,6 +467,26 @@
     }
 
     renderProfile(data, null);
+  }
+
+  function showAdoptedNotice(catName) {
+    const contentEl = document.getElementById("content");
+    contentEl.innerHTML = `
+      <div class="card" style="text-align:center;">
+        <div style="font-size:15px; font-weight:700; color:#6a4a30; margin-bottom:10px;">🏠 ${escapeHtml(catName || "この子")}は里親さんが決まりました</div>
+        <p style="font-size:13px; color:#8a7a6d;">正式に譲渡が決まったため、このページの公開は終了しました。</p>
+      </div>
+    `;
+  }
+
+  function showDraftNotice() {
+    const contentEl = document.getElementById("content");
+    contentEl.innerHTML = `
+      <div class="card" style="text-align:center;">
+        <div style="font-size:15px; font-weight:700; color:#6a4a30; margin-bottom:10px;">🐾 ただいま準備中です</div>
+        <p style="font-size:13px; color:#8a7a6d;">もうしばらくお待ちください。</p>
+      </div>
+    `;
   }
 
   function showTrialNotice(catName) {
@@ -580,7 +623,18 @@
           const sibSnap = await getDoc(doc(db, "publicProfiles", sibId));
           if (sibSnap.exists()) {
             const sibData = sibSnap.data();
-            siblingLinks.push(`<a class="sibling-link" href="profile.html?id=${sibId}">${sibData.photoData ? `<img src="${sibData.photoData}" alt="">` : `<div class="sibling-no-photo">🐾</div>`}<span>${escapeHtml(sibData.name || "")}</span></a>`);
+            const photoHtml = sibData.photoData ? `<img src="${sibData.photoData}" alt="">` : `<div class="sibling-no-photo">🐾</div>`;
+            const nameHtml = `<span>${escapeHtml(sibData.name || "")}</span>`;
+            if (sibData.adopted) {
+              siblingLinks.push(`<div class="sibling-link sibling-link-disabled">${photoHtml}${nameHtml}<span class="sibling-status">里親さん決定</span></div>`);
+            } else if (sibData.trialMode) {
+              siblingLinks.push(`<div class="sibling-link sibling-link-disabled">${photoHtml}${nameHtml}<span class="sibling-status">トライアル中</span></div>`);
+            } else if (sibData.draft) {
+              // 下書き中の子は、まだ相手のページを見せられないので、写真と名前だけ出してリンクにはしない
+              siblingLinks.push(`<div class="sibling-link sibling-link-disabled">${photoHtml}${nameHtml}</div>`);
+            } else {
+              siblingLinks.push(`<a class="sibling-link" href="profile.html?id=${sibId}">${photoHtml}${nameHtml}</a>`);
+            }
           }
         } catch (err) {
           // 読み込めない場合はスキップ

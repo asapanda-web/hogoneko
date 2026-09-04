@@ -746,8 +746,21 @@ function showDetail(catId, catData) {
     document.getElementById("trial-notes-btn").onclick = () => openTrialNotesModal(catId);
 
     const trialDetailQrBtn = document.getElementById("trial-detail-qr-btn");
-    trialDetailQrBtn.classList.toggle("hidden", !catData.trialPasscode);
-    trialDetailQrBtn.onclick = () => {
+    trialDetailQrBtn.classList.remove("hidden");
+    trialDetailQrBtn.onclick = async () => {
+      // 以前の仕様(合言葉なしトライアル)で始まっていた子は合言葉が無いので、その場合はここで新しく発行して保存する
+      if (!catData.trialPasscode) {
+        const newPasscode = generateRandomPasscode();
+        try {
+          await updateDoc(doc(db, "cats", catId), { trialPasscode: newPasscode });
+          catData.trialPasscode = newPasscode;
+          await syncPublicProfile(catId, catData);
+        } catch (err) {
+          alert("合言葉の発行に失敗しました。もう一度お試しください。");
+          return;
+        }
+      }
+
       const trialUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}profile.html?id=${catId}&pass=${encodeURIComponent(catData.trialPasscode)}`;
       const qrBox = document.getElementById("trial-qr-box");
       qrBox.innerHTML = "";
@@ -884,8 +897,10 @@ function showDetail(catId, catData) {
   // 公開ページへのリンク表示切り替え
   const publicPageWrap = document.getElementById("public-page-wrap");
   const publicPageLink = document.getElementById("public-page-link");
-  if (catData.isPublished && catData.status !== "譲渡済み") {
+  const publicPageDraftNote = document.getElementById("public-page-draft-note");
+  if (catData.status !== "譲渡済み") {
     publicPageWrap.classList.remove("hidden");
+    publicPageDraftNote.classList.toggle("hidden", !!catData.isPublished);
     const publicUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}profile.html?id=${catId}`;
     publicPageLink.href = publicUrl;
     document.getElementById("public-page-qr-btn").onclick = () => {
@@ -2454,13 +2469,40 @@ document.getElementById("cat-public-photo-input").addEventListener("change", asy
 // cats本体とは別のコレクション(publicProfiles)に、公開して良い項目だけをミラーする。
 // これにより、ログイン不要で読めるようにしても、保護場所・預かり担当者名・内部メモなどは外部から見えない。
 async function syncPublicProfile(catId, data) {
-  if (!data.isPublished || data.status === "譲渡済み") {
-    try {
-      await deleteDoc(doc(db, "publicProfiles", catId));
-    } catch (err) {
-      // 元々存在しない場合は何もしなくてよい
+  if (data.status === "譲渡済み") {
+    // ページの中身自体は完全に非公開にするが、兄弟姉妹欄では「里親さん決定」の案内付きで
+    // 写真と名前だけ引き続き見られるように、ドキュメント自体は残す(詳しい内容は消す)
+    await setDoc(doc(db, "publicProfiles", catId), {
+      adopted: true,
+      draft: false,
+      trialMode: false,
+      name: data.name,
+      photoData: data.publicPhotoData || data.photoData || "",
+      updatedAt: serverTimestamp()
+    }, { merge: false });
+    // トライアル中だった場合のデータも消しておく(古い合言葉を分かっていても読めないようにする)
+    if (data.trialPasscode) {
+      try {
+        await deleteDoc(doc(db, "trialProfiles", `${catId}-${data.trialPasscode}`));
+      } catch (err) {
+        // 元々存在しない場合は何もしなくてよい
+      }
     }
-    // トライアル中だった場合のデータも消しておく(古いパスコードを分かっていても読めないようにする)
+    return;
+  }
+
+  if (!data.isPublished) {
+    // まだ「公開する」がオンになっていない場合。QRコード自体は先に発行できるように、
+    // publicProfilesのドキュメント(＝QRコードの行き先)は用意しておくが、中身は「準備中」の案内だけにする。
+    // これで、団体への配布用にQRコードだけ先に作っておき、公開のタイミングは自分で決められる。
+    await setDoc(doc(db, "publicProfiles", catId), {
+      draft: true,
+      trialMode: false,
+      name: data.name,
+      photoData: data.publicPhotoData || data.photoData || "",
+      updatedAt: serverTimestamp()
+    }, { merge: false });
+    // 下書き中は、トライアル専用の詳しいページも見られないようにしておく
     if (data.trialPasscode) {
       try {
         await deleteDoc(doc(db, "trialProfiles", `${catId}-${data.trialPasscode}`));
@@ -2578,6 +2620,7 @@ async function syncPublicProfile(catId, data) {
     await setDoc(doc(db, "publicProfiles", catId), {
       trialMode: true,
       name: data.name,
+      photoData: data.publicPhotoData || data.photoData || "",
       updatedAt: serverTimestamp()
     }, { merge: false });
     await setDoc(doc(db, "trialProfiles", `${catId}-${data.trialPasscode}`), fullProfileData, { merge: true });
@@ -2932,19 +2975,19 @@ function renderGroupQrCatList() {
   const listEl = document.getElementById("group-qr-cat-list");
   listEl.innerHTML = "";
   if (!latestCatsSnapshot) return;
-  const publishedCats = latestCatsSnapshot.docs.filter((docSnap) => {
+  const targetCats = latestCatsSnapshot.docs.filter((docSnap) => {
     const cat = docSnap.data();
-    return cat.isPublished && cat.status !== "譲渡済み";
+    return cat.status !== "譲渡済み";
   });
-  if (publishedCats.length === 0) {
-    listEl.innerHTML = `<p class="hint-text">公開ページに掲載中の子がいません。まず犬猫の編集画面で「この子を公開ページに掲載する」をオンにしてください。</p>`;
+  if (targetCats.length === 0) {
+    listEl.innerHTML = `<p class="hint-text">対象の子がいません。</p>`;
     return;
   }
-  publishedCats.forEach((docSnap) => {
+  targetCats.forEach((docSnap) => {
     const cat = docSnap.data();
     const label = document.createElement("label");
     label.className = "checkbox-item";
-    label.innerHTML = `<input type="checkbox" value="${docSnap.id}" class="group-qr-cat"> ${escapeHtml(cat.name)}`;
+    label.innerHTML = `<input type="checkbox" value="${docSnap.id}" class="group-qr-cat"> ${escapeHtml(cat.name)}${cat.isPublished ? "" : "<span class=\"hint-text\">(下書き中)</span>"}`;
     listEl.appendChild(label);
   });
 }
