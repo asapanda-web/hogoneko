@@ -3,7 +3,7 @@
 //      電波が不安定な時でもアプリの見た目がすぐ開けるようにする。
 // 注意: Firebase(認証・Firestore通信など)や外部サイトへの通信には一切関与しない。
 
-const CACHE_NAME = "hogolog-cache-v1"; // ファイルを大きく更新した時はこの数字を上げてください
+const CACHE_NAME = "hogolog-cache-v2"; // ファイルを大きく更新した時はこの数字を上げてください
 
 const PRECACHE_URLS = [
   "./index.html",
