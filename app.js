@@ -1354,10 +1354,18 @@ function applyRoleUI() {
   document.getElementById("group-qr-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
   document.getElementById("event-history-btn").classList.toggle("hidden", !(isFullAdmin() || isShelterMember()));
 
-  // シェルターメンバーは「個人宅預かり」の登録はできない(施設側で割り当てるため選択肢を消す)
+  // シェルターメンバーは「個人宅預かり」の登録はできない(施設側で割り当てるため選択肢を消す)。
+  // 逆に管理者・責任者の場合は、選択肢が消えたままになっていないか確認し、無ければ戻す
+  // (同じブラウザタブでログインし直した場合など、ページを再読み込みしなくても正しい状態になるようにするため)
+  const existingFosterOption = document.querySelector('#cat-location option[value="個人宅預かり"]');
   if (isShelterMember()) {
-    const option = document.querySelector('#cat-location option[value="個人宅預かり"]');
-    if (option) option.remove();
+    if (existingFosterOption) existingFosterOption.remove();
+  } else if (!existingFosterOption) {
+    const newOption = document.createElement("option");
+    newOption.id = "option-foster";
+    newOption.value = "個人宅預かり";
+    newOption.textContent = FOSTER_LABEL;
+    document.getElementById("cat-location").appendChild(newOption);
   }
 }
 
