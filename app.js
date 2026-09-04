@@ -901,6 +901,8 @@ function showDetail(catId, catData) {
   if (catData.status !== "譲渡済み") {
     publicPageWrap.classList.remove("hidden");
     publicPageDraftNote.classList.toggle("hidden", !!catData.isPublished);
+    document.getElementById("public-page-preview-btn").classList.toggle("hidden", !!catData.isPublished);
+    document.getElementById("public-page-preview-btn").onclick = () => previewPublicProfile(catId, catData);
     const publicUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}profile.html?id=${catId}`;
     publicPageLink.href = publicUrl;
     document.getElementById("public-page-qr-btn").onclick = () => {
@@ -1097,6 +1099,38 @@ function listenHistory(catId) {
 document.getElementById("daily-load-more-btn").addEventListener("click", () => {
   dailyDisplayDayLimit += 7;
   renderDailyList();
+});
+
+document.getElementById("daily-jump-btn").addEventListener("click", () => {
+  const statusEl = document.getElementById("daily-jump-status");
+  const targetDate = document.getElementById("daily-jump-date").value;
+  if (!targetDate) {
+    statusEl.textContent = "日付を選んでください。";
+    return;
+  }
+  if (lastDailyGroupDates.length === 0) {
+    statusEl.textContent = "記録がありません。";
+    return;
+  }
+  // 日付は新しい順(降順)に並んでいるので、指定日以前で一番近い記録を探す
+  let matchIndex = lastDailyGroupDates.findIndex((d) => d <= targetDate);
+  if (matchIndex === -1) {
+    // 指定日より新しい記録しか無い(全部指定日より後)場合は、一番古い記録を表示する
+    matchIndex = lastDailyGroupDates.length - 1;
+  }
+  const matchedDate = lastDailyGroupDates[matchIndex];
+  dailyDisplayDayLimit = Math.max(dailyDisplayDayLimit, matchIndex + 1);
+  renderDailyList();
+  statusEl.textContent = matchedDate === targetDate ? "" : `${targetDate}の記録は無かったので、一番近い${matchedDate}の記録を表示しています。`;
+  requestAnimationFrame(() => {
+    const target = document.querySelector(`.daily-date-header[data-date="${matchedDate}"]`);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      target.style.transition = "background-color 0.3s";
+      target.style.backgroundColor = "#fbece7";
+      setTimeout(() => { target.style.backgroundColor = ""; }, 1500);
+    }
+  });
 });
 
 // ---------- スクロール時に猫の名前を固定表示する ----------
@@ -1464,6 +1498,7 @@ function renderCatList() {
 let dailyDisplayDayLimit = 7; // 最初に表示する日数(「もっと見る」で増える)
 let latestDailyTotalsSnapshot = null;
 let unsubDailyTotals = null;
+let lastDailyGroupDates = []; // 日付ジャンプ用に、直近の描画で使った日付一覧(新しい順)を覚えておく
 
 function listenDailyLogs(catId) {
   if (unsubDaily) unsubDaily();
@@ -1513,10 +1548,12 @@ function renderDailyList() {
   // groups は日付の新しい順に並んでいるので、直近◯日分だけに絞る
   const visibleGroups = groups.slice(0, dailyDisplayDayLimit);
   const remainingDays = groups.length - visibleGroups.length;
+  lastDailyGroupDates = groups.map((g) => g.date);
 
   visibleGroups.forEach((group) => {
     const dateHeader = document.createElement("div");
     dateHeader.className = "daily-date-header";
+    dateHeader.dataset.date = group.date;
     dateHeader.textContent = group.date;
     listEl.appendChild(dateHeader);
 
@@ -2650,6 +2687,70 @@ async function syncPublicProfile(catId, data) {
   }
 
   await syncPublicWeightHistory(catId);
+}
+
+// ---------- 公開ページ用: プレビュー(まだ「公開する」がオフの子でも、公開したらどう見えるかその場で確認する) ----------
+// Firestoreには一切書き込まず、この端末のsessionStorageに一時保存したデータをprofile.htmlが読み取って表示する仕組み。
+async function previewPublicProfile(catId, data) {
+  const records = latestMedicalSnapshot ? latestMedicalSnapshot.docs.map((d) => d.data()) : [];
+  const hasNeuter = records.some((r) => r.type === "避妊去勢");
+  const vaccineCount = records.filter((r) => r.type === "ワクチン").length;
+  const hasDeworm = records.some((r) => r.type === "駆虫");
+  const latestVirusTest = records
+    .filter((r) => r.type === "ウイルス検査")
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+
+  let weightHistory = [];
+  try {
+    const logsSnap = await getDocs(collection(db, "cats", catId, "dailyLogs"));
+    weightHistory = logsSnap.docs
+      .map((d) => d.data())
+      .filter((log) => log.weight !== undefined && log.weight !== null && log.weight !== "")
+      .map((log) => ({ date: log.date, weight: parseFloat(log.weight) }))
+      .filter((p) => !isNaN(p.weight))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  } catch (err) {
+    weightHistory = [];
+  }
+
+  const previewData = {
+    trialMode: false,
+    name: data.name,
+    species: data.species,
+    sex: data.sex,
+    age: data.age,
+    nameOriginShared: data.nameOriginShared,
+    nameOrigin: data.nameOrigin,
+    siblingIds: data.siblingIds || [],
+    intro: data.intro,
+    personalityTags: data.personalityTags,
+    personalityOther: data.personalityOther,
+    canDoTags: data.canDoTags,
+    canDoOther: data.canDoOther,
+    canDislikeTags: data.canDislikeTags,
+    canDislikeOther: data.canDislikeOther,
+    playTags: data.playTags,
+    playOther: data.playOther,
+    videoUrl: data.videoUrl,
+    videoComingSoon: data.videoComingSoon,
+    contactItems: data.contactItems || [],
+    photoData: data.publicPhotoData || data.photoData || "",
+    neuterStatus: hasNeuter ? "済" : "未",
+    vaccineStatus: vaccineCount > 0 ? `済(${vaccineCount}回)` : "未",
+    fivResult: latestVirusTest ? (latestVirusTest.fivResult || "未検査") : "未検査",
+    felvResult: latestVirusTest ? (latestVirusTest.felvResult || "未検査") : "未検査",
+    dewormStatus: hasDeworm ? "済" : "未",
+    weightHistory,
+    currentWeight: weightHistory.length ? weightHistory[weightHistory.length - 1].weight : null
+  };
+
+  try {
+    sessionStorage.setItem(`hogonekoPreview_${catId}`, JSON.stringify(previewData));
+  } catch (err) {
+    alert("プレビューの準備に失敗しました。もう一度お試しください。");
+    return;
+  }
+  window.open(`${location.origin}${location.pathname.replace(/[^/]*$/, "")}profile.html?id=${catId}&preview=1`, "_blank");
 }
 
 // ---------- 公開ページ用: 体重の推移を同期する(日々の記録が変わるたびに呼び出す) ----------

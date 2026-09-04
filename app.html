@@ -113,6 +113,7 @@
         <button type="button" class="btn btn-outline btn-small" id="public-page-qr-btn">📱 QRコード</button>
         <span class="hint-text">この子は公開ページに掲載されています(ログイン不要で誰でも見られます)</span>
         <p class="hint-text" id="public-page-draft-note" style="color:#c0733a;">⚠️ 「この子を公開ページに掲載する」がまだオフのため、今はQRコードを読み取っても「準備中です」としか表示されません。譲渡会の表などQRコードだけ先に用意しておき、掲載準備ができたら編集画面でオンにしてください。</p>
+        <button type="button" class="btn btn-outline btn-small hidden" id="public-page-preview-btn" style="margin-top:6px;">👀 公開したらどう見えるかプレビュー</button>
       </div>
       <div id="print-buttons-wrap" style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap;">
         <button class="btn btn-outline btn-small" id="print-cat-btn">🖨️ この子の記録を印刷</button>
@@ -255,6 +256,12 @@
       <div id="tab-daily">
         <button class="btn btn-outline btn-small" id="weight-chart-btn" style="margin-bottom:12px;">📈 体重グラフを見る</button>
         <button class="btn btn-outline btn-small" id="daily-total-bulk-btn" style="margin-bottom:12px; margin-left:8px;">📝 トータル食事量をまとめて入力</button>
+        <div style="margin-bottom:12px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <label for="daily-jump-date" style="font-size:12px; color:#8a7a6d;">📅 日付から探す:</label>
+          <input type="date" id="daily-jump-date" style="width:auto;">
+          <button type="button" class="btn btn-outline btn-small" id="daily-jump-btn">その日を見る</button>
+          <span class="hint-text" id="daily-jump-status"></span>
+        </div>
         <div id="daily-list"></div>
         <p class="empty-state hidden" id="empty-daily">まだ記録がありません。</p>
         <div id="daily-load-more-wrap" class="hidden" style="text-align:center; margin-top:12px;">
