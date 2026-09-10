@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection, addDoc, deleteDoc, doc, getDoc, getDocs, onSnapshot,
-  query, where, orderBy, serverTimestamp, updateDoc, writeBatch, setDoc, arrayUnion, arrayRemove
+  query, where, orderBy, limit, serverTimestamp, updateDoc, writeBatch, setDoc, arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ORG_NAME, APP_TITLE, FACILITY_LABEL, FOSTER_LABEL } from "./site-config.js?v=1784218044";
 
@@ -1170,6 +1170,56 @@ membersBtn.addEventListener("click", () => {
   loadMembersList();
 });
 
+// ---------- ログイン履歴(管理者・責任者のみ) ----------
+const loginLogsBtn = document.getElementById("login-logs-btn");
+
+loginLogsBtn.addEventListener("click", () => {
+  document.getElementById("modal-login-logs").classList.add("open");
+  loadLoginLogsList();
+});
+
+async function loadLoginLogsList() {
+  const listEl = document.getElementById("login-logs-list");
+  const statusEl = document.getElementById("login-logs-status");
+  listEl.innerHTML = "読み込み中...";
+  statusEl.textContent = "";
+
+  try {
+    // uid → 表示名 の対応表を作っておく(ログには表示名を保存していないため)
+    const usersSnap = await getDocs(collection(db, "users"));
+    const nameByUid = {};
+    usersSnap.forEach((docSnap) => {
+      const member = docSnap.data();
+      nameByUid[docSnap.id] = member.displayName || member.username || docSnap.id;
+    });
+
+    const logsQuery = query(collection(db, "loginLogs"), orderBy("loggedInAt", "desc"), limit(100));
+    const logsSnap = await getDocs(logsQuery);
+    listEl.innerHTML = "";
+
+    if (logsSnap.empty) {
+      listEl.innerHTML = `<p class="hint-text">まだログイン記録がありません(この機能を追加した後のログインから記録されます)。</p>`;
+      return;
+    }
+
+    logsSnap.forEach((docSnap) => {
+      const log = docSnap.data();
+      const name = nameByUid[log.uid] || "(退会済み・不明なユーザー)";
+      const dateStr = log.loggedInAt && log.loggedInAt.toDate
+        ? log.loggedInAt.toDate().toLocaleString("ja-JP")
+        : "(日時不明)";
+      const row = document.createElement("div");
+      row.className = "member-row";
+      row.innerHTML = `
+        <span class="member-name">${escapeHtml(name)}<span class="hint-text" style="display:block; margin:0;">${escapeHtml(dateStr)}・ログイン入力: ${escapeHtml(log.loginInput || "")}</span></span>
+      `;
+      listEl.appendChild(row);
+    });
+  } catch (err) {
+    statusEl.textContent = "読み込みに失敗しました。";
+  }
+}
+
 async function loadMembersList() {
   const listEl = document.getElementById("members-list");
   const statusEl = document.getElementById("members-status");
@@ -1343,6 +1393,7 @@ function compressImageToDataUrl(file, maxSize, quality) {
 function applyRoleUI() {
   // メンバー管理ボタンは管理者・責任者だけに表示
   membersBtn.classList.toggle("hidden", !isFullAdmin());
+  loginLogsBtn.classList.toggle("hidden", !isFullAdmin());
 
   // 絞り込みタブは管理者・責任者だけに表示(他の役割はもともと見える範囲が限定されるため)
   const filterTabs = document.querySelector(".filter-tabs");

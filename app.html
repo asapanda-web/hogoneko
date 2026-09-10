@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1788549866">
+<link rel="stylesheet" href="style.css?v=1788987286">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -36,6 +36,7 @@
     <div class="brand" id="brand-title">🐾 犬猫の健康管理</div>
     <div class="topbar-actions" style="display:flex; gap:8px;">
       <button class="btn btn-outline btn-small hidden" id="members-btn">👥 メンバー管理</button>
+      <button class="btn btn-outline btn-small hidden" id="login-logs-btn">🔐 ログイン履歴</button>
       <a href="share.html" class="btn btn-outline btn-small">📱 招待</a>
       <button class="btn btn-outline btn-small" id="wallpaper-btn">🎨 壁紙</button>
       <button class="btn btn-outline btn-small" id="account-settings-btn">⚙️ アカウント設定</button>
@@ -1164,9 +1165,22 @@
   </div>
 </div>
 
+<!-- ログイン履歴モーダル -->
+<div class="modal-overlay" id="modal-login-logs">
+  <div class="modal">
+    <h3>🔐 ログイン履歴</h3>
+    <p class="hint-text">直近のログイン記録です(新しい順・最大100件)。見覚えのないログインがあれば、パスワードの変更やメンバー管理での対応をご検討ください。</p>
+    <div id="login-logs-list" style="margin-top:12px; max-height:60vh; overflow-y:auto;"></div>
+    <p class="hint-text" id="login-logs-status"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" data-close>閉じる</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1788549866"></script>
+<script type="module" src="app.js?v=1788987286"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

@@ -1,12 +1,12 @@
-import { auth, db } from "./firebase-config.js?v=1784218044";
+import { auth, db } from "./firebase-config.js?v=1788987286";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ORG_NAME, APP_TITLE, ADMIN_EMAIL } from "./site-config.js?v=1784218044";
+import { doc, setDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { ORG_NAME, APP_TITLE, ADMIN_EMAIL } from "./site-config.js?v=1788987286";
 
 // 団体名・アプリ名を画面に反映
 const titleText = ORG_NAME ? `${APP_TITLE}(${ORG_NAME})` : APP_TITLE;
@@ -88,6 +88,20 @@ function resolveEmail(input) {
   return `${input.toLowerCase()}@${FAKE_EMAIL_DOMAIN}`; // ユーザー名 → 擬似メール
 }
 
+// ---------- ログイン記録を残す(誰が・いつログインしたかを後から確認できるようにする) ----------
+async function recordLoginLog(uid, loginInput) {
+  try {
+    await addDoc(collection(db, "loginLogs"), {
+      uid,
+      loginInput,
+      userAgent: navigator.userAgent,
+      loggedInAt: serverTimestamp()
+    });
+  } catch (err) {
+    // 記録に失敗しても、ログイン自体はそのまま続ける(記録は補助的な機能のため)
+  }
+}
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   errorMsg.style.display = "none";
@@ -162,6 +176,7 @@ form.addEventListener("submit", async (e) => {
 
       if (approvalNeeded) {
         // 承認待ちの場合は、管理者へのお知らせメールを案内する画面を表示する
+        await recordLoginLog(cred.user.uid, rawInput);
         form.classList.add("hidden");
         document.getElementById("signup-complete-username").textContent = `${displayName}(ログイン用: ${rawInput})`;
         const notice = document.getElementById("signup-complete-notice");
@@ -180,8 +195,12 @@ form.addEventListener("submit", async (e) => {
         submitBtn.disabled = false;
         return;
       }
+
+      // 招待コードが正しく、承認不要でそのまま使い始める場合もここで記録する
+      await recordLoginLog(cred.user.uid, rawInput);
     } else {
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      await recordLoginLog(cred.user.uid, rawInput);
     }
     window.location.href = "app.html";
   } catch (err) {

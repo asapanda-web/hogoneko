@@ -63,8 +63,9 @@ service cloud.firestore {
     }
     // ご飯の写真の保存済みリスト(同じご飯を使っている子に写真を使い回せるようにする。
     // 画像はサイズが大きいため、1件ずつ別ドキュメントとして保存する)
+    // 餌の写真は役割を問わず全員で使い回したいので、ログインしていれば誰でも読み書きできるようにする
     match /config/foodPhotoPresets/items/{presetId} {
-      allow read, write: if isFullAdmin() || isShelterMember();
+      allow read, write: if isSignedIn();
     }
     // 譲渡会の会場の保存済みリスト(同じ会場でまた開催する時に選び直せるようにする)
     match /config/eventLocationPresets {
@@ -123,6 +124,16 @@ service cloud.firestore {
         || (isSignedIn() && request.auth.uid == userId && request.resource.data.role == resource.data.role);
       // 削除は管理者・責任者に加えて、本人による退会(自分のドキュメントの削除)も許可
       allow delete: if isFullAdmin() || (isSignedIn() && request.auth.uid == userId);
+    }
+    // ログイン記録(いつ・誰がログインしたかの履歴。セキュリティ確認用)
+    match /loginLogs/{logId} {
+      // 一覧の閲覧は管理者・責任者のみ
+      allow read: if isFullAdmin();
+      // 記録の作成は、自分自身のログインとしてのみ許可(他人になりすまして記録できないようにする)
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      // 記録は改ざん防止のため更新不可。古い記録の削除(整理)は管理者のみ許可
+      allow update: if false;
+      allow delete: if isFullAdmin();
     }
     // 犬猫本体の情報
     match /cats/{catId} {
