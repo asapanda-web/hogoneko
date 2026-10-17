@@ -749,16 +749,18 @@ function showDetail(catId, catData) {
     trialDetailQrBtn.classList.remove("hidden");
     trialDetailQrBtn.onclick = async () => {
       // 以前の仕様(合言葉なしトライアル)で始まっていた子は合言葉が無いので、その場合はここで新しく発行して保存する
-      if (!catData.trialPasscode) {
-        const newPasscode = generateRandomPasscode();
-        try {
+      try {
+        if (!catData.trialPasscode) {
+          const newPasscode = generateRandomPasscode();
           await updateDoc(doc(db, "cats", catId), { trialPasscode: newPasscode });
           catData.trialPasscode = newPasscode;
-          await syncPublicProfile(catId, catData);
-        } catch (err) {
-          alert("合言葉の発行に失敗しました。もう一度お試しください。");
-          return;
         }
+        // 合言葉が既にある場合も、QRを開いたときに「非公開」にならないよう、
+        // 里親さん用の公開用データをここで作り直して最新にしておく
+        await syncPublicProfile(catId, catData);
+      } catch (err) {
+        alert("里親さん用ページの準備に失敗しました。もう一度お試しください。");
+        return;
       }
 
       const trialUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}profile.html?id=${catId}&pass=${encodeURIComponent(catData.trialPasscode)}`;
@@ -900,8 +902,9 @@ function showDetail(catId, catData) {
   const publicPageDraftNote = document.getElementById("public-page-draft-note");
   if (catData.status !== "譲渡済み") {
     publicPageWrap.classList.remove("hidden");
-    publicPageDraftNote.classList.toggle("hidden", !!catData.isPublished);
-    document.getElementById("public-page-preview-btn").classList.toggle("hidden", !!catData.isPublished);
+    const isDraftOnly = !catData.isPublished && catData.status !== "トライアル中";
+    publicPageDraftNote.classList.toggle("hidden", !isDraftOnly);
+    document.getElementById("public-page-preview-btn").classList.toggle("hidden", !isDraftOnly);
     document.getElementById("public-page-preview-btn").onclick = () => previewPublicProfile(catId, catData);
     const publicUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}profile.html?id=${catId}`;
     publicPageLink.href = publicUrl;
@@ -2589,7 +2592,10 @@ async function syncPublicProfile(catId, data) {
     return;
   }
 
-  if (!data.isPublished) {
+  // トライアル中で合言葉がある子は、「公開ページに掲載する」がオフでも里親さん用QRで見られるようにする
+  const isTrialWithPasscode = data.status === "トライアル中" && !!data.trialPasscode;
+
+  if (!data.isPublished && !isTrialWithPasscode) {
     // まだ「公開する」がオンになっていない場合。QRコード自体は先に発行できるように、
     // publicProfilesのドキュメント(＝QRコードの行き先)は用意しておくが、中身は「準備中」の案内だけにする。
     // これで、団体への配布用にQRコードだけ先に作っておき、公開のタイミングは自分で決められる。
@@ -2820,8 +2826,16 @@ async function previewPublicProfile(catId, data) {
 // ---------- 公開ページ用: 体重の推移を同期する(日々の記録が変わるたびに呼び出す) ----------
 async function syncPublicWeightHistory(catId) {
   try {
-    const profileSnap = await getDoc(doc(db, "publicProfiles", catId));
-    if (!profileSnap.exists()) return; // 公開されていない子は何もしない
+    // トライアル中(合言葉あり)の子は、体重も里親さん用のページ(trialProfiles)側に入れる。
+    // 通常の公開QRから読める「トライアル中です」の案内側には、体重を入れない。
+    let targetRef = doc(db, "publicProfiles", catId);
+    const catSnapForWeight = await getDoc(doc(db, "cats", catId));
+    const catForWeight = catSnapForWeight.exists() ? catSnapForWeight.data() : null;
+    if (catForWeight && catForWeight.status === "トライアル中" && catForWeight.trialPasscode) {
+      targetRef = doc(db, "trialProfiles", `${catId}-${catForWeight.trialPasscode}`);
+    }
+    const profileSnap = await getDoc(targetRef);
+    if (!profileSnap.exists()) return; // 公開用データがまだ無い子は何もしない
 
     const logsSnap = await getDocs(collection(db, "cats", catId, "dailyLogs"));
     const points = logsSnap.docs
@@ -2831,7 +2845,7 @@ async function syncPublicWeightHistory(catId) {
       .filter((p) => !isNaN(p.weight))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    await updateDoc(doc(db, "publicProfiles", catId), {
+    await updateDoc(targetRef, {
       weightHistory: points,
       currentWeight: points.length ? points[points.length - 1].weight : null
     });
@@ -3753,7 +3767,8 @@ async function syncTrialNotesToPublic(catId) {
   try {
     const catSnap = await getDoc(doc(db, "cats", catId));
     const catData = catSnap.data();
-    if (!catData || catData.status !== "トライアル中" || !catData.isPublished) return;
+    if (!catData || catData.status !== "トライアル中") return;
+    if (!catData.trialPasscode && !catData.isPublished) return; // 合言葉も無く掲載もしていない子は、同期先が無い
 
     const notesSnap = await getDocs(collection(db, "cats", catId, "trialNotes"));
     const trialNotes = notesSnap.docs
