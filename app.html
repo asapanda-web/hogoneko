@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="保護ログ">
-<link rel="stylesheet" href="style.css?v=1788987286">
+<link rel="stylesheet" href="style.css?v=1792205038">
 <style>
   /* スマホ画面では、タイトルとボタン群を横一列に詰め込まず、ボタンを折り返して2段にする */
   @media (max-width: 640px) {
@@ -528,6 +528,13 @@
         <input type="checkbox" id="cat-is-published"> この子を公開ページに掲載する
       </label>
       <p class="hint-text">「譲渡済みにする」を押すと、公開ページも自動的に非表示になります。</p>
+
+      <label>公開ページの体重の見せ方</label>
+      <select id="cat-weight-display-mode">
+        <option value="graph">グラフで見せる(推移が分かります)</option>
+        <option value="latest">現在の体重と測定日だけ見せる</option>
+      </select>
+      <p class="hint-text">里親さんに見せる際など、推移を見せたくない場合は「現在の体重と測定日だけ」を選んでください。保存すると公開ページに反映されます。</p>
 
       <label>メモ(任意・スタッフ内部用、プロフィールには表示されません)</label>
       <textarea id="cat-memo" placeholder="性格や特徴など"></textarea>
@@ -1180,7 +1187,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="app.js?v=1788987286"></script>
+<script type="module" src="app.js?v=1792205038"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {

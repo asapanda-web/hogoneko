@@ -417,6 +417,25 @@
       return;
     }
 
+    // プレビューモード(公開する前に、公開したらどう見えるか確認する用)。
+    // Firestoreは見ずに、この端末に一時保存されたデータだけを表示する。
+    if (params.get("preview") === "1") {
+      let previewData = null;
+      try {
+        const raw = sessionStorage.getItem(`hogonekoPreview_${catId}`);
+        previewData = raw ? JSON.parse(raw) : null;
+      } catch (err) {
+        previewData = null;
+      }
+      if (!previewData) {
+        contentEl.innerHTML = `<div class="not-found">🐾 プレビューデータが見つかりませんでした。<br>アプリの画面から「プレビュー」ボタンをもう一度押してみてください。</div>`;
+        return;
+      }
+      document.body.insertAdjacentHTML("afterbegin", `<div style="background:#c0733a; color:#fff; text-align:center; font-size:12px; font-weight:700; padding:6px;">👀 プレビュー中(まだ実際には公開されていません)</div>`);
+      renderProfile(previewData, null);
+      return;
+    }
+
     let snap;
     try {
       snap = await getDoc(doc(db, "publicProfiles", catId));
@@ -523,12 +542,28 @@
 
     const metaText = data.species || "";
 
-    const weightHtml = (data.weightHistory && data.weightHistory.length > 0)
-      ? `<div class="section-title">⚖️ 体重</div>
-         ${data.currentWeight !== null && data.currentWeight !== undefined ? `<div class="current-weight">現在: <strong>${escapeHtml(String(data.currentWeight))}kg</strong></div>` : ""}
+    // 体重の見せ方は、編集画面の設定で切り替える
+    //  - "graph"  : 現在の体重 + 推移グラフ(以前のまま)
+    //  - "latest" : 現在の体重 + その測定日だけ
+    const showWeightAsGraph = data.weightDisplayMode !== "latest";
+    let weightHtml = "";
+    if (data.weightHistory && data.weightHistory.length > 0) {
+      const latestPoint = data.weightHistory[data.weightHistory.length - 1];
+      const weightValue = (data.currentWeight !== null && data.currentWeight !== undefined) ? data.currentWeight : latestPoint.weight;
+      if (showWeightAsGraph) {
+        weightHtml = `<div class="section-title">⚖️ 体重</div>
+         ${weightValue !== null && weightValue !== undefined ? `<div class="current-weight">現在: <strong>${escapeHtml(String(weightValue))}kg</strong></div>` : ""}
          <div class="weight-chart-wrap"><canvas id="weight-chart" width="500" height="220"></canvas></div>
-         <p class="chart-note">グラフをタップすると、その日の日付と体重が見られます。</p>`
-      : "";
+         <p class="chart-note">グラフをタップすると、その日の日付と体重が見られます。</p>`;
+      } else {
+        const dateParts = (latestPoint.date || "").split("-"); // [年, 月, 日]
+        const dateLabel = dateParts.length === 3
+          ? `${parseInt(dateParts[1], 10)}月${parseInt(dateParts[2], 10)}日現在`
+          : "";
+        weightHtml = `<div class="section-title">⚖️ 体重</div>
+         <div class="current-weight"><strong>${escapeHtml(String(weightValue))}kg</strong>${dateLabel ? ` <span style="font-size:13px; color:#8a7a6d;">(${escapeHtml(dateLabel)})</span>` : ""}</div>`;
+      }
+    }
 
     const nameOriginParts = [];
     if (data.nameOriginShared) {
@@ -700,8 +735,8 @@
       });
     });
 
-    // 体重グラフの描画
-    if (data.weightHistory && data.weightHistory.length > 0) {
+    // 体重グラフの描画(「グラフで見せる」設定のときだけ)
+    if (showWeightAsGraph && data.weightHistory && data.weightHistory.length > 0) {
       const canvasEl = document.getElementById("weight-chart");
       new Chart(canvasEl.getContext("2d"), {
         type: "line",

@@ -2452,6 +2452,7 @@ async function openCatEditModal(catId, catData) {
   document.getElementById("cat-video-url").value = catData.videoUrl || "";
   document.getElementById("cat-video-coming-soon").checked = !!catData.videoComingSoon;
   document.getElementById("cat-is-published").checked = !!catData.isPublished;
+  document.getElementById("cat-weight-display-mode").value = catData.weightDisplayMode === "latest" ? "latest" : "graph";
 
   currentCatPublicPhotoData = catData.publicPhotoData || null;
   const publicPhotoPreview = document.getElementById("cat-public-photo-preview");
@@ -2504,6 +2505,7 @@ function resetCatModalToAddMode() {
   foodItemizedWrap.classList.add("hidden");
   setFoodItemsToForm([]);
   document.getElementById("cat-is-published").checked = false;
+  document.getElementById("cat-weight-display-mode").value = "graph";
   document.getElementById("cat-video-coming-soon").checked = false;
   document.getElementById("cat-contact-preset").value = "";
   setContactItemsToForm([]);
@@ -2673,6 +2675,7 @@ async function syncPublicProfile(catId, data) {
     felvResult: latestVirusTest ? (latestVirusTest.felvResult || "未検査") : "未検査",
     dewormStatus: hasDeworm ? "済" : "未",
     trialEndDate: data.status === "トライアル中" ? (data.trialEndDate || "") : "",
+    weightDisplayMode: data.weightDisplayMode === "latest" ? "latest" : "graph",
     trialActive: data.status === "トライアル中",
     trialNotes,
     updatedAt: serverTimestamp()
@@ -2707,6 +2710,7 @@ async function syncPublicProfile(catId, data) {
     fivResult: latestVirusTest ? (latestVirusTest.fivResult || "未検査") : "未検査",
     felvResult: latestVirusTest ? (latestVirusTest.felvResult || "未検査") : "未検査",
     dewormStatus: hasDeworm ? "済" : "未",
+    weightDisplayMode: data.weightDisplayMode === "latest" ? "latest" : "graph",
     updatedAt: serverTimestamp()
   };
 
@@ -2799,6 +2803,7 @@ async function previewPublicProfile(catId, data) {
     fivResult: latestVirusTest ? (latestVirusTest.fivResult || "未検査") : "未検査",
     felvResult: latestVirusTest ? (latestVirusTest.felvResult || "未検査") : "未検査",
     dewormStatus: hasDeworm ? "済" : "未",
+    weightDisplayMode: data.weightDisplayMode === "latest" ? "latest" : "graph",
     weightHistory,
     currentWeight: weightHistory.length ? weightHistory[weightHistory.length - 1].weight : null
   };
@@ -2898,6 +2903,7 @@ document.getElementById("form-cat").addEventListener("submit", async (e) => {
     videoComingSoon: document.getElementById("cat-video-coming-soon").checked,
     publicPhotoData: currentCatPublicPhotoData || "",
     isPublished: document.getElementById("cat-is-published").checked,
+    weightDisplayMode: document.getElementById("cat-weight-display-mode").value,
     contactItems: getContactItemsFromForm(),
     fosterContactItems: getFosterContactItemsFromForm(),
     fosterContactComingSoon: document.getElementById("foster-contact-coming-soon").checked,
